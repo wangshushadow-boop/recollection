@@ -106,8 +106,13 @@ func run() -> void:
 	root.add_child(world)
 	scope={"view":world}
 	world.add_child(PLAIN.instantiate())
+	var plate := box(Vector3(4,0.02,4),Vector3.ZERO,"grazing_plate")
 	await physics_frame
 	await physics_frame
+	var grazing := Queries.sweep(scope,[{"from":[0,290,0],"to":[8,292,1],"radius_mm":280,"mask":1}])
+	check(grazing.ok and grazing.value.any(func(h):return h.entity_handle=="grazing_plate" and h.fraction_ppm==0),
+		"sphere touching a 20 mm plate reports contact at its starting position")
+	plate.free()
 	for count in [16,64,500,1000]:
 		var rows:=fixture(count)
 		var response:=compare(rows,"clear actual terrain "+str(count))

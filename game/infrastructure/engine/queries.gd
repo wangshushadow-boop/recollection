@@ -118,8 +118,10 @@ static func _sphere_hit(space: PhysicsDirectSpaceState3D, origin: Vector3, targe
 	for part in parts:
 		var start := origin.lerp(target,float(part)/parts)
 		var end := origin.lerp(target,float(part+1)/parts)
-		query.transform = Transform3D(Basis.IDENTITY,start)
-		query.motion = Vector3.ZERO
+		# The overlap check left the query at the first segment's start.
+		if part > 0:
+			query.transform = Transform3D(Basis.IDENTITY,start)
+			query.motion = Vector3.ZERO
 		var hit := space.get_rest_info(query)
 		var contact := start
 		if hit.is_empty():
@@ -156,6 +158,9 @@ static func sweep(scope: Dictionary, queries: Array, field := false) -> Dictiona
 	var space: PhysicsDirectSpaceState3D = scope.view.world_3d.direct_space_state
 	var result := []
 	var spheres:={}
+	# The batch is synchronous; reuse scratch arrays and only sort actual contacts.
+	var excluded: Array[RID] = []
+	var hits := []
 	for index in queries.size():
 		var q: Variant = queries[index]
 		if typeof(q) != TYPE_DICTIONARY or not _vector(q.get("from")) or not _vector(q.get("to")):
@@ -169,8 +174,8 @@ static func sweep(scope: Dictionary, queries: Array, field := false) -> Dictiona
 		var target := _meters(q.to)
 		if origin == target:
 			return R.fail("InvalidArgument","motion")
-		var excluded: Array[RID] = []
-		var hits := []
+		excluded.clear()
+		hits.clear()
 		while true:
 			var hit: Dictionary
 			if radius == 0:
@@ -195,9 +200,12 @@ static func sweep(scope: Dictionary, queries: Array, field := false) -> Dictiona
 			if field:
 				scope.field.tag_hit(object,hit.position,row)
 			hits.append(row)
-		hits.sort_custom(func(a,b):
-			if a.fraction_ppm == b.fraction_ppm:
-				return a.entity_handle < b.entity_handle
-			return a.fraction_ppm < b.fraction_ppm)
-		result.append_array(hits)
+		if hits.size() == 1:
+			result.append(hits[0])
+		elif hits.size() > 1:
+			hits.sort_custom(func(a,b):
+				if a.fraction_ppm == b.fraction_ppm:
+					return a.entity_handle < b.entity_handle
+				return a.fraction_ppm < b.fraction_ppm)
+			result.append_array(hits)
 	return R.ok(result)

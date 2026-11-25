@@ -2,7 +2,7 @@
 
 ## P2 野战画面刷新体验版
 
-从仓库根目录双击「启动游戏.cmd」，选择「进入河原野战」。客户端按战斗步接收输入、命中和倒地事件，每个显示帧使用最新已提交的战场状态更新模型、相机和 HUD。按负责人要求，本次体验版的启动、功能回归及 500/1000 人性能复测均为 NOT_RUN，实际帧率待测。
+从仓库根目录双击「启动游戏.cmd」，选择「进入河原野战」。在原画面合帧版 `0e7fef8` 上完成 500 人＋100 马的水平球扫优化与实机复测。每版六轮站立对照为 3.233→3.235 FPS，仍有积压。同一世界同批球扫约节省 5.5%；独立行为复验保留移动、接战与命中。隔离实验确认平坦地面误触粗筛，安全区分地面顶面与障碍仍是优先项。1000 人在本轮未测，P2 门禁仍阻塞。[性能、失败及行为验收](development/reports/tests/P2/field-clearance-500/README.md)
 
 **P5 柳溪庄人物委托已交付。** 在沙盒「人物 → 领地治理 → 拜访庄署」选择在任总督，可交谈、核账、交差和领取管理经验。生产提交 `4cfca39`。独立 QA 在正式 PCK 通过 404 项、冷源码通过 550 项。P5 整体为 PARTIAL，P4 总督和 P3 人物可继续游玩，P2 性能延期。[阶段验收](development/reports/stages/P5-estate-visit.md) · [任务记录](development/reports/tasks/P5-estate-visit.md) · [实际会面截图](development/reports/tests/P5/estate-visit/estate-audience.png)
 

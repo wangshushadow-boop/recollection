@@ -1,0 +1,998 @@
+{
+  "baseline": {
+    "step_mean": 34.330078125,
+    "step50": 33.941,
+    "step95": 38.717,
+    "frame50": 306.729,
+    "frame95": 340.619,
+    "fps": 3.232884793594467,
+    "sps": 25.863078348755735,
+    "steps": 1920,
+    "frames": 234,
+    "frame_steps": 1872
+  },
+  "candidate": {
+    "step_mean": 34.2831234375,
+    "step50": 33.886,
+    "step95": 38.549,
+    "frame50": 306.551,
+    "frame95": 338.458,
+    "fps": 3.2348625505519846,
+    "sps": 25.878900404415877,
+    "steps": 1920,
+    "frames": 234,
+    "frame_steps": 1872
+  },
+  "runs": {
+    "T1": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11923.451,
+      "frame_steps": 312,
+      "step_mean": 33.973728125,
+      "step50": 33.611,
+      "step95": 37.629,
+      "frame50": 305.443,
+      "frame95": 324.924,
+      "fps": 3.270865121180101,
+      "sps": 26.166920969440813
+    },
+    "AC1": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12510.064,
+      "frame_steps": 312,
+      "step_mean": 35.65575625,
+      "step50": 35.234,
+      "step95": 40.146,
+      "frame50": 320.232,
+      "frame95": 354.579,
+      "fps": 3.117490046413831,
+      "sps": 24.93992037131065
+    },
+    "AC2": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11752.167,
+      "frame_steps": 312,
+      "step_mean": 33.4648375,
+      "step50": 33.166,
+      "step95": 36.404,
+      "frame50": 299.989,
+      "frame95": 319.794,
+      "fps": 3.3185369132348104,
+      "sps": 26.548295305878483
+    },
+    "AC3": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12019.013,
+      "frame_steps": 312,
+      "step_mean": 34.201265625,
+      "step50": 34.013,
+      "step95": 37.892,
+      "frame50": 306.764,
+      "frame95": 327.334,
+      "fps": 3.2448587916495306,
+      "sps": 25.958870333196245
+    },
+    "C1": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11695.228,
+      "frame_steps": 312,
+      "step_mean": 33.249971875,
+      "step50": 32.981,
+      "step95": 36.3,
+      "frame50": 298.997,
+      "frame95": 311.618,
+      "fps": 3.3346934322272297,
+      "sps": 26.67754745781784
+    },
+    "C2": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11989.263,
+      "frame_steps": 312,
+      "step_mean": 34.0434375,
+      "step50": 33.413,
+      "step95": 39.062,
+      "frame50": 302.703,
+      "frame95": 340.566,
+      "fps": 3.252910541707193,
+      "sps": 26.02328433365754
+    },
+    "C3": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11929.623,
+      "frame_steps": 312,
+      "step_mean": 33.910359375,
+      "step50": 33.745,
+      "step95": 37.361,
+      "frame50": 305.412,
+      "frame95": 323.065,
+      "fps": 3.269172881657702,
+      "sps": 26.153383053261617
+    },
+    "A1": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12194.413,
+      "frame_steps": 312,
+      "step_mean": 34.681240625,
+      "step50": 34.082,
+      "step95": 39.589,
+      "frame50": 308.603,
+      "frame95": 355.255,
+      "fps": 3.1981859233404677,
+      "sps": 25.585487386723738
+    },
+    "A2": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11984.344000000001,
+      "frame_steps": 312,
+      "step_mean": 34.0724,
+      "step50": 33.888,
+      "step95": 37.18,
+      "frame50": 306.403,
+      "frame95": 322.783,
+      "fps": 3.2542457058976275,
+      "sps": 26.03396564718102
+    },
+    "A3": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12592.367,
+      "frame_steps": 312,
+      "step_mean": 35.945175,
+      "step50": 35.44,
+      "step95": 40.232,
+      "frame50": 320.299,
+      "frame95": 354.357,
+      "fps": 3.097114307421313,
+      "sps": 24.776914459370506
+    },
+    "A4": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11892.085,
+      "frame_steps": 312,
+      "step_mean": 33.833065625,
+      "step50": 33.406,
+      "step95": 37.955,
+      "frame50": 301.415,
+      "frame95": 332.729,
+      "fps": 3.2794922000641606,
+      "sps": 26.235937600513285
+    },
+    "A5": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11835.225,
+      "frame_steps": 312,
+      "step_mean": 33.647703125,
+      "step50": 33.088,
+      "step95": 38.253,
+      "frame50": 301.533,
+      "frame95": 341.725,
+      "fps": 3.2952478723471668,
+      "sps": 26.361982978777334
+    },
+    "A6": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11882.741,
+      "frame_steps": 312,
+      "step_mean": 33.800884375,
+      "step50": 33.248,
+      "step95": 37.773,
+      "frame50": 302.062,
+      "frame95": 334.316,
+      "fps": 3.2820710305812435,
+      "sps": 26.25656824464995
+    },
+    "B1": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11656.621,
+      "frame_steps": 312,
+      "step_mean": 33.116675,
+      "step50": 32.893,
+      "step95": 36.199,
+      "frame50": 294.914,
+      "frame95": 316.2,
+      "fps": 3.3457380144726336,
+      "sps": 26.76590411578107
+    },
+    "B2": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12588.891,
+      "frame_steps": 312,
+      "step_mean": 35.85453125,
+      "step50": 35.374,
+      "step95": 40.592,
+      "frame50": 320.077,
+      "frame95": 363.616,
+      "fps": 3.0979694716556048,
+      "sps": 24.78375577324484
+    },
+    "B3": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11797.124,
+      "frame_steps": 312,
+      "step_mean": 33.5300625,
+      "step50": 33.134,
+      "step95": 37.584,
+      "frame50": 300.663,
+      "frame95": 337.067,
+      "fps": 3.305890486528751,
+      "sps": 26.447123892230007
+    },
+    "B4": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11778.663,
+      "frame_steps": 312,
+      "step_mean": 33.45331875,
+      "step50": 33.167,
+      "step95": 37.192,
+      "frame50": 298.143,
+      "frame95": 334.876,
+      "fps": 3.3110718933040193,
+      "sps": 26.488575146432154
+    },
+    "B5": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12209.842,
+      "frame_steps": 312,
+      "step_mean": 34.737865625,
+      "step50": 34.32,
+      "step95": 38.903,
+      "frame50": 307.905,
+      "frame95": 345.63,
+      "fps": 3.1941445270135356,
+      "sps": 25.55315621610828
+    },
+    "B6": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 12305.781,
+      "frame_steps": 312,
+      "step_mean": 35.0062875,
+      "step50": 34.516,
+      "step95": 39.054,
+      "frame50": 311.208,
+      "frame95": 351.057,
+      "fps": 3.169242163500228,
+      "sps": 25.35393730800182
+    }
+  },
+  "source_base": "0e7fef8",
+  "candidate_queries_sha256": "a05e79b963d5bc296844f80b80feec28b40db770bec9eacc9e18eb679d2e315f",
+  "rejected": "C1-C3 failed the grazing contact regression",
+  "subphases": {
+    "walkA": {
+      "ai.acquired_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.apply_intents": [
+        0.0211,
+        41.575,
+        39.6437
+      ],
+      "ai.assemble_units": [
+        1.747,
+        500.0,
+        500.0
+      ],
+      "ai.collect_intents": [
+        0.4316,
+        41.575,
+        39.6437
+      ],
+      "ai.decide": [
+        8.1588,
+        500.0,
+        41.575
+      ],
+      "ai.formation_jobs": [
+        0.2612,
+        8.0,
+        0.4
+      ],
+      "ai.formation_slots": [
+        0.3243,
+        8.0,
+        500.0
+      ],
+      "ai.index_members": [
+        2.4061,
+        500.0,
+        8.0
+      ],
+      "ai.individual_collect": [
+        0.6645,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_decide": [
+        1.8563,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_jobs": [
+        4.4134,
+        41.575,
+        41.575
+      ],
+      "ai.los": [
+        0.0,
+        42.0125,
+        0.0
+      ],
+      "ai.lost_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.member_copies": [
+        0.4122,
+        23.35,
+        1459.375
+      ],
+      "ai.mount_requests": [
+        0.0046,
+        0.0,
+        0.0
+      ],
+      "ai.publish_perception": [
+        0.11,
+        500.0,
+        0.0
+      ],
+      "ai.read_combat": [
+        1.0374,
+        500.0,
+        500.0
+      ],
+      "ai.read_poses": [
+        0.1096,
+        500.0,
+        500.0
+      ],
+      "ai.schedule": [
+        0.2867,
+        500.0,
+        42.0969
+      ],
+      "ai.sense_scan": [
+        0.9577,
+        42.0125,
+        2016.6
+      ],
+      "ai.switched_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.tactical": [
+        0.1109,
+        2.0,
+        0.0375
+      ],
+      "ai.target_eval": [
+        0.0264,
+        41.575,
+        0.0
+      ],
+      "ai.think": [
+        11.4239,
+        500.0,
+        41.575
+      ],
+      "mov.advance": [
+        3.9672,
+        500.0,
+        1582.5375
+      ],
+      "mov.broad_ground_hits": [
+        0.0,
+        1.1281,
+        1.1281
+      ],
+      "mov.clear_step": [
+        1.0592,
+        499.0,
+        1582.5375
+      ],
+      "mov.driver_paths": [
+        0.7,
+        500.0,
+        0.0594
+      ],
+      "mov.grid": [
+        0.0189,
+        500.0,
+        5.0906
+      ],
+      "mov.join": [
+        0.0024,
+        0.0,
+        0.0
+      ],
+      "mov.navigation": [
+        0.0201,
+        8.0,
+        0.0
+      ],
+      "mov.run_step": [
+        9.1609,
+        500.0,
+        360.8531
+      ],
+      "mov.scene_apply": [
+        0.0003,
+        475.2625,
+        0.0
+      ],
+      "mov.scene_broad": [
+        0.0263,
+        500.0,
+        1.1281
+      ],
+      "mov.scene_build": [
+        1.2979,
+        500.0,
+        475.2625
+      ],
+      "mov.scene_clearance": [
+        4.4429,
+        500.0,
+        476.3906
+      ],
+      "mov.scene_query": [
+        3.0159,
+        475.2625,
+        0.0
+      ],
+      "phys.sync": [
+        0.5196,
+        600.0,
+        149.825
+      ],
+      "phys.validate_rows": [
+        2.026,
+        600.0,
+        149.825
+      ],
+      "walk.inputs": [
+        0.4147,
+        40.6437,
+        39.6437
+      ],
+      "walk.pack_bodies": [
+        1.4517,
+        600.0,
+        600.0
+      ],
+      "walk.read_poses": [
+        0.0786,
+        500.0,
+        500.0
+      ],
+      "walk.total": [
+        13.685,
+        500.0,
+        600.0
+      ]
+    },
+    "walkB": {
+      "ai.acquired_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.apply_intents": [
+        0.0216,
+        41.575,
+        39.6437
+      ],
+      "ai.assemble_units": [
+        1.7777,
+        500.0,
+        500.0
+      ],
+      "ai.collect_intents": [
+        0.4342,
+        41.575,
+        39.6437
+      ],
+      "ai.decide": [
+        8.1794,
+        500.0,
+        41.575
+      ],
+      "ai.formation_jobs": [
+        0.2685,
+        8.0,
+        0.4
+      ],
+      "ai.formation_slots": [
+        0.3309,
+        8.0,
+        500.0
+      ],
+      "ai.index_members": [
+        2.4014,
+        500.0,
+        8.0
+      ],
+      "ai.individual_collect": [
+        0.6655,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_decide": [
+        1.8527,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_jobs": [
+        4.419,
+        41.575,
+        41.575
+      ],
+      "ai.los": [
+        0.0,
+        42.0125,
+        0.0
+      ],
+      "ai.lost_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.member_copies": [
+        0.4134,
+        23.35,
+        1459.375
+      ],
+      "ai.mount_requests": [
+        0.0046,
+        0.0,
+        0.0
+      ],
+      "ai.publish_perception": [
+        0.1129,
+        500.0,
+        0.0
+      ],
+      "ai.read_combat": [
+        1.0452,
+        500.0,
+        500.0
+      ],
+      "ai.read_poses": [
+        0.1197,
+        500.0,
+        500.0
+      ],
+      "ai.schedule": [
+        0.2896,
+        500.0,
+        42.0969
+      ],
+      "ai.sense_scan": [
+        0.9609,
+        42.0125,
+        2016.6
+      ],
+      "ai.switched_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.tactical": [
+        0.1109,
+        2.0,
+        0.0375
+      ],
+      "ai.target_eval": [
+        0.0266,
+        41.575,
+        0.0
+      ],
+      "ai.think": [
+        11.5005,
+        500.0,
+        41.575
+      ],
+      "mov.advance": [
+        3.9605,
+        500.0,
+        1582.5375
+      ],
+      "mov.broad_ground_hits": [
+        0.0,
+        1.1281,
+        1.1281
+      ],
+      "mov.clear_step": [
+        1.0521,
+        499.0,
+        1582.5375
+      ],
+      "mov.driver_paths": [
+        0.717,
+        500.0,
+        0.0594
+      ],
+      "mov.grid": [
+        0.0228,
+        500.0,
+        5.0906
+      ],
+      "mov.join": [
+        0.0023,
+        0.0,
+        0.0
+      ],
+      "mov.navigation": [
+        0.021,
+        8.0,
+        0.0
+      ],
+      "mov.run_step": [
+        9.0198,
+        500.0,
+        360.8531
+      ],
+      "mov.scene_apply": [
+        0.0003,
+        475.2625,
+        0.0
+      ],
+      "mov.scene_broad": [
+        0.0263,
+        500.0,
+        1.1281
+      ],
+      "mov.scene_build": [
+        1.3092,
+        500.0,
+        475.2625
+      ],
+      "mov.scene_clearance": [
+        4.2863,
+        500.0,
+        476.3906
+      ],
+      "mov.scene_query": [
+        2.8454,
+        475.2625,
+        0.0
+      ],
+      "phys.sync": [
+        0.5246,
+        600.0,
+        149.825
+      ],
+      "phys.validate_rows": [
+        2.0375,
+        600.0,
+        149.825
+      ],
+      "walk.inputs": [
+        0.4178,
+        40.6437,
+        39.6437
+      ],
+      "walk.pack_bodies": [
+        1.4825,
+        600.0,
+        600.0
+      ],
+      "walk.read_poses": [
+        0.0805,
+        500.0,
+        500.0
+      ],
+      "walk.total": [
+        13.5974,
+        500.0,
+        600.0
+      ]
+    },
+    "floor-only": {
+      "ai.acquired_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.apply_intents": [
+        0.022,
+        41.575,
+        39.6437
+      ],
+      "ai.assemble_units": [
+        1.8048,
+        500.0,
+        500.0
+      ],
+      "ai.collect_intents": [
+        0.4416,
+        41.575,
+        39.6437
+      ],
+      "ai.decide": [
+        8.3551,
+        500.0,
+        41.575
+      ],
+      "ai.formation_jobs": [
+        0.2769,
+        8.0,
+        0.4
+      ],
+      "ai.formation_slots": [
+        0.3357,
+        8.0,
+        500.0
+      ],
+      "ai.index_members": [
+        2.456,
+        500.0,
+        8.0
+      ],
+      "ai.individual_collect": [
+        0.6712,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_decide": [
+        1.8928,
+        41.575,
+        39.6437
+      ],
+      "ai.individual_jobs": [
+        4.5161,
+        41.575,
+        41.575
+      ],
+      "ai.los": [
+        0.0,
+        42.0125,
+        0.0
+      ],
+      "ai.lost_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.member_copies": [
+        0.4258,
+        23.35,
+        1459.375
+      ],
+      "ai.mount_requests": [
+        0.0046,
+        0.0,
+        0.0
+      ],
+      "ai.publish_perception": [
+        0.1168,
+        500.0,
+        0.0
+      ],
+      "ai.read_combat": [
+        1.0595,
+        500.0,
+        500.0
+      ],
+      "ai.read_poses": [
+        0.1151,
+        500.0,
+        500.0
+      ],
+      "ai.schedule": [
+        0.2948,
+        500.0,
+        42.0969
+      ],
+      "ai.sense_scan": [
+        0.988,
+        42.0125,
+        2016.6
+      ],
+      "ai.switched_enemy": [
+        0.0,
+        41.575,
+        0.0
+      ],
+      "ai.tactical": [
+        0.1107,
+        2.0,
+        0.0375
+      ],
+      "ai.target_eval": [
+        0.027,
+        41.575,
+        0.0
+      ],
+      "ai.think": [
+        11.7185,
+        500.0,
+        41.575
+      ],
+      "mov.advance": [
+        4.0551,
+        500.0,
+        1582.5375
+      ],
+      "mov.broad_ground_hits": [
+        0.0,
+        33.0438,
+        33.0438
+      ],
+      "mov.clear_step": [
+        1.1243,
+        499.0,
+        1582.5375
+      ],
+      "mov.driver_paths": [
+        0.7425,
+        500.0,
+        0.0594
+      ],
+      "mov.grid": [
+        0.0161,
+        500.0,
+        5.0906
+      ],
+      "mov.join": [
+        0.0023,
+        0.0,
+        0.0
+      ],
+      "mov.navigation": [
+        0.0218,
+        8.0,
+        0.0
+      ],
+      "mov.run_step": [
+        5.809,
+        500.0,
+        360.8531
+      ],
+      "mov.scene_broad": [
+        0.7314,
+        500.0,
+        33.0438
+      ],
+      "mov.scene_build": [
+        0.2256,
+        500.0,
+        0.0
+      ],
+      "mov.scene_clearance": [
+        0.9616,
+        500.0,
+        33.0438
+      ],
+      "phys.sync": [
+        0.5204,
+        600.0,
+        149.825
+      ],
+      "phys.validate_rows": [
+        2.1153,
+        600.0,
+        149.825
+      ],
+      "walk.inputs": [
+        0.4193,
+        40.6437,
+        39.6437
+      ],
+      "walk.pack_bodies": [
+        1.5426,
+        600.0,
+        600.0
+      ],
+      "walk.read_poses": [
+        0.0792,
+        500.0,
+        500.0
+      ],
+      "walk.total": [
+        10.5197,
+        500.0,
+        600.0
+      ]
+    }
+  },
+  "same_requests": {
+    "paired.baseline": [
+      2.9944,
+      475.2625,
+      0.0
+    ],
+    "paired.candidate": [
+      2.8285,
+      475.2625,
+      0.0
+    ]
+  },
+  "entry_longest_frame_ms_per_run": {
+    "A": [
+      1880.166,
+      1582.048,
+      1620.083,
+      1577.129,
+      1565.505,
+      1569.314
+    ],
+    "B": [
+      1945.206,
+      1669.168,
+      1572.714,
+      1568.591,
+      1569.863,
+      1572.331
+    ]
+  },
+  "_detailed_rows": "Detailed runs use in-process counters. Pure counts have no independent duration in stages.csv.",
+  "step_columns": [
+    "tick",
+    "authority_microseconds",
+    "stage_triplets: elapsed_microseconds / entities / workload"
+  ],
+  "fixture_only_desktop": {
+    "walkA": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11828.288,
+      "frame_steps": 312,
+      "step_mean": 33.655775,
+      "step50": 33.455,
+      "step95": 36.506,
+      "frame50": 299.465,
+      "frame95": 318.423,
+      "fps": 3.2971804541789984,
+      "sps": 26.377443633431987
+    },
+    "walkB": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11890.351,
+      "frame_steps": 312,
+      "step_mean": 33.8448,
+      "step50": 33.442,
+      "step95": 37.905,
+      "frame50": 301.486,
+      "frame95": 336.117,
+      "fps": 3.2799704567173835,
+      "sps": 26.239763653739068
+    },
+    "floor-only": {
+      "steps": 320,
+      "frames": 39,
+      "wall_frames_ms": 11035.347,
+      "frame_steps": 312,
+      "step_mean": 31.0435625,
+      "step50": 30.702,
+      "step95": 34.445,
+      "frame50": 280.921,
+      "frame95": 305.117,
+      "fps": 3.5340982028023222,
+      "sps": 28.27278562241858
+    }
+  }
+}
