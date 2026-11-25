@@ -1,5 +1,9 @@
 # recollection 项目状态
 
+## P2 野战画面刷新体验版
+
+从仓库根目录双击「启动游戏.cmd」，选择「进入河原野战」。客户端按战斗步接收输入、命中和倒地事件，每个显示帧使用最新已提交的战场状态更新模型、相机和 HUD。按负责人要求，本次体验版的启动、功能回归及 500/1000 人性能复测均为 NOT_RUN，实际帧率待测。
+
 **P5 柳溪庄人物委托已交付。** 在沙盒「人物 → 领地治理 → 拜访庄署」选择在任总督，可交谈、核账、交差和领取管理经验。生产提交 `4cfca39`。独立 QA 在正式 PCK 通过 404 项、冷源码通过 550 项。P5 整体为 PARTIAL，P4 总督和 P3 人物可继续游玩，P2 性能延期。[阶段验收](development/reports/stages/P5-estate-visit.md) · [任务记录](development/reports/tasks/P5-estate-visit.md) · [实际会面截图](development/reports/tests/P5/estate-visit/estate-audience.png)
 
 ## P4 治理基线

@@ -198,12 +198,24 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 			return R.ok(out)
 		"hud":
 			out["delegate_candidate"]=_teams[grant.team_key].issuer
+			out["confirmed_events"]=_confirmed_events(grant.team_key)
+			out["interaction_target"]=_nearby_mount(player,grant.team_key)
 			out["can_withdraw"]=decision.outcome==null and not decision.teams.any(func(t):return is_same(t.team_key,grant.team_key) and t.withdrawn)
 			out["deployment_zones"]=[{"id":zone.get("id","deployment-"+str(_teams[grant.team_key].ordinal)),"position_mm":zone.rally_mm}]
 			out["target_position"]=null
 			out["result"]=_result if not _result.is_empty() else null
 			return R.ok(out)
 	return R.fail("InvalidArgument","field.projection")
+
+func _nearby_mount(player: Dictionary, team: Variant) -> String:
+	if _user_handle==null or player.get("mount_handle")!=null or player.get("role")!="cavalry":return ""
+	for row in _frame.get("ending_rows",[]):
+		if row.components.get("rider_handle")!=_user_handle:continue
+		if _frame.rows.get(row.handle.index,{}).get("handle")!=row.handle or not _visible_handle(row.handle,team):continue
+		var position: Vector3=_frame.pose[row.handle.index].position
+		if position.distance_squared_to(_player_pose.position)<=9:
+			return "field/%d/%d"%[row.handle.index,row.handle.generation]
+	return ""
 
 func _visual(team: Variant) -> Dictionary:
 	var handles := []
@@ -220,14 +232,17 @@ func _visual(team: Variant) -> Dictionary:
 		actor.role="mount" if row.source_slot==null else _kit(row.components).role
 		if actor.role=="mount":actor["rider_handle"]=row.components.rider_handle
 		actors.append(actor)
+	var visible_shots: Array=read.value.projectiles.filter(func(shot):return not _player_pose.is_empty() and _engine.field_los(_mission,_player_pose.position,shot.position))
+	return R.ok({"scope_id":_mission,"tick":_tick,"actors":actors,"projectiles":visible_shots,"confirmed_events":_confirmed_events(team)})
+
+func _confirmed_events(team: Variant) -> Array:
 	var events := []
 	var report: Dictionary=_frame.get("combat_report",{})
 	for hit in report.get("hits",[]):
 		if hit.damage>0:_display_event(events,"hit",hit.target,team)
 	for ev in report.get("events",[]):
 		if ev.has("actor_handle"):_display_event(events,ev.type,ev.actor_handle,team)
-	var visible_shots: Array=read.value.projectiles.filter(func(shot):return not _player_pose.is_empty() and _engine.field_los(_mission,_player_pose.position,shot.position))
-	return R.ok({"scope_id":_mission,"tick":_tick,"actors":actors,"projectiles":visible_shots,"confirmed_events":events})
+	return events
 
 func _display_event(events: Array, kind: String, h: Dictionary, team: Variant) -> void:
 	var row: Dictionary=_frame.rows.get(h.index,{})

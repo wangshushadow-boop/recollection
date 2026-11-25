@@ -211,16 +211,17 @@ func consume_view_events(scope_id: String, tick: int, events: Array) -> Dictiona
 		var at: Variant = e.get("position",p.position if p != null else null)
 		if not _finite(at):
 			continue
+		var event_tick: int = clampi(e.get("tick",tick),0,tick) if e.get("tick",tick) is int else tick
 		if e.type == "downed":
 			var role: Variant = p.role if p != null else e.get("role")
 			if role not in Models.FILES: continue
 			if _corpses.size() == CORPSE_LIMIT: _corpses.pop_front()
 			_corpses.append({"at":at,"role":role,"ranged":p.ranged if p!=null else e.get("weapon_slot",1)!=0,"yaw":p.yaw if p != null else 0.0,
-				"team":p.team if p != null else int(e.get("team",0)),"until":tick+150})
+				"team":p.team if p != null else int(e.get("team",0)),"until":event_tick+150})
 		else:
 			if _impacts.size() == HIT_LIMIT: _impacts.pop_front()
-			_impacts.append({"at":Vector3(at)+Vector3.UP*1.1,"until":tick+10})
-		_seen_events[id] = tick
+			_impacts.append({"at":Vector3(at)+Vector3.UP*1.1,"until":event_tick+10})
+		_seen_events[id] = event_tick
 	for key in _seen_events.keys():
 		if _seen_events[key] < tick-180:
 			_seen_events.erase(key)
@@ -254,6 +255,8 @@ func _select_near(eye: Vector3, radius: float) -> void:
 func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) -> void:
 	if _tick < 0 or not eye.is_finite(): return
 	alpha = clampf(alpha,0,1)
+	# A display frame can span several committed ticks. Interpolate only the last tick's fraction.
+	alpha = 1.0 - (1.0-alpha)/maxi(1,_tick-_previous_tick)
 	var t := lerpf(float(_previous_tick),float(_tick),alpha)
 	if _tick-_lod_tick >= 8 or eye.distance_squared_to(_lod_eye)>16 or _lod_radius != near_radius:
 		_select_near(eye,maxf(0,near_radius))

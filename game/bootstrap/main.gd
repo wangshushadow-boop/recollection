@@ -134,6 +134,11 @@ func _physics_process(_delta: float) -> void:
 			return
 		_last_tick=step.value.tick
 
+func _process(delta: float) -> void:
+	if _running and _field_scene!=null:
+		var updated: Dictionary = _field_scene.present_frame(delta)
+		if not updated.ok: _failure(updated)
+
 func _log(event: String, state_hash: String, code: int, error: Dictionary = {}) -> void:
 	var detail: Dictionary=_root.report() if _root!=null else {}
 	var record := {"event":event,"profile":_profile,"protocol_version":Protocol.VERSION,

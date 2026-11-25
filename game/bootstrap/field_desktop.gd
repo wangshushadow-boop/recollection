@@ -19,6 +19,8 @@ var _launch := Button.new()
 var _hud_state := {}
 var _player := {}
 var _visual_state := {}
+var _pending_frame := false
+var _pending_events := []
 var _target: Variant
 var _first := false
 var _look := Vector2.ZERO
@@ -73,6 +75,7 @@ func begin() -> void:
 	var view: Dictionary = application.field_view("input")
 	if view.ok: _deployment_sequence = view.value.get("last_order_sequence",0)
 	running = true
+	_hud.set_process(false)
 	_launch.hide()
 	_audio.transition_music("battle")
 	get_viewport().gui_release_focus()
@@ -148,11 +151,10 @@ func _physics_process(_delta: float) -> void:
 
 func _refresh_views() -> Dictionary:
 	var hud: Dictionary = application.field_view("hud")
-	var player: Dictionary = application.field_view("input")
 	if not hud.ok: return hud
-	if not player.ok: return player
 	_hud_state = hud.value
-	_player = player.value
+	# The HUD projection also carries the committed local player's control state.
+	_player = _hud_state
 	var own := []
 	var revisions := {}
 	for row in _hud_state.formations:
@@ -186,31 +188,34 @@ func after_step() -> Dictionary:
 	if _exiting: return R.ok()
 	var refreshed := _refresh_views()
 	if not refreshed.ok: return refreshed
-	var visual: Dictionary = application.field_view("visual")
-	if not visual.ok: return visual
-	_visual_state = visual.value
-	var accepted := _visuals.apply_snapshot(_visual_state)
-	if not accepted.ok: return accepted
-	var events: Array = _visual_state.get("confirmed_events",[])
-	_visuals.consume_view_events(scope,_visual_state.tick,events)
-	for event in events:
+	_pending_frame = true
+	_input_port.set_interaction_target(_hud_state.interaction_target)
+	for event: Dictionary in _hud_state.confirmed_events:
+		_pending_events.append(event.merged({"tick":_hud_state.tick}))
 		if event.has("event_id"):
 			var payload := {"confirmed":true}
 			if event.get("position") is Vector3:
 				var p: Vector3 = event.position
 				payload.position_mm = [roundi(p.x*1000),roundi(p.y*1000),roundi(p.z*1000)]
-			_audio.play_event({"scope_id":scope,"revision":_visual_state.tick,"tick":_visual_state.tick,
+			_audio.play_event({"scope_id":scope,"revision":_hud_state.tick,"tick":_hud_state.tick,
 				"event_id":event.event_id,"type":event.type,"payload":payload},_camera.global_position)
 	if _hud_state.phase=="ended" and not _last_audio_end:
 		_last_audio_end = true
 		_audio.transition_music("victory" if _hud_state.rules.outcome.winner_team_keys.has(_hud_state.team_key) else "defeat")
-	var horse_id := ""
-	if _player.get("actor_handle")!=null and _player.get("player",{}).get("mount_handle")==null:
-		for actor in _visual_state.actors:
-			if actor.get("role")=="mount" and actor.get("rider_handle")==_player.actor_handle and actor.position.distance_squared_to(_player.position)<=9:
-				horse_id = "field/%d/%d"%[actor.handle.index,actor.handle.generation]
-				break
-	_input_port.set_interaction_target(horse_id)
+	return R.ok()
+
+func present_frame(delta: float) -> Dictionary:
+	if _exiting or not _pending_frame: return R.ok()
+	var visual: Dictionary = application.field_view("visual")
+	if not visual.ok: return visual
+	_visual_state = visual.value
+	var accepted := _visuals.apply_snapshot(_visual_state)
+	if not accepted.ok: return accepted
+	accepted = _visuals.consume_view_events(scope,_visual_state.tick,_pending_events)
+	if not accepted.ok: return accepted
+	_pending_events.clear()
+	_pending_frame = false
+	if _last_audio_end: _hud.set_process(true)
 	var desired := _mode()
 	var focus: Dictionary = {} if desired=="deployment" else _own_actor()
 	if desired!=_camera_mode or focus!=_camera_actor:
@@ -219,7 +224,7 @@ func after_step() -> Dictionary:
 			_camera_actor = focus
 	var look := _look
 	_look = Vector2.ZERO
-	_camera.update_view(scope,_visual_state.tick,1.0/60.0,look)
+	_camera.update_view(scope,_visual_state.tick,delta,look)
 	return _hud.refresh()
 
 func _own_actor() -> Dictionary:

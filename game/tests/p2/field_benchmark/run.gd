@@ -150,11 +150,7 @@ func _physics_process(_delta: float) -> bool:
 	if not _ok(result,"fixed step"): return false
 	tick += 1
 	if result.value.tick!=tick: _fail("nonsequential authority tick");return false
-	if not _ok(desktop.after_step(),"desktop snapshot"): return false
-	camera.fov = 60
-	var trajectory_tick := tick-initial_wait if trace=="flanks" and measure_from>=0 else tick
-	camera.global_position = Vector3(6.0*sin(trajectory_tick/150.0),38,45)
-	camera.look_at(Vector3(0,.5,0))
+	if not _ok(desktop.after_step(),"desktop step"): return false
 	if tick==1:
 		first_step_us = authority_us
 		for row in result.value.entities:
@@ -190,8 +186,8 @@ func _physics_process(_delta: float) -> bool:
 		var humans: int = result.value.entities.size()-horses
 		min_humans=mini(min_humans,humans)
 		max_humans=maxi(max_humans,humans)
-		samples.append([tick,authority_us,Time.get_ticks_usec()-started,humans,horses,hit_count,launched,
-			visual.report().projectiles])
+		# Visible projectiles are now sampled in _frame() after submission.
+		samples.append([tick,authority_us,Time.get_ticks_usec()-started,humans,horses,hit_count,launched])
 		if samples.size()==(18 if probe else MEASURE): ending=true
 	if tick%120==0:
 		print("BENCHMARK tick ",tick," contact ",contact_tick," samples ",samples.size())
@@ -226,6 +222,15 @@ func _frustum() -> Vector2i:
 			var point:=arrows.multimesh.get_instance_transform(i).origin
 			if camera.is_position_in_frustum(arrows.to_global(point)): shots+=1
 	return Vector2i(rigs.size(),shots)
+
+func _process(delta: float) -> bool:
+	if not ready_field: return false
+	if not _ok(desktop.present_frame(delta),"desktop snapshot"): return false
+	camera.fov = 60
+	var trajectory_tick := tick-initial_wait if trace=="flanks" and measure_from>=0 else tick
+	camera.global_position = Vector3(6.0*sin(trajectory_tick/150.0),38,45)
+	camera.look_at(Vector3(0,.5,0))
+	return false
 
 func _frame() -> void:
 	if not ready_field or started==0: return
