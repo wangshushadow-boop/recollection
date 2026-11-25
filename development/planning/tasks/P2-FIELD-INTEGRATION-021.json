@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-021",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "INF-ENGINE",
+  "title": "河原平地静态碰撞几何检查",
+  "spec": "docs/systems/game/infrastructure/engine/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-018"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/infrastructure/engine/adapter.gd",
+    "development/reports/tests/P2/field-flat-runtime/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a8ba6e21d3475b3e6f317fad81f1d70c9d9bd0bc",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "河原平地静态碰撞几何检查",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "500 人和 100 匹马同种子站立对照，报告帧时间与实步率。",
+    "保留同格障碍及地面边界处理，验证跳跃、落地与战斗结果。"
+  ],
+  "status": "DONE"
+}

@@ -1,0 +1,402 @@
+{
+  "before": {
+    "files": [
+      "F4A3.json",
+      "F4A4.json",
+      "F4A5.json"
+    ],
+    "step_samples": 960,
+    "frame_samples": 477,
+    "frame_step_histogram": {
+      "2": 477
+    },
+    "step_ms": [
+      33.457,
+      33.192,
+      36.588
+    ],
+    "frame_ms": [
+      85.872,
+      85.377,
+      92.374
+    ],
+    "fps": 11.645283777255457,
+    "sps": 23.290567554510915,
+    "field_step_per_frame_ms": 66.90763522012578,
+    "outside_field_step_ms": 18.96403773584906,
+    "gpu_viewport_ms": [
+      5.52,
+      5.572,
+      6.215
+    ],
+    "scene_exact_per_step": null,
+    "phases_ms": {},
+    "frame_spans_mean_ms": {}
+  },
+  "after": {
+    "files": [
+      "F4B1.json",
+      "F4B2.json",
+      "F4B3.json"
+    ],
+    "step_samples": 960,
+    "frame_samples": 477,
+    "frame_step_histogram": {
+      "2": 477
+    },
+    "step_ms": [
+      30.982,
+      30.731,
+      34.134
+    ],
+    "frame_ms": [
+      80.996,
+      80.513,
+      87.494
+    ],
+    "fps": 12.346297014220191,
+    "sps": 24.692594028440382,
+    "field_step_per_frame_ms": 61.954215932914046,
+    "outside_field_step_ms": 19.041729559748426,
+    "gpu_viewport_ms": [
+      5.567,
+      5.575,
+      5.795
+    ],
+    "scene_exact_per_step": null,
+    "phases_ms": {},
+    "frame_spans_mean_ms": {}
+  },
+  "before_detail": {
+    "files": [
+      "FbaseDetail.json"
+    ],
+    "step_samples": 320,
+    "frame_samples": 159,
+    "frame_step_histogram": {
+      "2": 159
+    },
+    "step_ms": [
+      33.439,
+      33.321,
+      36.176
+    ],
+    "frame_ms": [
+      85.742,
+      85.69,
+      90.162
+    ],
+    "fps": 11.662847756412843,
+    "sps": 23.325695512825686,
+    "field_step_per_frame_ms": 66.86257232704402,
+    "outside_field_step_ms": 18.87977987421384,
+    "gpu_viewport_ms": [
+      5.414,
+      5.527,
+      5.728
+    ],
+    "scene_exact_per_step": 475.2625,
+    "phases_ms": {
+      "_fight": [
+        2.629,
+        2.572,
+        3.171
+      ],
+      "_snapshot": [
+        0.012,
+        0.012,
+        0.013
+      ],
+      "_start": [
+        1.731,
+        1.685,
+        2.14
+      ],
+      "_think": [
+        11.448,
+        11.326,
+        12.599
+      ],
+      "_walk": [
+        13.393,
+        13.267,
+        14.615
+      ],
+      "clearance": [
+        4.287,
+        4.24,
+        4.817
+      ]
+    },
+    "frame_spans_mean_ms": {
+      "_process": 1.9854339622641504,
+      "after_step": 1.8605786163522011,
+      "before_step": 2.7026415094339638,
+      "present_frame": 9.771238993710687
+    }
+  },
+  "after_detail": {
+    "files": [
+      "FoptDetail.json"
+    ],
+    "step_samples": 320,
+    "frame_samples": 159,
+    "frame_step_histogram": {
+      "2": 159
+    },
+    "step_ms": [
+      31.015,
+      30.843,
+      33.985
+    ],
+    "frame_ms": [
+      81.103,
+      80.385,
+      86.505
+    ],
+    "fps": 12.329954227952937,
+    "sps": 24.659908455905875,
+    "field_step_per_frame_ms": 62.02736477987421,
+    "outside_field_step_ms": 19.07593710691824,
+    "gpu_viewport_ms": [
+      5.603,
+      5.616,
+      5.779
+    ],
+    "scene_exact_per_step": 0.0,
+    "phases_ms": {
+      "_fight": [
+        2.703,
+        2.653,
+        3.219
+      ],
+      "_snapshot": [
+        0.013,
+        0.012,
+        0.014
+      ],
+      "_start": [
+        1.724,
+        1.701,
+        2.149
+      ],
+      "_think": [
+        11.538,
+        11.392,
+        13.052
+      ],
+      "_walk": [
+        10.836,
+        10.761,
+        11.833
+      ],
+      "clearance": [
+        1.602,
+        1.598,
+        1.778
+      ]
+    },
+    "frame_spans_mean_ms": {
+      "_process": 2.0044968553459124,
+      "after_step": 1.8622515723270452,
+      "apply_snapshot": 2.5415471698113206,
+      "before_step": 2.7019433962264148,
+      "present_frame": 9.885943396226413,
+      "visual_view": 6.222534591194968
+    }
+  },
+  "per_run": {
+    "F4A3": {
+      "files": [
+        "F4A3.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        33.74,
+        33.345,
+        37.398
+      ],
+      "frame_ms": [
+        86.465,
+        85.426,
+        94.167
+      ],
+      "fps": 11.565376637400929,
+      "sps": 23.130753274801858,
+      "field_step_per_frame_ms": 67.47057232704402,
+      "outside_field_step_ms": 18.994402515723266,
+      "gpu_viewport_ms": [
+        5.527,
+        5.582,
+        5.801
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "F4A4": {
+      "files": [
+        "F4A4.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        33.131,
+        33.02,
+        35.681
+      ],
+      "frame_ms": [
+        85.221,
+        84.94,
+        89.193
+      ],
+      "fps": 11.734183980492029,
+      "sps": 23.468367960984057,
+      "field_step_per_frame_ms": 66.25911949685535,
+      "outside_field_step_ms": 18.96197484276729,
+      "gpu_viewport_ms": [
+        5.456,
+        5.546,
+        5.813
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "F4A5": {
+      "files": [
+        "F4A5.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        33.502,
+        33.251,
+        36.419
+      ],
+      "frame_ms": [
+        85.929,
+        85.697,
+        91.847
+      ],
+      "fps": 11.637521506542301,
+      "sps": 23.275043013084602,
+      "field_step_per_frame_ms": 66.99321383647799,
+      "outside_field_step_ms": 18.9357358490566,
+      "gpu_viewport_ms": [
+        5.576,
+        5.615,
+        7.043
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "F4B1": {
+      "files": [
+        "F4B1.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        31.168,
+        30.916,
+        34.271
+      ],
+      "frame_ms": [
+        81.485,
+        80.944,
+        88.012
+      ],
+      "fps": 12.272153765301312,
+      "sps": 24.544307530602623,
+      "field_step_per_frame_ms": 62.32922641509434,
+      "outside_field_step_ms": 19.156062893081767,
+      "gpu_viewport_ms": [
+        5.57,
+        5.624,
+        6.553
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "F4B2": {
+      "files": [
+        "F4B2.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.645,
+        30.454,
+        33.046
+      ],
+      "frame_ms": [
+        80.237,
+        80.114,
+        83.997
+      ],
+      "fps": 12.463022447549488,
+      "sps": 24.926044895098975,
+      "field_step_per_frame_ms": 61.28298113207547,
+      "outside_field_step_ms": 18.954377358490568,
+      "gpu_viewport_ms": [
+        5.563,
+        5.552,
+        5.792
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "F4B3": {
+      "files": [
+        "F4B3.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        31.134,
+        30.817,
+        34.807
+      ],
+      "frame_ms": [
+        81.265,
+        80.345,
+        89.636
+      ],
+      "fps": 12.305391967365171,
+      "sps": 24.610783934730343,
+      "field_step_per_frame_ms": 62.25044025157233,
+      "outside_field_step_ms": 19.014748427672956,
+      "gpu_viewport_ms": [
+        5.569,
+        5.609,
+        5.792
+      ],
+      "scene_exact_per_step": null,
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    }
+  }
+}

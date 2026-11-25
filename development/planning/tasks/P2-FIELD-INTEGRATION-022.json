@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-022",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MOV",
+  "title": "河原水平移动筛选与桌面复测",
+  "spec": "docs/systems/game/mission/movement/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-020"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/movement/ports/field_movement.gd",
+    "docs/systems/game/mission/movement/README.md",
+    "game/tests/p2/move_intents/flat_clearance.gd",
+    "game/tests/p2/move_intents/flat_clearance.gd.uid",
+    "development/reports/tests/P2/field-flat-runtime/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "game/contracts/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a8ba6e21d3475b3e6f317fad81f1d70c9d9bd0bc",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "河原水平移动筛选与桌面复测",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "500 人和 100 匹马同种子站立对照，报告帧时间与实步率。",
+    "保留同格障碍及地面边界处理，验证跳跃、落地与战斗结果。"
+  ],
+  "status": "DONE"
+}
