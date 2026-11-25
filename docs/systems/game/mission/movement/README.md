@@ -29,6 +29,8 @@ crowd/spatial_hash / local_avoidance / congestion
 
 ## 4. 数据模型与约束
 
+野战移动可从已注入的场景适配器读取局部查询 `field_scenery_top(scope_id, mask)`。有限返回值是本次同步查询中该遮罩下所有场景碰撞体的世界高度上界，单位为米。适配器仅在能从当前物理形状证明上界时提供该值。缺少该能力或返回无穷大时，移动沿用原有格子粗筛和球扫。移动只对整段球扫的最低点高于上界且留有接触余量的水平移动使用此信息。跳跃和落地独立查询。
+
 `PathRequest{id,requester,origin,goal,agent_profile,priority,nav_revision,deadline}`；`PathResult{status,corridor,waypoints,nav_revision}`；`NavLink{id,from,to,allowed_profiles,enabled,revision}`；`Kinematics{position,velocity,heading,desired_velocity,mode}`。坐标米、速度 m/s、弧度；船上局部坐标由扩展适配。
 
 ## 5. 公共接口

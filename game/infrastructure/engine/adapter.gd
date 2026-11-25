@@ -210,6 +210,32 @@ func field_sweep(scope: String, queries: Array, tick: int) -> Dictionary:
 func query_sweep_batch(queries: Array, stamp: Dictionary) -> Dictionary:
 	return _sweep(queries,stamp,false)
 
+# MOV may skip sweeps wholly above a single static slab. Recheck the live
+# simulation scope: doors, other shapes and procedural colliders disable this proof.
+func field_scenery_top(scope_id: String, mask: int) -> float:
+	if not _on_owner() or not _scopes.has(scope_id): return INF
+	var view: SubViewport = _scopes[scope_id].view
+	var floor_body: StaticBody3D
+	for node in view.find_children("*","",true,false):
+		if node.get_script()!=null: return INF
+		match node.get_class():
+			"StaticBody3D":
+				if (node.collision_layer & mask)==0: continue
+				if floor_body!=null: return INF
+				floor_body = node
+			"Node3D", "CollisionShape3D", "NavigationRegion3D": pass
+			_: return INF
+	if floor_body==null or floor_body.global_basis!=Basis.IDENTITY: return INF
+	var rid := floor_body.get_rid()
+	if PhysicsServer3D.body_get_shape_count(rid)!=1: return INF
+	var shape := PhysicsServer3D.body_get_shape(rid,0)
+	if PhysicsServer3D.shape_get_type(shape)!=PhysicsServer3D.SHAPE_BOX: return INF
+	var pose: Transform3D = PhysicsServer3D.body_get_state(rid,PhysicsServer3D.BODY_STATE_TRANSFORM)
+	pose = pose * PhysicsServer3D.body_get_shape_transform(rid,0)
+	if pose.basis!=Basis.IDENTITY: return INF
+	var half_size: Vector3 = PhysicsServer3D.shape_get_data(shape)
+	return pose.origin.y+half_size.y
+
 func _sweep(queries: Array, stamp: Dictionary, field: bool) -> Dictionary:
 	if not _on_owner():
 		return R.fail("InvalidState","thread")

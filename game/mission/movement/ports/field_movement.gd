@@ -720,7 +720,10 @@ func _occupied_scene_cells(tick: int) -> Dictionary:
 	return R.ok(cells)
 
 func _scene_clearances(tick: int, dt: float) -> Dictionary:
-	var broad := _occupied_scene_cells(tick)
+	var floor_top := INF
+	if _drivers.size()>=64 and _engine.has_method("field_scenery_top"):
+		floor_top = _engine.field_scenery_top(_scope,SCENERY_MASK)
+	var broad := R.ok(null) if is_finite(floor_top) else _occupied_scene_cells(tick)
 	if not broad.ok: return broad
 	var requests := []
 	var actors: Array[Body] = []
@@ -740,6 +743,11 @@ func _scene_clearances(tick: int, dt: float) -> Dictionary:
 		var origin := b.position+Vector3.UP*(b.radius+.04)
 		var probe := maxf(extent,.003)
 		var end := origin+delta.normalized()*probe
+		# The whole swept sphere clears the slab, including its side faces.
+		# Leave 30 mm for quantization and the physics backend's contact tolerance.
+		if minf(origin.y,end.y)-b.radius > floor_top+0.030 and maxf(absf(origin.y),absf(end.y))<1024.0:
+			b.scene_travel = extent
+			continue
 		requests.append({"from":_mm(origin),"to":_mm(end),"radius_mm":roundi(b.radius*1000),"mask":SCENERY_MASK})
 		actors.append(b)
 		lengths.append(probe)
