@@ -32,6 +32,37 @@ func sweep(scope: String, x: float, y: float, radius := 0) -> Array:
 func regions(rows: Array, h: Dictionary) -> Array:
 	return rows.filter(func(r): return r.target == h).map(func(r): return r.region)
 
+func frozen_actor(index: int, generation: int, x: float, freeze_handle := true) -> Dictionary:
+	var row := actor(index,generation,x,0)
+	row.type = "human"
+	row.mounted = false
+	if freeze_handle:
+		row.handle.make_read_only()
+	row.make_read_only()
+	return row
+
+func unchanged_bodies() -> void:
+	var left := frozen_actor(31,1,-8)
+	var right := frozen_actor(32,1,8,false)
+	check(engine.field_stage_bodies(A,[left,right]).ok and engine.field_commit_bodies(A).ok,"commit immutable and shallow-readonly inputs")
+	check(engine.field_stage_bodies(A,[left,right]).ok and engine.field_commit_bodies(A).ok,"repeat committed immutable input")
+	var duplicate := engine.field_stage_bodies(A,[left,left])
+	check(not duplicate.ok and duplicate.error.code=="Conflict","duplicate unchanged handle rejected")
+	right.handle.generation = 0
+	var invalid := engine.field_stage_bodies(A,[left,right])
+	check(not invalid.ok and invalid.error.code=="InvalidArgument","shallow-readonly row revalidates edited nested handle")
+	check(regions(sweep(A,8,1.1),{"index":32,"generation":1})==["body"],"failed batch leaves original handle live")
+	var moved := frozen_actor(31,1,-4)
+	check(engine.field_stage_bodies(A,[moved]).ok and regions(sweep(A,-4,1.1),left.handle)==["body"],"replacement immutable pose moves proxy")
+	check(engine.field_rollback_bodies(A).ok and regions(sweep(A,-8,1.1),left.handle)==["body"],"rollback restores cached committed pose")
+	check(engine.field_stage_bodies(A,[left]).ok and engine.field_commit_bodies(A).ok,"original input can retry after rollback")
+	check(engine.field_stage_bodies(A,[]).ok and engine.field_commit_bodies(A).ok,"retire immutable input")
+	var retired := engine.field_stage_bodies(A,[left])
+	check(not retired.ok and retired.error.code=="StaleVersion","retired immutable input cannot restore old generation")
+	var replacement := frozen_actor(31,2,-2)
+	check(engine.field_stage_bodies(A,[replacement]).ok and engine.field_commit_bodies(A).ok,"recreate body under next generation")
+	check(not engine.field_stage_bodies(A,[left]).ok and regions(sweep(A,-2,1.1),replacement.handle)==["body"],"old generation cannot replace committed successor")
+
 func battle_shot(scope: String, shooter_x: float, target_x: float, blocked: bool) -> void:
 	var archer := actor(25,1,shooter_x,0)
 	var defender := actor(26,1,target_x,"0")
@@ -104,6 +135,7 @@ func run() -> void:
 	check(regions(sweep(A,8,1.1),{"index":7,"generation":2}) == ["body"] and sweep(A,18,1).is_empty(),"failed stage leaves geometry intact")
 	check(engine.field_stage_bodies(A,[actor(7,2,-6.0,0)]).ok and regions(sweep(A,-6,1.1),{"index":7,"generation":2}) == ["body"],"existing proxy moved immediately")
 	check(engine.field_rollback_bodies(A).ok and sweep(A,-6,1).is_empty(),"moving existing proxy rolls back")
+	unchanged_bodies()
 	check(engine.release_scope(A).released==1 and not engine.field_los(A,Vector3.ZERO,Vector3.LEFT) and not engine.field_sweep(A,[],1).ok,"release invalidates access")
 	var reopened := engine.open_scope(A)
 	check(reopened.ok and not engine.query_sweep_batch([],{"scope_id":A,"tick":1,"generation":a.value.generation}).ok,"scope generation barrier")

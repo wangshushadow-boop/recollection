@@ -37,6 +37,12 @@ var _consumed := {}
 var _mount_orders := {}
 var _allow_jump := false
 
+class PoseProjection:
+	var source: Dictionary
+	var pose: Dictionary
+	var body: Dictionary
+	var combat: Dictionary
+
 func _init(core: RefCounted, engine: RefCounted, key: String, registry: RefCounted, resolve_principal: Callable, brains_factory: Callable) -> void:
 	super(core,engine,key,_results.build_result)
 	_registry = registry
@@ -329,14 +335,25 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if stable:
 		_draft["humans"]=_frame.humans
 		_draft["token"]=_frame.token
+		_draft["roles"]=_frame.roles
+		_draft["horses"]=_frame.horses
 	else:
 		var humans := []
+		var horses := []
+		var roles := {}
 		for row in ctx.entities:
-			if row.source_slot!=null:humans.append(row.handle)
+			if row.source_slot==null:
+				horses.append(row)
+				roles[row.handle.index]="mount"
+			else:
+				humans.append(row.handle)
+				roles[row.handle.index]=_kit(row.components).role
 		var ticket:Dictionary=_move.bind_roster(humans,_draft.stage)
 		if not ticket.ok:return ticket
 		_draft["humans"]=humans
 		_draft["token"]=ticket.value
+		_draft["roles"]=roles
+		_draft["horses"]=horses
 	return _sync_groups(ctx.entities,batch.source_tick)
 
 func _sync_groups(rows: Array, tick: int) -> Dictionary:
@@ -446,8 +463,17 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if not mounted.ok:return mounted
 	var targets := _formations()
 	if not targets.ok: return targets
-	var prior:Dictionary=_move.read_poses(_draft.token,_draft.stage)
-	if not prior.ok:return prior
+	# The opening AI reads only positions and headings. Profile/formation changes
+	# before movement can change velocity or routes, but neither of those columns.
+	var motion: Dictionary
+	if is_same(_draft.token,_frame.get("token")):
+		motion=_frame.motion
+	else:
+		var prior: Dictionary=_move.read_poses(_draft.token,_draft.stage)
+		if not prior.ok:return prior
+		motion=prior.value
+	var positions: PackedVector3Array=motion.positions
+	var headings: PackedVector3Array=motion.headings
 	var state:Dictionary=_draft.com.field_view(_mission,_draft.humans,0)
 	if not state.ok:return state
 	_draft["members_state"]=state.value.actors
@@ -458,9 +484,9 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		var id:int=_draft.membership[h.index]
 		var group:Dictionary=_draft.groups[id]
 		var actor:Dictionary=state.value.actors[i]
-		var pos:Vector3=prior.value.positions[i]
-		units.append({"handle":h,"formation_id":id,"team_key":row.components.team_key,"role":_kit(row.components).role,
-			"heading":_draft.look.get(h.index,prior.value.headings[i]),"slot_position":targets.value.get(h.index,pos),
+		var pos:Vector3=positions[i]
+		units.append({"handle":h,"formation_id":id,"team_key":row.components.team_key,"role":_draft.roles[h.index],
+			"heading":_draft.look.get(h.index,headings[i]),"slot_position":targets.value.get(h.index,pos),
 			"position":pos,"control_revision":group.control_revision,"order_revision":_draft.layout_cache.get(id,{}).get("order_revision",0),
 			"ammo":actor.ammo,"hp":actor.hp,"morale":actor.morale,"terrain":null})
 	var player: Variant = _draft.player if _rules.view().control_mode!="delegate" else null
@@ -555,6 +581,27 @@ func _apply_mount_requests(tick: int) -> Dictionary:
 			_draft.interactions.append(applied)
 	return R.ok()
 
+static func _project_actor(previous: PoseProjection, row: Dictionary, position: Vector3, velocity: Vector3, heading: Vector3, mounted: bool, shield: bool) -> PoseProjection:
+	if previous!=null and is_same(previous.source,row):
+		if previous.pose.position==position and previous.pose.velocity==velocity and previous.pose.heading==heading and previous.body.mounted==mounted and previous.body.shield==shield:
+			return previous
+	var next := PoseProjection.new()
+	next.source=row
+	next.pose={"position":position,"velocity":velocity,"heading":heading}
+	next.pose.make_read_only()
+	next.body={"handle":row.handle,"type":"mount" if row.source_slot==null else "human","team_key":row.components.team_key,
+		"position":position,"facing":heading,"mounted":mounted,"shield":shield}
+	next.body.make_read_only()
+	var origin := position+Vector3.UP
+	if mounted:origin+=Vector3.UP*.8
+	var position_mm := _mm(origin)
+	var facing_ppm := _mm(heading,1000000)
+	position_mm.make_read_only()
+	facing_ppm.make_read_only()
+	next.combat={"position_mm":position_mm,"facing_ppm":facing_ppm,"speed_mm_tick":roundi(velocity.length()*1000.0/60.0)}
+	next.combat.make_read_only()
+	return next
+
 func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	for command in _draft.moves:
 		var moved: Dictionary = _move.apply_move_intent(_draft.stage,command.intent,command.context)
@@ -566,44 +613,55 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if not walk.ok: return walk
 	var moved_poses:Dictionary=_move.read_poses(_draft.token,_draft.stage)
 	if not moved_poses.ok:return moved_poses
-	var physical := []
+	_draft["motion"]=moved_poses.value
+	var positions: PackedVector3Array=moved_poses.value.positions
+	var velocities: PackedVector3Array=moved_poses.value.velocities
+	var headings: PackedVector3Array=moved_poses.value.headings
+	var previous: Dictionary=_frame.get("projections",{})
+	var projections: Array[PoseProjection]=[]
+	var ridden := {}
 	for i in _draft.humans.size():
 		var h: Dictionary=_draft.humans[i]
-		var row:Dictionary=_draft.rows[h.index]
-		var state:Dictionary=_draft.members_state[i]
-		var p:Dictionary={"position":moved_poses.value.positions[i],"velocity":moved_poses.value.velocities[i],"heading":_draft.look.get(h.index,moved_poses.value.headings[i])}
-		var mounted: bool = state.mount_handle!=null
-		_draft.pose[h.index]=p
-		physical.append({"handle":h,"team_key":row.components.team_key,"position":p.position,
-			"facing":p.heading,"mounted":mounted,"shield":state.shield>0})
-		if mounted:
-			var horse: Dictionary = state.mount_handle
-			_draft.pose[horse.index]=p
-			physical.append({"handle":horse,"type":"mount","team_key":row.components.team_key,"position":p.position,"facing":p.heading})
-	# A dismounted horse holds its last authoritative location.
-	for row in _draft.roster:
-		if row.source_slot==null and not _draft.pose.has(row.handle.index):
-			var previous: Dictionary = _frame.get("pose",{}).get(row.handle.index,{"position":_meters(row.components.spawn_position_mm),"heading":Vector3.FORWARD})
-			var p := {"position":previous.position,"velocity":Vector3.ZERO,"heading":previous.heading}
-			_draft.pose[row.handle.index]=p
-			physical.append({"handle":row.handle,"type":"mount","team_key":row.components.team_key,"position":p.position,"facing":p.heading})
+		var state: Dictionary=_draft.members_state[i]
+		var heading: Vector3=_draft.look.get(h.index,headings[i])
+		projections.append(_project_actor(previous.get(h.index),_draft.rows[h.index],positions[i],velocities[i],heading,state.mount_handle!=null,state.shield>0))
+		if state.mount_handle!=null:
+			var index: int=state.mount_handle.index
+			projections.append(_project_actor(previous.get(index),_draft.rows[index],positions[i],velocities[i],heading,false,false))
+			ridden[index]=true
+	for row in _draft.horses:
+		if ridden.has(row.handle.index):continue
+		var last: PoseProjection=previous.get(row.handle.index)
+		var same_horse := last!=null and is_same(last.source,row)
+		var position: Vector3=last.pose.position if same_horse else _meters(row.components.spawn_position_mm)
+		var heading: Vector3=last.pose.heading if same_horse else Vector3.FORWARD
+		projections.append(_project_actor(last,row,position,Vector3.ZERO,heading,false,false))
+
+	var stable := is_same(_draft.roster,_frame.get("roster"))
+	var next: Dictionary=previous.duplicate() if stable else {}
+	var pose: Dictionary=_frame.pose.duplicate() if stable else {}
+	var combat: Dictionary=_frame.combat_poses.duplicate() if stable else {}
+	if not stable:
+		for row in _draft.roster:combat[row.handle.index]=null
+	var physical := []
+	for projection in projections:
+		physical.append(projection.body)
+		var index: int=projection.source.handle.index
+		if is_same(next.get(index),projection):continue
+		next[index]=projection
+		pose[index]=projection.pose
+		combat[index]=projection.combat
+	_draft["projections"]=next
+	_draft["pose"]=pose
+	_draft["combat_poses"]=combat
 	var stage: Dictionary = _engine.field_stage_bodies(_mission,physical)
 	if not stage.ok: return stage
 	_draft["physical"]=physical
 	return R.ok()
 
 func _fight(ctx: Dictionary, batch: Dictionary) -> Dictionary:
-	var poses := {}
-	var riders:={}
-	for state in _draft.members_state:
-		if state.mount_handle!=null:riders[state.handle.index]=true
-	for row in _draft.roster:
-		var p: Dictionary = _draft.pose[row.handle.index]
-		var origin: Vector3 = p.position+Vector3.UP
-		if riders.has(row.handle.index): origin+=Vector3.UP*.8
-		poses[row.handle.index]={"position_mm":_mm(origin),"facing_ppm":_mm(p.heading,1000000),"speed_mm_tick":roundi(p.velocity.length()*1000.0/60.0)}
 	var actions: Array = _draft.actions+_draft.ai
-	var combat: Dictionary = _draft.com.step_field(batch.source_tick,actions,poses,func(q,t):return _engine.field_sweep(_mission,q,t))
+	var combat: Dictionary = _draft.com.step_field(batch.source_tick,actions,_draft.combat_poses,func(q,t):return _engine.field_sweep(_mission,q,t))
 	if not combat.ok: return combat
 	for event in combat.value.events:
 		if event.type=="dismounted":
@@ -677,6 +735,7 @@ func _publish() -> void:
 	_layout_specs=_draft.layout_cache
 	for key in _draft.resolved_mount_orders:_mount_orders.erase(key)
 	_frame={"roster":_draft.roster,"rows":_draft.rows,"ending_rows":_draft.ending_rows,"groups":_draft.groups,"nav":_draft.nav,"humans":_draft.humans,"token":_draft.token,
+		"roles":_draft.roles,"horses":_draft.horses,"motion":_draft.motion,"projections":_draft.projections,"combat_poses":_draft.combat_poses,
 		"look":_draft.look,"pose":_draft.pose,"metrics":_draft.metrics,"combat_report":_draft.combat_report}
 	_draft={}
 	if not _input.is_empty(): _consumed=_input

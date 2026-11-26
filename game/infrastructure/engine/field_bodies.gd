@@ -8,6 +8,7 @@ const ENVIRONMENT := 0xffffffff ^ BODY_LAYER
 const ENEMY_CLEARANCE_M := 6.0
 const EYE := Vector3.UP * 1.55
 const SADDLE_M := 0.95
+const BODY_FIELDS := ["handle","type","team_key","position","facing","mounted","shield"]
 
 var _world: SubViewport
 var _committed := {}
@@ -38,9 +39,19 @@ func stage(rows: Array) -> Dictionary:
 		return R.fail("Conflict","field.bodies")
 	var next := {}
 	for row in rows:
-		if not row is Dictionary or not _team(row.get("team_key")) or not row.get("position") is Vector3 or not row.position.is_finite():
+		if not row is Dictionary:
 			return R.fail("InvalidArgument","field.body")
 		var h: Variant = row.get("handle")
+		var previous_row: Variant
+		if h is Dictionary and h.get("index") is int:
+			previous_row = _committed.get(h.index)
+			if previous_row != null and is_same(previous_row.source,row):
+				if next.has(h.index):
+					return R.fail("Conflict","field.body.handle")
+				next[h.index] = previous_row
+				continue
+		if not _team(row.get("team_key")) or not row.get("position") is Vector3 or not row.position.is_finite():
+			return R.fail("InvalidArgument","field.body")
 		if not h is Dictionary or h.size()!=2 or not V.integer(h.get("index"),0,V.MAX_U32) or not V.integer(h.get("generation"),1,V.MAX_U32):
 			return R.fail("InvalidArgument","field.body.handle")
 		if next.has(h.index):
@@ -57,10 +68,9 @@ func stage(rows: Array) -> Dictionary:
 		var planar := Vector3(facing.x,0,facing.z)
 		if planar.is_zero_approx():
 			return R.fail("InvalidArgument","field.body.facing")
-		var previous_row: Dictionary = _committed.get(h.index,{})
 		var owned: Dictionary
 		planar = planar.normalized()
-		if not previous_row.is_empty() and h.generation == previous:
+		if previous_row != null and h.generation == previous:
 			if not is_same(previous_row.team_key,row.team_key) or previous_row.type != kind:
 				return R.fail("Conflict","field.body.identity")
 			if previous_row.position==row.position and previous_row.facing==planar and previous_row.mounted==mounted and previous_row.shield==shield:
@@ -70,8 +80,10 @@ func stage(rows: Array) -> Dictionary:
 		else:
 			owned = h.duplicate()
 			owned.make_read_only()
+		# Only the closed immutable shape can be retained. Other caller data stays detached.
+		var reusable: bool = row.is_read_only() and h.is_read_only() and row.size()==BODY_FIELDS.size() and row.has_all(BODY_FIELDS)
 		next[h.index] = {"handle":owned,"position":row.position,"facing":planar,
-			"team_key":row.team_key,"type":kind,"mounted":mounted,"shield":shield}
+			"team_key":row.team_key,"type":kind,"mounted":mounted,"shield":shield,"source":row if reusable else null}
 	_sync(next)
 	_staged = true
 	return R.ok()

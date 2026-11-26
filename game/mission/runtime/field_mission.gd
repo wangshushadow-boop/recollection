@@ -143,10 +143,13 @@ func _deploy_placements(placements: Variant, grant: Dictionary, context: Variant
 func _visible_handle(h: Dictionary, team: Variant) -> bool:
 	var resolved:=resolve_entity(_mission,h)
 	if not resolved.ok:return false
-	if is_same(resolved.value.components.team_key,team):return true
+	return _visible_row(resolved.value,team)
+
+func _visible_row(row: Dictionary, team: Variant) -> bool:
+	if is_same(row.components.team_key,team):return true
 	if _user_handle==null:return false
 	var observer: Dictionary=_player_pose
-	var target: Dictionary=_frame.get("pose",{}).get(h.index,{})
+	var target: Dictionary=_frame.get("pose",{}).get(row.handle.index,{})
 	if observer.is_empty() or target.is_empty():return false
 	return _engine.field_los(_mission,observer.position,target.position)
 
@@ -219,8 +222,12 @@ func _nearby_mount(player: Dictionary, team: Variant) -> String:
 
 func _visual(team: Variant) -> Dictionary:
 	var handles := []
-	for row in _frame.get("ending_rows",[]):
-		if _frame.rows.get(row.handle.index,{}).get("handle")==row.handle and _visible_handle(row.handle,team):
+	var live_rows := _entities.rows()
+	var staged_rows: Dictionary = _frame.get("rows",{})
+	var stable := is_same(live_rows,_frame.get("roster"))
+	for row in live_rows:
+		# New or recycled handles acquire a MOV/COM pose on their first tick.
+		if (stable or is_same(staged_rows.get(row.handle.index),row)) and _visible_row(row,team):
 			handles.append(row.handle)
 	var read: Dictionary=_com.field_view(_mission,handles)
 	if not read.ok:return read
@@ -228,9 +235,9 @@ func _visual(team: Variant) -> Dictionary:
 	for a in read.value.actors:
 		var actor: Dictionary=a.duplicate()
 		actor.merge(_frame.pose[a.handle.index],true)
-		var row:Dictionary=_frame.rows[a.handle.index]
-		actor.role="mount" if row.source_slot==null else _kit(row.components).role
-		if actor.role=="mount":actor["rider_handle"]=row.components.rider_handle
+		actor.role=_frame.roles[a.handle.index]
+		if actor.role=="mount":
+			actor["rider_handle"]=staged_rows[a.handle.index].components.rider_handle
 		actors.append(actor)
 	var visible_shots: Array=read.value.projectiles.filter(func(shot):return not _player_pose.is_empty() and _engine.field_los(_mission,_player_pose.position,shot.position))
 	return R.ok({"scope_id":_mission,"tick":_tick,"actors":actors,"projectiles":visible_shots,"confirmed_events":_confirmed_events(team)})
