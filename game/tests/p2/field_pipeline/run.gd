@@ -307,14 +307,30 @@ func hero_and_mount()->void:
 	check(not input(2,[{"actor_handle":h,"target_ref":"missing","action":"interact"}]).ok,"unknown interaction rejected without ending battle")
 	ok(input(2,[{"actor_handle":h,"target_ref":"self","action":"dismount"}]),"actual dismount")
 	ok(mission.step_fixed(2,[]),"player dismount and same-tick MOV synchronization")
-	check(hud().player.mount_handle==null,"dismounted COM projection")
+	check(hud().player.mount_handle==null and not hud().player.has("mount_heading"),"dismounted COM projection has no horse heading")
 	var seen:Dictionary=mission.gateway("field.view",{"projection":"visual"},token).value
 	check(seen.actors.any(func(a):return a.role=="mount" and a.handle==old_horse and a.rider_handle==h),"dismounted player's own nearby mount remains identifiable")
 	ok(input(3,[{"actor_handle":h,"target_ref":"field/%d/%d"%[old_horse.index,old_horse.generation],"action":"mount"}]),"remount own nearby horse")
 	ok(mission.step_fixed(3,[]),"renews COM and MOV mounted profile")
 	check(hud().player.mount_handle==old_horse,"same real horse generation")
+	var course: Vector3=hud().player.mount_heading
+	var aim := course.rotated(Vector3.UP,PI/2)
+	var aim_yaw := roundi(atan2(-aim.x,-aim.z)*1000000)
+	ok(input(4,[{"actor_handle":h,"yaw":aim_yaw,"pitch":0}]),"mounted rider looks to the side")
+	ok(mission.step_fixed(4,[]),"commit mounted look independently of travel")
+	var rider=mission._frame.projections[h.index]
+	var horse=mission._frame.projections[old_horse.index]
+	check(rider.pose.heading.dot(aim)>.999 and rider.body.facing.dot(aim)>.999,"rider and physical facing follow aim")
+	check(horse.pose.heading.dot(course)>.999 and horse.body.facing.dot(course)>.999 and hud().player.mount_heading.dot(course)>.999,"stationary horse render, collision and steering share MOV heading")
+	check(rider.combat.facing_ppm!=horse.combat.facing_ppm,"combat receives independent horse and rider facings")
+	var steer := move(h)
+	steer.desired_direction=[roundi(aim.x*1000000),0,roundi(aim.z*1000000)]
+	ok(input(5,[steer]),"steer while keeping the same rider aim")
+	ok(mission.step_fixed(5,[]),"MOV turns the horse at riding turn rate")
+	var turned: Vector3=hud().player.mount_heading
+	check(turned.dot(aim)>course.dot(aim)+.001 and turned.dot(aim)<.99 and mission._frame.pose[h.index].heading.dot(aim)>.999,"limited horse turn is published while rider holds aim")
 	ok(mission.gateway("field.withdraw",{},token),"hero leaves")
-	ok(mission.step_fixed(4,[]),"ending after cavalry participation")
+	ok(mission.step_fixed(6,[]),"ending after cavalry participation")
 	ok(mission.request_end(hud().rules.outcome),"sealed decision")
 	var result:Dictionary=mission.finalize()
 	if ok(result,"equipment-only hero result"):

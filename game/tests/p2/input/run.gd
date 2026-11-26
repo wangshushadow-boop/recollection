@@ -280,12 +280,51 @@ func run() -> void:
 	orbit.handle_event(key(KEY_ESCAPE))
 	check(orbit.view().mode=="command","pack opened from menu restores that menu then the original context")
 	orbit.free()
-	var strafe := fresh_field()
-	strafe.align_look(Vector3.FORWARD)
-	strafe.handle_event(key(KEY_D))
-	var side_step := strafe.step(1)
-	check(side_step.value.batch.inputs.any(func(i):return i.get("yaw")==0) and side_step.value.batch.inputs.back().desired_direction==[1000000,0,0],"first sideways step publishes the facing used by subsequent blocks and hits")
-	strafe.free()
+	for keys in [[KEY_W],[KEY_A],[KEY_D],[KEY_S],[KEY_W,KEY_A],[KEY_W,KEY_D],[KEY_S,KEY_A],[KEY_S,KEY_D]]:
+		var foot := fresh_field()
+		foot.align_look(Vector3.RIGHT)
+		for code in keys: foot.handle_event(key(code))
+		var facing := Vector3.RIGHT
+		var travel := Vector3.ZERO
+		for tick in range(1,39):
+			var intents: Array = foot.step(tick).value.batch.inputs
+			for intent in intents:
+				if intent.has("yaw"):
+					var turned := Vector3.FORWARD.rotated(Vector3.UP,intent.yaw*.000001)
+					check(facing.angle_to(turned)<deg_to_rad(5.01),"bounded foot turn")
+					facing = turned
+			var direction: Array = intents.back().desired_direction
+			travel = Vector3(direction[0],0,direction[2]).normalized()
+		var expected := (Vector3.RIGHT*(int(KEY_W in keys)-int(KEY_S in keys)) + Vector3.BACK*(int(KEY_D in keys)-int(KEY_A in keys))).normalized()
+		check(travel.dot(expected)>.999 and facing.dot(expected)>.999,"third-person movement and body align for "+str(keys))
+		foot.handle_event(mouse(2))
+		var guard: Array = foot.step(39).value.batch.inputs
+		check(facing.dot(Vector3.RIGHT)>.999 or guard.any(func(i):return i.has("yaw") and absi(i.yaw+1570796)<2),"guard returns to sight even with direction held")
+		foot.handle_event(mouse(2,false))
+		foot.step(40)
+		var released: Array = foot.step(41).value.batch.inputs
+		if expected.dot(Vector3.RIGHT)<.999:
+			check(released.any(func(i):return i.has("yaw") and absi(i.yaw+1570796)>2),"releasing guard restores movement-facing while keys remain held")
+		foot.free()
+	var saddle := fresh_field()
+	saddle.align_look(Vector3.FORWARD)
+	saddle.bind_combat_view(func(_h):return R.ok({"mount_handle":{"index":80,"generation":1},"mount_heading":Vector3.RIGHT}))
+	saddle.handle_event(key(KEY_W))
+	saddle.handle_event(key(KEY_W,false))
+	saddle.handle_event(mouse_look(400,0))
+	var riding: Dictionary = saddle.step(1).value.batch.inputs.back()
+	check(is_equal_approx(riding.speed_fraction,1.0/3) and riding.desired_direction==[1000000,0,0],"gait persists and orbit does not steer the mount")
+	saddle.handle_event(key(KEY_D))
+	check(saddle.step(2).value.batch.inputs.back().desired_direction[2]>0,"right rein turns relative to horse")
+	saddle.handle_event(key(KEY_S))
+	check(saddle.step(3).value.batch.inputs.back().speed_fraction==0,"S brakes instead of reversing the camera-relative travel vector")
+	saddle.handle_event(key(KEY_S,false))
+	saddle.handle_event(axis(1,-1))
+	saddle.handle_event(axis(1,0))
+	check(saddle.step(4).value.batch.inputs.back().speed_fraction>0,"released pad throttle retains gait")
+	Input.joy_connection_changed.emit(17,false)
+	check(saddle.step(5).value.batch.inputs.back().speed_fraction==0,"disconnecting the mount's throttle device stops its gait")
+	saddle.free()
 	var controls := fresh_field()
 	controls.handle_event(key(KEY_W))
 	check(controls.step(1).value.batch.inputs.back().stance=="sprint","default keyboard run")

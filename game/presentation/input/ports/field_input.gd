@@ -8,6 +8,9 @@ const S = preload("res://contracts/schema.gd")
 const V = preload("res://contracts/values.gd")
 const Profile = preload("res://presentation/input/field_profile.gd")
 const LAYOUTS := ["line","shield_wall","loose","square","circle","wedge","column"]
+const FOOT_TURN_PER_STEP := PI / 36.0 # 300 degrees per second at 60 Hz.
+const GAIT_HOLD_STEPS := 18
+const MAX_GAIT := 3
 const ORDER_PAGES := {
 	"":[ "movement","formation","toggle","toggle_fire","toggle_mount","toggle_delegate","face","shield_wall","line"],
 	"movement":["move","follow","charge","advance","","hold","retreat"],
@@ -55,6 +58,10 @@ var _mouse := Vector2.ZERO
 var _yaw := 0
 var _body_yaw := 0
 var _sent_body_heading := false
+var _mount: Variant
+var _gait := 0
+var _gait_hold := 0
+var _gait_source := ""
 var _pitch := 0
 var _weapon_slot := 0
 var _interaction_target := ""
@@ -295,6 +302,9 @@ func close_inventory() -> void:
 	set_context(_before_inventory)
 
 func _flush() -> void:
+	_gait = 0
+	_gait_hold = 0
+	_gait_source = ""
 	for source in _held: _blocked[source] = true
 	_held.clear()
 	_strength.clear()
@@ -319,6 +329,10 @@ func _focus_lost() -> void:
 func _joy_connection(device: int, connected: bool) -> void:
 	if connected: return
 	var prefix := "pad/%d/" % device
+	if _gait_source.begins_with(prefix):
+		_gait = 0
+		_gait_hold = 0
+		_gait_source = ""
 	# Neutralize just this device. Keyboard or another pad can still hold the same action.
 	var lost := {}
 	for source in _held.keys():
@@ -486,6 +500,12 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 		_command_action(action,additive)
 		return
 	if _mode != "battle" or _actor.is_empty(): return
+	if pressed and action in ["move_forward","move_back"]:
+		_track_mount(_combat_view().get("mount_handle"))
+		if _mount!=null:
+			_gait_source = source
+			_change_gait(1 if action=="move_forward" else -1)
+			return
 	if action=="crouch" and pressed and _combat_view().get("mount_handle")!=null:
 		action = "dismount"
 		_held[source] = action
@@ -673,6 +693,71 @@ func _deliver() -> void:
 		if _retryable(row.receipt): break
 	_stepping = false
 
+func _track_mount(handle: Variant) -> void:
+	if handle!=_mount:
+		_mount = handle
+		_gait = 0
+		_gait_hold = 0
+		_gait_source = ""
+
+func _change_gait(change: int) -> void:
+	_gait = clampi(_gait+change,0,MAX_GAIT)
+	_gait_hold = GAIT_HOLD_STEPS
+
+# Sample camera, travel and body facing together so a strafe never feeds the
+# body angle back into the camera, and turning to shoot never steers the horse.
+func _sample_locomotion(inputs: Array) -> void:
+	if _actor.is_empty(): return
+	var combat := _combat_view()
+	_track_mount(combat.get("mount_handle"))
+	var move := Vector2(_axis("move_right")-_axis("move_left"),_axis("move_back")-_axis("move_forward"))
+	var playing := _mode in ["battle","command"]
+	var delta := Vector2.ZERO
+	if playing:
+		var stick := _look_stick().limit_length(1.0)
+		if _axis("free_look")>0:
+			_orbit_delta(stick*_profile.options.stick_sensitivity)
+			stick = Vector2.ZERO
+		delta = _mouse*_profile.options.mouse_sensitivity + stick*_profile.options.stick_sensitivity
+		var aim := _look_after(delta)
+		_yaw = aim.x
+		_pitch = aim.y
+
+	var world := Vector3(move.x,0,move.y).normalized().rotated(Vector3.UP,_yaw*.000001)
+	var fraction := minf(1.0,move.length())
+	var keyboard_move := false
+	for source: String in _held:
+		if source.begins_with("desktop/") and str(_held[source]).begins_with("move_"):
+			keyboard_move = true
+			break
+	var run := _axis("sprint")>0 or (keyboard_move and not _walk_mode)
+	var stance := "crouch" if _axis("crouch")>0 else ("sprint" if run else "walk")
+	var horse: Vector3 = combat.get("mount_heading",Vector3.ZERO)
+	if _mount!=null:
+		if playing and not is_zero_approx(move.y):
+			_gait_hold -= 1
+			if _gait_hold<=0: _change_gait(1 if move.y<0 else -1)
+		world = horse.rotated(Vector3.UP,-move.x*deg_to_rad(2.5))
+		fraction = float(_gait)/MAX_GAIT if playing and horse!=Vector3.ZERO else 0.0
+		stance = "sprint" # MOV applies the actual acceleration and turn limits.
+
+	if playing:
+		var prior_body := _body_yaw
+		var action_edge := inputs.any(func(i):return i.has("input_phase") or i.has("held"))
+		var aiming: bool = _first_person or action_edge or not _attack.is_empty() or not _guard.is_empty() or combat.get("phase","Ready") in ["Windup","Hold","Active","Guard"]
+		if aiming:
+			_body_yaw = _yaw
+		elif (_mount!=null and horse!=Vector3.ZERO) or fraction>0.0:
+			var facing := horse if _mount!=null else world
+			var angle := atan2(-facing.x,-facing.z)
+			_body_yaw = V.yaw_microradians(rotate_toward(_body_yaw*.000001,angle,FOOT_TURN_PER_STEP)).value
+		if prior_body!=_body_yaw or delta.y!=0 or (not _sent_body_heading and (aiming or _mount!=null or fraction>0.0)):
+			inputs.append({"actor_handle":_actor,"yaw":_body_yaw,"pitch":_pitch})
+			_sent_body_heading = true
+		if not _attack.is_empty() and not inputs.any(func(i): return i.has("input_phase")):
+			inputs.append(_attack_intent("hold",_attack))
+	inputs.append({"actor_handle":_actor,"desired_direction":[roundi(world.x*1000000),0,roundi(world.z*1000000)],"speed_fraction":fraction,"stance":stance})
+
 func step(tick: int) -> Dictionary:
 	if _stepping or _mission.is_empty() or not V.integer(tick,1) or tick < _last_tick: return R.fail("StaleVersion","source_tick")
 	if _pending_delivery(): _deliver()
@@ -686,40 +771,7 @@ func step(tick: int) -> Dictionary:
 			_queued_release = {}
 		elif phase != null and phase != "Windup" and not inputs.any(func(i): return i.get("input_phase") == "start"):
 			_queued_release = {}
-	var move := Vector2(_axis("move_right")-_axis("move_left"),_axis("move_back")-_axis("move_forward")).limit_length(1.0)
-	if _mode in ["battle","command"] and not _actor.is_empty():
-		var stick := _look_stick().limit_length(1.0)
-		if _axis("free_look")>0:
-			_orbit_delta(stick*_profile.options.stick_sensitivity)
-			stick = Vector2.ZERO
-		var delta: Vector2 = _mouse * _profile.options.mouse_sensitivity + stick * _profile.options.stick_sensitivity
-		var aim := _look_after(delta)
-		_yaw = aim.x
-		_pitch = aim.y
-		# Idle third-person look orbits the actor. Travel turns the body at 300°/s;
-		# combat and first person use the sight line on the very tick of the action.
-		var prior_body := _body_yaw
-		var engaging := not _attack.is_empty() or not _guard.is_empty() or inputs.any(func(i): return i.has("input_phase") or i.has("held"))
-		var aim_body: bool = _first_person or engaging or _combat_view().get("phase","Ready") in ["Windup","Hold","Active","Guard"]
-		if aim_body:
-			_body_yaw = _yaw
-		elif move!=Vector2.ZERO:
-			_body_yaw = V.yaw_microradians(rotate_toward(_body_yaw*.000001,_yaw*.000001,deg_to_rad(5))).value
-		if prior_body!=_body_yaw or delta.y!=0 or (not _sent_body_heading and (aim_body or move!=Vector2.ZERO)):
-			inputs.append({"actor_handle":_actor,"yaw":_body_yaw,"pitch":_pitch})
-			_sent_body_heading = true
-		if not _attack.is_empty() and not inputs.any(func(i): return i.has("input_phase")):
-			inputs.append(_attack_intent("hold",_attack))
-	if not _actor.is_empty():
-		var world := Vector3(move.x,0,move.y).normalized().rotated(Vector3.UP,_yaw*0.000001)
-		var keyboard_move := false
-		for source: String in _held:
-			if source.begins_with("desktop/") and str(_held[source]).begins_with("move_"):
-				keyboard_move = true
-				break
-		var run := _axis("sprint")>0 or (keyboard_move and not _walk_mode)
-		var stance := "crouch" if _axis("crouch")>0 else ("sprint" if run else "walk")
-		inputs.append({"actor_handle":_actor,"desired_direction":[roundi(world.x*1000000),0,roundi(world.z*1000000)],"speed_fraction":minf(1.0,move.length()),"stance":stance})
+	_sample_locomotion(inputs)
 	var batch := S.validate_shape("IntentBatch",{"mission_id":_mission,"source_tick":tick,"control_revision":_revision,"inputs":inputs})
 	if not batch.ok: return _feedback(batch)
 	var outgoing := []

@@ -222,6 +222,11 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 					player.merge(_commander_kit(source.components).duplicate(true))
 					if _commander_hero!=null and source.components.hero_id==_commander_hero and _local.has("commander_level"):
 						player.level = _local.commander_level
+					var mount: Variant = player.get("mount_handle")
+					if decision.control_mode=="direct" and mount!=null and _frame.mounts.get(_user_handle.index)==mount:
+						var horse: Dictionary = _frame.rows.get(mount.index,{})
+						if horse.get("handle")==mount and _frame.pose.has(mount.index):
+							player.mount_heading = _frame.pose[mount.index].heading
 			out["delegate_candidate"]=_teams[grant.team_key].issuer
 			out["confirmed_events"]=_confirmed_events(grant.team_key)
 			out["interaction_target"]=_nearby_mount(player,grant.team_key)

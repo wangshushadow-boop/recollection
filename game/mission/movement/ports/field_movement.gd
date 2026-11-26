@@ -9,6 +9,7 @@ const Schema = preload("res://contracts/schema.gd")
 const CELL := 1.2
 const NEIGHBOURS := 48
 const QUERIES_PER_TICK := 8
+const DIRECT_RIDE_ALIGNMENT := .999
 # Legacy hurtboxes use layer 2, scoped field bodies use layer 30. MOV resolves actors in its own grid.
 const SCENERY_MASK := 0xffffffff ^ 2 ^ (1 << 29)
 
@@ -665,7 +666,11 @@ func _needs_leg(b: Body) -> bool:
 		(b.leg.direction.dot(b.drive.direction)<.99985 and not _braking_turn(b)) or (b.leg_cursor>=b.leg.points.size() and b.leg.continues)))
 
 func _braking_turn(b: Body) -> bool:
-	return b.profile=="mounted" and b.velocity.length_squared()>.000001 and b.leg_cursor<b.leg.points.size() and b.leg.direction.dot(b.drive.direction)<.99985
+	# A small steering input can transfer to a freshly verified strip at the current gait.
+	# For a sharp turn, brake on the old strip before requesting the new direction.
+	return (b.profile=="mounted" and b.velocity.length_squared()>.000001
+		and b.leg_cursor<b.leg.points.size() and b.leg.direction.dot(b.drive.direction)<.99985
+		and b.heading.dot(b.drive.direction)<DIRECT_RIDE_ALIGNMENT)
 
 func _prepare_drives(tick: int) -> Dictionary:
 	var ids := _drivers.keys()
@@ -1058,7 +1063,7 @@ func _advance(b: Body, target: Vector3, dt: float, fraction: float, direct: bool
 		speed = move_toward(previous_speed, desired_speed, (8.0 if previous_speed > desired_speed else 4.0) * dt)
 		if direct:
 			# Turn on the certified strip; a turning arc outside it has no navigation proof.
-			if b.heading.dot(flat)<.999: speed = 0
+			if b.heading.dot(flat)<DIRECT_RIDE_ALIGNMENT: speed = 0
 		else:
 			direction = (b.heading * Vector2(direction.x,direction.z).length() + Vector3.UP * direction.y).normalized()
 	elif not flat.is_zero_approx():

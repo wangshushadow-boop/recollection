@@ -78,7 +78,7 @@ func setup() -> bool:
 func equip(index: int, slot: int) -> Dictionary:
 	return {"actor_handle":handles[index],"slot":slot,"item_ref":"bow" if slot==1 else "melee"}
 
-func advance(intents: Array) -> void:
+func advance(intents: Array, saddle_turn := 0.0) -> void:
 	tick += 1
 	var stepped := combat.step(tick,intents,func(_t,_s):return R.ok([]))
 	check(stepped.ok,"COM tick")
@@ -91,6 +91,7 @@ func advance(intents: Array) -> void:
 		a.role = classes[i]
 		a.position = places[i]
 		a.heading = Vector3(.48,0,1).normalized()
+		if a.handle==handles[0]: a.heading=a.heading.rotated(Vector3.UP,saddle_turn)
 		a.velocity = Vector3.ZERO
 	check(vis.apply_snapshot(snap).ok,"VIS receives COM slots and mount handles")
 
@@ -230,6 +231,17 @@ func run() -> void:
 	check(attacking.size()==4 and far.size()==4 and attacking[0]!=far[0] and attacking[1]!=far[1],"bow and halberd switch to actual far action meshes")
 	await capture("action-far")
 	vis.render_interpolated(1,camera.position)
+	var rider := figure(0)
+	skel = rider.find_children("*","Skeleton3D",true,false)[0] as Skeleton3D
+	var initial_course := rider.global_basis
+	var seated_leg := leg(0)
+	var spine := skel.find_bone("Spine")
+	var before_turn := skel.global_basis*skel.get_bone_global_pose(spine).basis
+	advance([],PI/2)
+	vis.render_interpolated(1,camera.position)
+	var after_turn := skel.global_basis*skel.get_bone_global_pose(spine).basis
+	check(after_turn.x.normalized().dot(before_turn.x.rotated(Vector3.UP,PI/2).normalized())>.95 and after_turn.z.normalized().dot(before_turn.z.rotated(Vector3.UP,PI/2).normalized())>.95,"sideways mounted aim turns the torso through the requested angle")
+	check(rider.global_basis.is_equal_approx(initial_course) and seated_leg.angle_to(leg(0))<.05,"saddle and legs keep the horse course during sideways aim")
 	var instance: WeakRef = weakref(figure(0))
 	original_roles()
 	check(instance.get_ref()==null,"despawn frees rider and both weapon instances")

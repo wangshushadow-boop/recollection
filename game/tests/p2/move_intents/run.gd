@@ -224,6 +224,35 @@ func wall_and_horse() -> void:
 	check(commit(horse,140,move(0,1.0,[-1000000,0,0]),ai) and horse.view(handle(0)).value.heading.dot(Vector3.RIGHT)>.99,"horse cannot snap backwards")
 	print("MOVE_JOLT wall_x=",at.x," rider_v=",fast," braking_v=",brake)
 
+func riding_curve() -> void:
+	var horse := Field.new(meter,SCOPE,authorize)
+	horse.spawn(handle(0),Vector3(-30,0,8),"mounted",Vector3.RIGHT)
+	check(commit(horse,0,move(0,.6),player),"start mounted gait")
+	for tick in range(1,95): check(horse.step(tick,DT).ok,"reach cruising speed")
+	var tick := 95
+	for sign_value in [1.0,-1.0]:
+		var start := horse.view(handle(0)).value as Dictionary
+		var pose := start
+		var min_speed := INF
+		var queried := meter.queries
+		var within_limit := true
+		for frame in 60:
+			var heading: Vector3 = pose.heading
+			var speed: float = pose.velocity.length()
+			var desired := heading.rotated(Vector3.UP,sign_value*deg_to_rad(2.5))
+			if not commit(horse,tick,move(0,.6,[roundi(desired.x*1000000),0,roundi(desired.z*1000000)]),player):
+				check(false,"steering intent accepted")
+				return
+			pose = horse.view(handle(0)).value
+			min_speed = minf(min_speed,pose.velocity.length())
+			within_limit = within_limit and heading.angle_to(pose.heading)<=3.0*DT/(1+.22*speed)+.0001
+			tick += 1
+		var yaw := rad_to_deg((start.heading as Vector3).signed_angle_to(pose.heading,Vector3.UP))
+		var displacement: float = start.position.distance_to(pose.position)
+		check(yaw*sign_value>55 and displacement>4.0 and min_speed>5.0,"held steering keeps gait through a moving arc in both directions")
+		check(meter.queries>queried and within_limit,"moving curve uses verified strips and obeys its speed-dependent turn rate")
+		print("MOVE_RIDING_CURVE yaw_deg=",yaw," displacement_m=",displacement," min_speed_mps=",min_speed)
+
 func gated() -> void:
 	var bridge := Field.new(meter,SCOPE,authorize)
 	bridge.spawn(handle(0),Vector3(-8,0,0))
@@ -306,6 +335,7 @@ func run() -> void:
 		commit_authority()
 		await actor_colliders()
 		await wall_and_horse()
+		riding_curve()
 		for n in [500,1000]: load_drives(n)
 		engine.release_scope(SCOPE)
 	else: check(false,"opening real navigation and collision area")

@@ -298,8 +298,11 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 		var pos := p.previous.lerp(p.position,alpha)
 		var horse: Proxy = _actors.get(p.mount_index)
 		var mounted: bool = horse != null and horse.generation == p.mount_generation and horse.role == "mount" and horse.phase != "Downed"
+		var saddle_turn := 0.0
 		if mounted:
-			yaw = lerp_angle(horse.old_yaw,horse.yaw,alpha)
+			var horse_yaw := lerp_angle(horse.old_yaw,horse.yaw,alpha)
+			saddle_turn = angle_difference(horse_yaw,yaw)
+			yaw = horse_yaw
 			pos = horse.previous.lerp(horse.position,alpha) + Basis(Vector3.UP,yaw)*Models.saddle_offset(horse.figure)
 		var transform3 := Transform3D(Basis(Vector3.UP,yaw),pos)
 		var offset := posmod(p.index,27)
@@ -313,6 +316,7 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 			if t-p.last_pose >= 1.5 or p.last_pose < 0 or p.last_mounted != mounted or phase in ["Active","Guard","Windup","Recovery"]:
 				_models[p.role].pose(p.figure,t+offset,p.speed,phase,p.old_direction if old else p.direction,
 					(p.old_since if old else p.since)+offset,mounted,p.ranged)
+				if mounted: Models.turn_in_saddle(p.figure,saddle_turn)
 				p.last_pose = t
 				p.last_mounted = mounted
 			_skinned += 1

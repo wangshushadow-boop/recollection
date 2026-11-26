@@ -691,7 +691,7 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		var h: Dictionary=_draft.humans[i]
 		var index: int=h.index
 		var heading: Vector3=look.get(index,headings[i])
-		if same_slots and old_positions[i]==positions[i] and old_velocities[i]==velocities[i] and old_look.get(index,old_headings[i])==heading:
+		if same_slots and old_positions[i]==positions[i] and old_velocities[i]==velocities[i] and old_look.get(index,old_headings[i])==heading and old_headings[i]==headings[i]:
 			if same_shields or shielded.has(index)==_frame.shielded.has(index): continue
 		var mount: Variant=mounts.get(index)
 		if not same_slots: slots.append(physical.size())
@@ -699,7 +699,7 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		_store_projection(projection,slots[i],physical,next,pose,combat)
 		if mount!=null:
 			var horse: int=mount.index
-			projection=_project_actor(previous.get(horse),_draft.rows[horse],positions[i],velocities[i],heading,false,false)
+			projection=_project_actor(previous.get(horse),_draft.rows[horse],positions[i],velocities[i],headings[i],false,false)
 			_store_projection(projection,slots[i]+1,physical,next,pose,combat)
 			if not same_slots: ridden[horse]=true
 	if not same_slots:

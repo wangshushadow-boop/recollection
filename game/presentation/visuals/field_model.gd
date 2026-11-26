@@ -19,6 +19,7 @@ class Figure:
 	var root: Node3D
 	var player: AnimationPlayer
 	var skeleton: Skeleton3D
+	var spine: int
 	var right: int
 	var forearm: int
 	var left_leg: int
@@ -76,6 +77,7 @@ func instantiate(host: Node3D) -> Figure:
 	f.player = players[0]
 	f.player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	f.skeleton = skeletons[0]
+	f.spine = f.skeleton.find_bone("Spine")
 	f.right = f.skeleton.find_bone("RightArm")
 	f.forearm = f.skeleton.find_bone("RightForeArm")
 	f.left_leg = f.skeleton.find_bone("LeftUpLeg")
@@ -151,6 +153,14 @@ func pose(f: Figure, time: float, speed: float, phase: String, direction: String
 				bend = -.7 + sweep*.55
 	f.skeleton.set_bone_pose_rotation(f.right, f.skeleton.get_bone_pose_rotation(f.right)*arm)
 	f.skeleton.set_bone_pose_rotation(f.forearm, f.skeleton.get_bone_pose_rotation(f.forearm)*Quaternion(Vector3.UP,bend))
+
+## Apply mounted aim after sampling the clip and positioning hands. The pelvis
+## and legs stay with the saddle while the bow or melee weapon follows the torso.
+static func turn_in_saddle(f: Figure, turn: float) -> void:
+	if f.spine<0 or is_zero_approx(turn): return
+	var parent := f.skeleton.get_bone_global_pose(f.skeleton.get_bone_parent(f.spine)).basis
+	var up := (f.skeleton.global_basis*parent).inverse()*Vector3.UP
+	f.skeleton.set_bone_pose_rotation(f.spine,Quaternion(up.normalized(),turn)*f.skeleton.get_bone_pose_rotation(f.spine))
 
 func _aim_bone(skel: Skeleton3D, bone: String, child: String, direction: Vector3) -> void:
 	var id := skel.find_bone(bone)
