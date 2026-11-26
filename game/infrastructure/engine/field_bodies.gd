@@ -13,6 +13,10 @@ const BODY_FIELDS := ["handle","type","team_key","position","facing","mounted","
 var _world: SubViewport
 var _committed := {}
 var _current := {}
+var _committed_order: Array = []
+var _staged_order: Array = []
+var _changed_slots: Array = []
+var _same_order := false
 var _staged := false
 var _generations := {}
 var _bodies := {}
@@ -37,24 +41,37 @@ static func _team(key: Variant) -> bool:
 func stage(rows: Array) -> Dictionary:
 	if _staged:
 		return R.fail("Conflict","field.bodies")
-	var next := {}
-	for row in rows:
+	return _stage(rows,rows.size()==_committed_order.size())
+
+func _stage(rows: Array, same_order: bool) -> Dictionary:
+	var next := _committed.duplicate() if same_order else {}
+	var ordered := _committed_order.duplicate() if same_order else []
+	var changed := []
+	for i in rows.size():
+		var row: Variant = rows[i]
+		var slot: Variant = _committed_order[i] if same_order else null
+		if same_order and slot.source!=null and is_same(row,slot.source):
+			continue
 		if not row is Dictionary:
 			return R.fail("InvalidArgument","field.body")
 		var h: Variant = row.get("handle")
 		var previous_row: Variant
 		if h is Dictionary and h.get("index") is int:
+			if same_order and h.index!=slot.handle.index:
+				# The full snapshot path also checks for duplicate indices after a reorder.
+				return _stage(rows,false)
 			previous_row = _committed.get(h.index)
 			if previous_row != null and is_same(previous_row.source,row):
 				if next.has(h.index):
 					return R.fail("Conflict","field.body.handle")
 				next[h.index] = previous_row
+				ordered.append(previous_row)
 				continue
 		if not _team(row.get("team_key")) or not row.get("position") is Vector3 or not row.position.is_finite():
 			return R.fail("InvalidArgument","field.body")
 		if not h is Dictionary or h.size()!=2 or not V.integer(h.get("index"),0,V.MAX_U32) or not V.integer(h.get("generation"),1,V.MAX_U32):
 			return R.fail("InvalidArgument","field.body.handle")
-		if next.has(h.index):
+		if not same_order and next.has(h.index):
 			return R.fail("Conflict","field.body.handle")
 		var previous: int = _generations.get(h.index,0)
 		if h.generation < previous or (h.generation == previous and not _committed.has(h.index)):
@@ -74,7 +91,9 @@ func stage(rows: Array) -> Dictionary:
 			if not is_same(previous_row.team_key,row.team_key) or previous_row.type != kind:
 				return R.fail("Conflict","field.body.identity")
 			if previous_row.position==row.position and previous_row.facing==planar and previous_row.mounted==mounted and previous_row.shield==shield:
-				next[h.index] = previous_row
+				if not same_order:
+					next[h.index] = previous_row
+					ordered.append(previous_row)
 				continue
 			owned = previous_row.handle
 		else:
@@ -84,6 +103,14 @@ func stage(rows: Array) -> Dictionary:
 		var reusable: bool = row.is_read_only() and h.is_read_only() and row.size()==BODY_FIELDS.size() and row.has_all(BODY_FIELDS)
 		next[h.index] = {"handle":owned,"position":row.position,"facing":planar,
 			"team_key":row.team_key,"type":kind,"mounted":mounted,"shield":shield,"source":row if reusable else null}
+		if same_order:
+			ordered[i] = next[h.index]
+			changed.append(h.index)
+		else:
+			ordered.append(next[h.index])
+	_staged_order = ordered
+	_changed_slots = changed
+	_same_order = same_order
 	_sync(next)
 	_staged = true
 	return R.ok()
@@ -91,15 +118,20 @@ func stage(rows: Array) -> Dictionary:
 func commit() -> Dictionary:
 	if not _staged:
 		return R.fail("InvalidState","field.bodies")
-	for index in _current:
+	for index in (_changed_slots if _same_order else _current.keys()):
 		_generations[index] = _current[index].handle.generation
 	_committed = _current
+	_committed_order = _staged_order
+	_staged_order = []
+	_changed_slots = []
 	_staged = false
 	return R.ok()
 
 func rollback() -> Dictionary:
 	if _staged:
 		_sync(_committed)
+		_staged_order = []
+		_changed_slots = []
 		_staged = false
 	return R.ok()
 
@@ -144,10 +176,11 @@ func _place(index: int, row: Dictionary) -> void:
 		proxy.shield.force_update_transform()
 
 func _sync(next: Dictionary) -> void:
-	for index in _current:
-		if not next.has(index):
-			_remove(index)
-	for index in next:
+	if not _same_order:
+		for index in _current:
+			if not next.has(index):
+				_remove(index)
+	for index in (_changed_slots if _same_order else next.keys()):
 		var row: Dictionary = next[index]
 		var old: Dictionary = _current.get(index,{})
 		if is_same(old,row):

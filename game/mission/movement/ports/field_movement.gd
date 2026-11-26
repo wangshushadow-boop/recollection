@@ -18,7 +18,16 @@ class Drive:
 	var direction: Vector3
 	var fraction: float
 
+class DriveBlock:
+	var index: int
+	var other_position: Vector3
+	var origin: Vector3
+	var candidate: Vector3
+	var radii: float
+
 class Body:
+	var index: int
+	var last_drive_block: DriveBlock
 	var birth: RefCounted
 	var generation: int
 	var profile: String
@@ -55,6 +64,7 @@ class Body:
 	func copy_from(other: Body, with_drives: bool) -> void:
 		var new_birth := not is_same(birth,other.birth)
 		if new_birth:
+			index = other.index
 			birth = other.birth
 			generation = other.generation
 		if new_birth or not is_same(assignment_stamp,other.assignment_stamp):
@@ -82,6 +92,7 @@ class Body:
 		courtesy = other.courtesy
 		courtesy_time = other.courtesy_time
 		if with_drives:
+			last_drive_block = other.last_drive_block
 			drive = other.drive
 			leg = other.leg
 			leg_cursor = other.leg_cursor
@@ -127,6 +138,9 @@ var _had_drives := false
 var _members_ready := false
 var _next_driver := 0
 var _exact_sweeps_until := -1
+var _lowest_leg_y := INF
+var _highest_leg_y := -INF
+var _legs_clear_scenery := false
 var _bodies := {}
 var _retired := {}
 var _routes := {}
@@ -177,6 +191,7 @@ func spawn(handle: Dictionary, position: Vector3, profile: String = "foot", head
 	if _bodies.has(handle.index) or handle.generation <= _retired.get(handle.index, 0):
 		return R.fail("Conflict", "movement_handle")
 	var b := Body.new()
+	b.index = handle.index
 	b.birth = RefCounted.new()
 	b.generation = handle.generation
 	b.profile = profile
@@ -513,6 +528,8 @@ func begin_step(tick: int) -> Dictionary:
 	_launches = {}
 	_draft._next_driver = _next_driver
 	_draft._exact_sweeps_until = _exact_sweeps_until
+	_draft._lowest_leg_y = _lowest_leg_y
+	_draft._highest_leg_y = _highest_leg_y
 	_stage = RefCounted.new()
 	_stage_tick = tick
 	return R.ok(_stage)
@@ -586,6 +603,8 @@ func commit_step(stage: Variant) -> Dictionary:
 	_members_ready = _draft._members_ready
 	_next_driver = _draft._next_driver
 	_exact_sweeps_until = _draft._exact_sweeps_until
+	_lowest_leg_y = _draft._lowest_leg_y
+	_highest_leg_y = _draft._highest_leg_y
 	_stage = null
 	_stage_ready = false
 	return R.ok(_tick)
@@ -687,6 +706,12 @@ func _prepare_drives(tick: int) -> Dictionary:
 		if not checked.ok: return checked
 		b.leg = leg
 		b.leg_cursor = 0
+		# Direct ground motion stays on these segments. Landing clears the leg.
+		_lowest_leg_y = minf(_lowest_leg_y,b.position.y)
+		_highest_leg_y = maxf(_highest_leg_y,b.position.y)
+		for point in leg.points:
+			_lowest_leg_y = minf(_lowest_leg_y,point.y)
+			_highest_leg_y = maxf(_highest_leg_y,point.y)
 		_next_driver = (job.index+1)%ids.size()
 	return R.ok()
 
@@ -723,6 +748,10 @@ func _scene_clearances(tick: int, dt: float) -> Dictionary:
 	var floor_top := INF
 	if _drivers.size()>=64 and _engine.has_method("field_scenery_top"):
 		floor_top = _engine.field_scenery_top(_scope,SCENERY_MASK)
+	# Each probe bottom starts 40 mm above its segment. Allow the 3 mm minimum
+	# probe to overshoot a short leg, plus float error and the 30 mm contact margin.
+	_legs_clear_scenery = is_finite(floor_top) and _lowest_leg_y+0.005>floor_top and _lowest_leg_y > -1022.0 and _highest_leg_y < 1022.0
+	if _legs_clear_scenery: return R.ok()
 	var broad := R.ok(null) if is_finite(floor_top) else _occupied_scene_cells(tick)
 	if not broad.ok: return broad
 	var requests := []
@@ -1035,9 +1064,15 @@ func _advance(b: Body, target: Vector3, dt: float, fraction: float, direct: bool
 	elif not flat.is_zero_approx():
 		b.heading = flat
 	var travel := minf(distance, speed*dt)
-	if direct and travel>b.scene_travel:
-		travel = b.scene_travel
-		b.blocked = "scene"
+	if direct:
+		var limit := b.scene_travel
+		if _legs_clear_scenery:
+			limit = minf(distance,(9.0 if b.profile=="mounted" else 3.4)*dt)
+			if delta.length_squared()<.000001 or (b.drive.fraction<=0 and (b.profile=="foot" or b.velocity.is_zero_approx())):
+				limit = 0.0
+		if travel>limit:
+			travel = limit
+			b.blocked = "scene"
 	var candidate := b.position + direction * travel
 	for passage in b.passages:
 		var box: AABB = passage.bounds
@@ -1048,12 +1083,29 @@ func _advance(b: Body, target: Vector3, dt: float, fraction: float, direct: bool
 		if outside and entered and absf(candidate[side]-passage.lane) > 0.03:
 			candidate = b.position
 			candidate[side] = move_toward(candidate[side],passage.lane,travel)
-	if not _clear_step(b,candidate):
+	# Direct movement needs only a yes/no answer. An intersecting live blocker
+	# guarantees a yield even when earlier neighbours or the inspection cap changed.
+	var blocked_again := false
+	var witness := b.last_drive_block
+	if direct and witness!=null:
+		if b.position==witness.origin and candidate==witness.candidate:
+			var prior: Body = _bodies.get(witness.index)
+			blocked_again = prior!=null and prior.position==witness.other_position and b.radius+prior.radius==witness.radii
+		if not blocked_again: b.last_drive_block=null
+	if blocked_again or not _clear_step(b,candidate):
 		b.wait += dt
 		b.blocked = "yield"
 		_yields += 1
-		candidate = b.position
 		var obstruction := _blocker
+		if direct and not blocked_again and obstruction!=null:
+			witness = DriveBlock.new()
+			witness.index = obstruction.index
+			witness.other_position = obstruction.position
+			witness.origin = b.position
+			witness.candidate = candidate
+			witness.radii = b.radius+obstruction.radius
+			b.last_drive_block = witness
+		candidate = b.position
 		if not direct and b.profile == "foot" and b.wait > 0.20:
 			var right := direction.cross(Vector3.UP).normalized()
 			if obstruction != null and obstruction.profile == "foot" and obstruction.courtesy_time <= 0.0 and (b.cursor+1 == b.path.size() or b.heading.dot(obstruction.heading) < -0.5):
