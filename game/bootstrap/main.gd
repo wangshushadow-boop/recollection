@@ -11,6 +11,7 @@ var _content_hash := ""
 var _desktop: Control
 var _profile_smoke := false
 var _last_tick := 0
+var _sweep_retries := 0
 var _running := false
 var _field_scene: Node3D
 var _retiring_audio: Array[WeakRef] = []
@@ -81,6 +82,7 @@ func _start() -> void:
 	_log("ready","",0)
 
 func _enter_field() -> void:
+	_sweep_retries = 0
 	var started: Dictionary = _root.start_field()
 	if not started.ok:
 		_desktop.field_closed(started)
@@ -127,6 +129,12 @@ func _physics_process(_delta: float) -> void:
 			step = _root.field_step()
 			if not step.ok and step.error.code in ["Unavailable","StaleVersion"] and step.error.field in ["navigation_sync","nav_revision","deployment.spawn_site"]:
 				return
+			# A transient narrow-phase miss rolled the whole step back. Retry the same
+			# tick and input on a fresh physics frame, with a bound for persistent errors.
+			if not step.ok and step.error.field=="sweep_contact" and step.error.retryable and _sweep_retries<2:
+				_sweep_retries += 1
+				return
+			_sweep_retries = 0
 			if step.ok and _field_scene!=null:
 				var refreshed: Dictionary = _field_scene.after_step()
 				if not refreshed.ok:

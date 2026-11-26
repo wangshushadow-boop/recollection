@@ -87,6 +87,40 @@ static func _ray_hit(space: PhysicsDirectSpaceState3D, origin: Vector3, target: 
 		hit["fraction"] = origin.distance_to(hit.position) / origin.distance_to(target)
 	return hit
 
+## The swept volume of a sphere is a capsule. Resolve rare grazing casts where
+## Jolt reports an unsafe fraction but no stationary sphere at that sample overlaps.
+static func _swept_volume_hit(space: PhysicsDirectSpaceState3D, start: Vector3, end: Vector3,
+		radius: float, mask: int, excluded: Array[RID]) -> Dictionary:
+	var motion := end-start
+	var length := motion.length()
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = radius
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = capsule
+	q.collision_mask = mask
+	q.exclude = excluded
+	var basis := Basis(Quaternion(Vector3.UP,motion/length))
+	var lo := 0.0
+	var hi := 1.0
+	var fraction := hi
+	var first := {}
+	while true:
+		capsule.height = 2.0*radius + length*fraction
+		q.transform = Transform3D(basis,start+motion*(0.5*fraction))
+		var hit := space.get_rest_info(q)
+		if hit.is_empty():
+			if first.is_empty():
+				return {} if space.intersect_shape(q,1).is_empty() else {"error":"sweep_contact"}
+			lo = fraction
+		else:
+			first = hit
+			hi = fraction
+		# Public hit positions are expressed in millimetres.
+		if (hi-lo)*length<=0.0001: break
+		fraction = (lo+hi)*0.5
+	first["center"] = start+motion*hi
+	return first
+
 static func _sphere_hit(space: PhysicsDirectSpaceState3D, origin: Vector3, target: Vector3,
 		radius: float, mask: int, excluded: Array[RID], cached: Dictionary) -> Dictionary:
 	var query: PhysicsShapeQueryParameters3D = cached.get(radius)
@@ -147,7 +181,11 @@ static func _sphere_hit(space: PhysicsDirectSpaceState3D, origin: Vector3, targe
 				if limits.size() != 2 or limits[0] >= 1.0:
 					break
 			if hit.is_empty():
-				return {"error":"sweep_contact"}
+				hit = _swept_volume_hit(space,origin.lerp(target,float(part)/parts),
+					origin.lerp(target,float(part+1)/parts),radius,mask,excluded)
+				if hit.is_empty(): continue
+				if hit.has("error"): return hit
+				contact = hit.center
 		hit["fraction"] = origin.distance_to(contact)/length
 		hit["position"] = hit.point
 		hit["collider"] = instance_from_id(hit.collider_id)

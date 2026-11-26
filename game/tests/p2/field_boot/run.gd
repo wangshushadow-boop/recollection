@@ -23,6 +23,13 @@ func run() -> void:
 		if not check(app.session().start_session("custom",{}).ok,"single player practice session"): quit(1);return
 	var opened: Dictionary=app.start_field(20,40)
 	if not check(opened.ok,"normal field start "+str(opened)): quit(1); return
+	var attempts := []
+	var trace := func(_ctx,tick_batch):
+		if tick_batch.source_tick==2:
+			attempts.append(tick_batch.source_tick)
+			if attempts.size()==1: return preload("res://contracts/result.gd").fail("Unavailable","sweep_contact")
+		return {"ok":true,"value":null}
+	check(app._field_mission.get_ref().register_system("snapshot",{"id":"qa.contact_retry","run":trace}).ok,"install one transient contact failure")
 	var hud: Dictionary=app.field_view("hud")
 	check(hud.ok and hud.value.phase=="deployment" and not hud.value.formations.is_empty(),"initial deployment")
 	var opening := {}
@@ -56,8 +63,14 @@ func run() -> void:
 		"inputs":[{"actor_handle":handle,"desired_direction":[1000000,0,0],"speed_fraction":1.0,"stance":"walk"}]}
 	var accepted: Dictionary=app.field_command("field.input",{"batch":batch},input.value.revision,"smoke-input")
 	if not check(accepted.ok,"normal player command "+str(accepted)):quit(1);return
-	var second: Dictionary=app.field_step()
-	if not check(second.ok,"second step "+str(second)):quit(1);return
+	var client_loop := preload("res://bootstrap/main.gd").new()
+	client_loop._root = app
+	client_loop._running = true
+	client_loop._physics_process(1.0/60)
+	check(client_loop._running and app.field_view("hud").value.tick==1,"transient contact leaves the prior tick committed")
+	client_loop._physics_process(1.0/60)
+	check(attempts==[2,2] and client_loop._last_tick==2,"client retries the same battle step and commits it exactly once")
+	client_loop.free()
 	hud=app.field_view("hud")
 	var left: Dictionary=app.field_command("field.withdraw",{},hud.value.revision)
 	if not check(left.ok,"authorized withdrawal "+str(left)):quit(1);return

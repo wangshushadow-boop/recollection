@@ -96,6 +96,34 @@ func thin_faces() -> void:
 		plate.free()
 	check(front_hits==2,"both winding directions hit on front and skip on back")
 
+func grazing_projectile() -> void:
+	# A 15 mm projectile grazing the rounded bottom of a mounted fighter at river
+	# tick 1885: cast_motion's unsafe sample was already beyond the capsule.
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.30
+	shape.height = 1.80
+	var rider := collider(shape,Vector3(40.7816276550293,1.85,7.64076328277588),"rider")
+	rider.rotation.y = -0.596333005039446
+	rider.collision_layer = 2
+	rider.force_update_transform()
+	var row := {"from":[38988,1000,9353],"to":[41153,997,7577],"radius_mm":15,"mask":2}
+	var result := Queries.sweep(scope,[row])
+	check(result.ok and result.value.size()==1 and result.value[0].entity_handle=="rider" and
+		result.value[0].fraction_ppm>850000 and result.value[0].fraction_ppm<910000,"grazing arrow strikes rounded rider with correct fraction")
+	var clear := row.duplicate(true)
+	clear.from[1]-=5
+	clear.to[1]-=5
+	check(Queries.sweep(scope,[clear]).get("value")==[],"lower arrow misses the rider")
+	var shield := box(Vector3(.012,.4,.4),Vector3(40.07,1.0,8.46),"shield")
+	shield.collision_layer = 2
+	var blocked := Queries.sweep(scope,[row])
+	check(blocked.ok and blocked.value.map(func(h):return h.entity_handle)==["shield","rider"],"thin blocker precedes grazing body")
+	row.ignored_handles=["shield"]
+	var ignored := Queries.sweep(scope,[row])
+	check(ignored.ok and ignored.value.size()==1 and ignored.value[0].entity_handle=="rider","excluded blocker preserves later physical grazing hit")
+	shield.free()
+	rider.free()
+
 func _initialize() -> void:
 	run.call_deferred()
 
@@ -113,6 +141,7 @@ func run() -> void:
 	check(grazing.ok and grazing.value.any(func(h):return h.entity_handle=="grazing_plate" and h.fraction_ppm==0),
 		"sphere touching a 20 mm plate reports contact at its starting position")
 	plate.free()
+	grazing_projectile()
 	for count in [16,64,500,1000]:
 		var rows:=fixture(count)
 		var response:=compare(rows,"clear actual terrain "+str(count))
