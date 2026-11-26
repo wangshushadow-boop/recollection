@@ -92,8 +92,8 @@ func menu_and_cancel() -> bool:
 	player.handle_event(mouse(1))
 	player.handle_event(mouse(1,false))
 	check(edges(player,1)==["start"] and combat.view(H).value.phase=="Windup","quick tap buffered")
-	player.handle_event(key(KEY_X))
-	player.handle_event(key(KEY_X,false))
+	player.handle_event(mouse(MOUSE_BUTTON_RIGHT))
+	player.handle_event(mouse(MOUSE_BUTTON_RIGHT,false))
 	check(edges(player,2)==["cancel"] and combat.view(H).value.phase=="Ready","explicit cancel acts on pending release")
 	for tick in range(3,8):
 		check(edges(player,tick).is_empty(),"cancelled attack cannot fire later")

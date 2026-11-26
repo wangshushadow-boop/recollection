@@ -73,6 +73,46 @@ func options_writer() -> void:
 func screen_center() -> Vector2:
 	return root.get_visible_rect().get_center()
 
+func chase_framing(tick: int) -> void:
+	pose_rows[0].position=Vector3(-4,0,0)
+	check(cam.set_mode(SCOPE,"first",PLAYER).ok and cam.update_view(SCOPE,tick,.016).ok,"first person before shoulder cut")
+	check(cam.set_mode(SCOPE,"third",PLAYER).ok and cam.update_view(SCOPE,tick,.001).ok,"immediate validated third-person cut")
+	var chest:=cam.unproject_position(Vector3(-4,1.15,0))
+	var viewport_size:=root.get_visible_rect().size
+	var normalized_chest:=chest/viewport_size
+	check(is_equal_approx(cam.position.z,Camera.CHASE_DISTANCE) and normalized_chest.x<.485 and normalized_chest.y>.53,
+		"first third-person frame shows chest below and beside center: camera=%s chest=%s" % [cam.position,normalized_chest])
+	var previous:=cam.position
+	pose_rows[0].position.x+=.12
+	check(cam.update_view(SCOPE,tick+1,.016).ok and cam.position.x>previous.x and cam.position.x<previous.x+.12,
+		"normal stride follows promptly with limited positional lag")
+	var base:=cam.fov
+	cam.set_zoom_held(true)
+	check(cam.update_view(SCOPE,tick+2,.13).ok and cam.fov<base-10,"hold narrows the combat view")
+	var held:=cam.fov
+	cam.set_zoom_held(false)
+	check(cam.update_view(SCOPE,tick+3,.016).ok and cam.fov>held and cam.fov<base,"released zoom eases out")
+	check(cam.update_view(SCOPE,tick+4,.13).ok and is_equal_approx(cam.fov,base),"release restores the user's FOV")
+	check(cam.update_player_view(SCOPE,tick+4,.15,Vector2.ZERO,-1).ok and is_equal_approx(cam.position.z,Camera.CHASE_DISTANCE-.35),"keypad step pulls the chase camera closer")
+	check(cam.update_player_view(SCOPE,tick+4,.15,Vector2.ZERO,-1).ok and is_equal_approx(cam.position.z,Camera.CHASE_DISTANCE-.35),"a held camera distance does not drift per frame")
+	check(cam.update_player_view(SCOPE,tick+4,.15,Vector2.ZERO,0).ok and is_equal_approx(cam.position.z,Camera.CHASE_DISTANCE),"opposite keypad step restores distance")
+	var aim:=Vector2(-PI+.02,.19)
+	var forward:=-Basis.from_euler(Vector3(aim.y,aim.x,0)).z
+	check(cam.update_view(SCOPE,tick+5,.016,Vector2(PI-.03,1.8)).ok and cam.update_player_view(SCOPE,tick+5,.016,aim).ok and (-cam.global_basis.z).is_equal_approx(forward),
+		"absolute combat look returns from a clamped orbit across the yaw seam")
+	check(cam.set_mode(SCOPE,"first",PLAYER).ok and cam.update_player_view(SCOPE,tick+6,.016,aim).ok and (-cam.global_basis.z).is_equal_approx(forward),
+		"first and third person share the supplied combat aim")
+	for pitch: float in [-1.570796,1.570796]:
+		var steep:=Vector2(aim.x,pitch)
+		check(cam.update_player_view(SCOPE,tick+6,.016,steep).ok and (-cam.global_basis.z).is_equal_approx(-Basis.from_euler(Vector3(pitch,aim.x,0)).z),
+			"combat view can match the full authoritative pitch range")
+	pose_rows[0].position=Vector3(-6,0,0)
+	var centered:=adapter.query_sweep_batch([{"from":[-6000,1650,0],"to":[-6000,1650,2650],"radius_mm":Camera.ARM_RADIUS_MM,"mask":1,"ignored_handles":["player"]}],{"scope_id":SCOPE,"tick":tick+7})
+	check(centered.ok and centered.value.is_empty() and cam.set_mode(SCOPE,"third",PLAYER).ok and cam.update_player_view(SCOPE,tick+7,.016,Vector2.ZERO).ok and cam.position.z<1.8,
+		"off-axis obstacle clips the complete shoulder sweep even when a centered sphere would pass")
+	functional_results["combat_framing"]={"first_chase_m":previous.z,"viewport_px":[viewport_size.x,viewport_size.y],"chest_viewport":[normalized_chest.x,normalized_chest.y],
+		"base_fov":base,"held_fov":held,"shoulder_wall_z_m":cam.position.z}
+
 func exercises() -> void:
 	var start := failures
 	check(bind_camera().ok and not cam.state().active and cam.cull_mask==0,"open without presenting an unauthorized view")
@@ -114,7 +154,7 @@ func exercises() -> void:
 	pose_rows[0].position = Vector3.ZERO
 	pose_rows[0].mounted = true
 	pose_rows[0].mount_position = Vector3(-5,0,0)
-	check(cam.set_mode(SCOPE,"mounted",PLAYER).ok and cam.update_view(SCOPE,62,.15).ok and is_equal_approx(cam.position.x,-5) and cam.position.y>=2.44,"mounted chase follows mount pose")
+	check(cam.set_mode(SCOPE,"mounted",PLAYER).ok and cam.update_view(SCOPE,62,.016).ok and is_equal_approx(cam.position.x,-5+Camera.SHOULDER) and cam.position.y>=2.44 and is_equal_approx(cam.position.z,Camera.CHASE_DISTANCE+Camera.MOUNTED_BACK),"mounted chase frames the saddle at full distance on the switching frame")
 	check(cam.set_mode(SCOPE,"first",PLAYER).ok and cam.update_view(SCOPE,63,.016).ok and is_equal_approx(cam.position.y,2.45),"mounted first-person eye")
 	pose_rows[0].mounted = false
 	check(not cam.set_mode(SCOPE,"mounted",PLAYER).ok and cam.state().mode=="first","dismounted rider cannot request mounted view")
@@ -143,6 +183,7 @@ func exercises() -> void:
 	check(not cam.update_view(SCOPE,70,.016).ok and not cam.state().active,"unavailable sweep hides unverified position")
 	fail_query = false
 	check(cam.update_view(SCOPE,70,.016).ok,"camera recovers after physical query becomes available")
+	chase_framing(71)
 	cam.release_scope("foreign")
 	check(cam.state().active,"wrong scope cannot release")
 	cam.release_scope(SCOPE)
@@ -150,6 +191,7 @@ func exercises() -> void:
 	functional_results["T-CAM-03"] = {"pass":failures==start}
 
 func run() -> void:
+	root.size=Vector2i(960,600)
 	cam = Camera.new()
 	root.add_child(cam)
 	var args := OS.get_cmdline_user_args()
@@ -190,6 +232,9 @@ func run() -> void:
 			check(cam.set_mode(SCOPE,"first",PLAYER).ok and cam.update_view(SCOPE,1,.016).ok,"camera after restart")
 			var no_roll := cam.global_basis
 			check(cam.update_view(SCOPE,2,.016,Vector2.ZERO,0,1).ok and cam.global_basis==no_roll,"disabled shake remains disabled with impact")
+			var saved:=FileAccess.get_file_as_bytes(Camera.SETTINGS)
+			cam.set_zoom_held(true)
+			check(cam.update_view(SCOPE,3,.15).ok and cam.fov<91.75 and FileAccess.get_file_as_bytes(Camera.SETTINGS)==saved,"holding first-person zoom preserves the preferences file")
 			cam.release_scope(SCOPE)
 			check(bind_camera().ok and cam.state().fov==91.75,"same node scene rebind retains options")
 			functional_results["T-CAM-02"] = {"pass":failures==start}

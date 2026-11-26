@@ -3,6 +3,7 @@ extends Control
 const R = preload("res://contracts/result.gd")
 const Words = preload("res://presentation/ui/field_hud_text.gd")
 const InputPort = preload("res://presentation/input/ports/field_input.gd")
+signal resume_requested
 
 var _scope := ""
 var _query: Callable
@@ -18,6 +19,7 @@ var _contrast := false
 var _captions := true
 var _capture := ""
 var _confirm := false
+var _field_capture := false
 var _draft := {}
 var _receipt := ""
 var _panel := PanelContainer.new()
@@ -26,6 +28,8 @@ var _body := VBoxContainer.new()
 var _groups := VBoxContainer.new()
 var _commands := GridContainer.new()
 var _prefs := VBoxContainer.new()
+var _field_info := Label.new()
+var _field_hints := Label.new()
 var _nodes := {}
 var _labels := {}
 var _pickers := {}
@@ -45,6 +49,13 @@ func _ready() -> void:
 	_scroll.add_child(_body)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_label("Title")
+	_button("Resume","controller",_resume)
+	_button("Settings","settings",func(): _prefs.visible = not _prefs.visible)
+	_body.add_child(_prefs)
+	_prefs.hide()
+	_label("Downed")
+	for mode in ["spectate","delegate"]:
+		_button("Down"+mode.capitalize(),mode,_send.bind("downed",{"mode":mode}))
 	_label("Strength")
 	_label("Vitals")
 	_label("Objective")
@@ -62,9 +73,6 @@ func _ready() -> void:
 	_button("Deploy","deploy",func(): _send("deploy",{"placements":_draft.values()}),_commands)
 	for pair in [["Hold","hold"],["Charge","charge"],["Move","move"],["ApplyLayout","set_layout"],["Delegate","delegate"]]:
 		_button(pair[0],pair[1],_order.bind(pair[1]),_commands)
-	_label("Downed")
-	for mode in ["spectate","delegate"]:
-		_button("Down"+mode.capitalize(),mode,_send.bind("downed",{"mode":mode}))
 	_button("Withdraw","withdraw",_ask_withdraw)
 	_label("Question","confirm_hint")
 	_button("Confirm","confirm",func(): _confirm = false; _send("withdraw",{}))
@@ -73,16 +81,28 @@ func _ready() -> void:
 	_button("Leave","leave",_send.bind("leave",{}))
 	_label("Receipt")
 	_label("Captions")
-	_button("Resume","controller",func(): get_viewport().gui_release_focus())
-	_button("Settings","settings",func(): _prefs.visible = not _prefs.visible)
-	_body.add_child(_prefs)
-	_prefs.hide()
 	_button("Language","language",_setting.bind("language"),_prefs)
 	_button("Large","large",_setting.bind("large"),_prefs,true)
 	_button("Contrast","contrast",_setting.bind("contrast"),_prefs,true)
 	_button("Subtitles","captions",_setting.bind("captions"),_prefs,true)
 	_picker("Binding","binding",_prefs)
 	_button("Rebind","rebind",func(): _capture = _chosen("Binding"); _render(),_prefs)
+	_field_info.name = "FieldInfo"
+	_field_hints.name = "FieldHints"
+	for label in [_field_info,_field_hints]:
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_color_override("font_outline_color",Color.BLACK)
+		label.add_theme_constant_override("outline_size",4)
+		add_child(label)
+		label.anchor_right = 1
+		label.offset_left = 14
+		label.offset_right = -14
+	_field_info.offset_top = 12
+	_field_hints.anchor_top = 1
+	_field_hints.anchor_bottom = 1
+	_field_hints.offset_bottom = -12
+	_field_hints.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	resized.connect(_resize)
 	_appearance()
 	_resize()
@@ -127,6 +147,33 @@ func _picker(id: String, caption: String, parent: Container = null) -> void:
 
 func _resize() -> void:
 	_panel.offset_right = _panel.offset_left + clampf(size.x*0.34, minf(size.x-16,256), 385)
+	queue_redraw()
+
+func _resume() -> void:
+	get_viewport().gui_release_focus()
+	if _view.get("phase")=="battle":
+		resume_requested.emit()
+
+func set_field_capture(captured: bool) -> void:
+	if _field_capture == captured: return
+	_field_capture = captured
+	if captured:
+		_confirm = false
+		_capture = ""
+		_prefs.hide()
+		for picker: OptionButton in _pickers.values():
+			picker.get_popup().hide()
+		var focus := get_viewport().gui_get_focus_owner()
+		if focus != null and is_ancestor_of(focus): focus.release_focus()
+	_render()
+	queue_redraw()
+
+func _draw() -> void:
+	if not _field_capture or _view.is_empty() or _view.get("phase")=="ended": return
+	var center := (size*0.5).round()
+	for direction: Vector2 in [Vector2.UP,Vector2.RIGHT,Vector2.DOWN,Vector2.LEFT]:
+		draw_line(center+direction*3,center+direction*8,Color("#171717d0"),3)
+		draw_line(center+direction*3,center+direction*8,Color("#faf5dd"),1)
 
 func _w(key: Variant) -> String:
 	return Words.word(key,_language)
@@ -151,6 +198,8 @@ func mount(scope: String, read_view: Callable, submit: Callable, settings_path :
 
 func release_scope() -> void:
 	_generation += 1
+	_field_capture = false
+	queue_redraw()
 	_scope = ""
 	_query = Callable()
 	_submit = Callable()
@@ -166,6 +215,7 @@ func _invalidate() -> void:
 	_confirm = false
 	_capture = ""
 	_receipt = ""
+	queue_redraw()
 	if is_node_ready(): _render()
 
 func _process(delta: float) -> void:
@@ -187,6 +237,7 @@ func refresh() -> Dictionary:
 		_invalidate()
 		return R.fail("StaleVersion","hud_view")
 	if _view.get("phase") != v.phase:
+		queue_redraw()
 		_confirm = false
 		_capture = ""
 		_draft.clear()
@@ -260,8 +311,66 @@ func _ask_withdraw() -> void:
 func _point(mm: Array) -> String:
 	return "%.1f, %.1f, %.1f" % [mm[0]*0.001,mm[1]*0.001,mm[2]*0.001]
 
+func _strength(rules: Dictionary) -> String:
+	var teams := []
+	for row in rules.get("teams",[]):
+		var who := _w("own" if is_same(row.team_key,_view.get("team_key")) else "other")
+		var parts := []
+		for stat in ["ready","reserve","routed","casualties"]:
+			if row.has(stat): parts.append("%s %s" % [_w(stat),row[stat]])
+		if row.get("withdrawn",false): parts.append(_w("withdrawn"))
+		teams.append("%s %s   %s" % [who,row.team_key," · ".join(parts)])
+	return "\n".join(teams)
+
+func _vitals() -> String:
+	var player: Dictionary = _view.get("player",{})
+	var stats := []
+	for stat in ["hp","ammo","morale","direction"]:
+		if player.get(stat) != null: stats.append("%s %s" % [_w(stat),_w(player[stat])])
+	return " · ".join(stats)
+
+func _desktop_key(action: String) -> String:
+	var binding: Dictionary = _view.get("bindings",{}).get(action,{})
+	var token: String = binding.get("desktop","")
+	return InputPort.Profile.desktop_key_name(token) if not token.is_empty() else ""
+
+func _render_field() -> void:
+	var lines := PackedStringArray()
+	var rules: Dictionary = _view.get("rules",{})
+	if _view.get("scoreboard_held",false):
+		lines.append(_strength(rules))
+	elif _view.get("orders_open",false):
+		var selected := PackedStringArray()
+		for id in _selection(): selected.append(str(id))
+		var title := _w(_view.get("command_page","")) if not str(_view.get("command_page","")).is_empty() else _w("orders")
+		if not selected.is_empty(): title += " · #"+", #".join(selected)
+		lines.append(title)
+		var choices := PackedStringArray()
+		for choice in _view.get("command_choices",[]):
+			choices.append("%s %s" % [choice.key,_w(choice.id)])
+		if not choices.is_empty(): lines.append("    ".join(choices))
+	else:
+		lines.append(_vitals())
+	var feedback: Dictionary = _view.get("command_feedback",{})
+	if feedback.get("ok")==false: lines.append(_error_text(feedback))
+	if _captions and not str(_view.get("subtitle","")).is_empty(): lines.append(str(_view.subtitle))
+	_field_info.text = "\n".join(lines)
+	var hints := PackedStringArray()
+	var actions := ["attack","block","select_all","scoreboard","menu"]
+	if _view.get("orders_open",false): actions = ["select_all","scoreboard","menu"]
+	for action in actions:
+		var key := _desktop_key(action)
+		if not key.is_empty(): hints.append(key+" "+_w(action))
+	_field_hints.text = "    ".join(hints)
+
 func _render() -> void:
 	if _nodes.is_empty(): return
+	_panel.visible = not _field_capture
+	_field_info.visible = _field_capture
+	_field_hints.visible = _field_capture
+	if _field_capture:
+		_render_field()
+		return
 	for id in _labels: _nodes[id].text = _w(_labels[id])
 	var phase: String = _view.get("phase","")
 	var deploy := phase == "deployment"
@@ -272,23 +381,12 @@ func _render() -> void:
 	var left_field: bool = rules.get("teams",[]).any(func(t):return is_same(t.team_key,_view.get("team_key")) and t.get("withdrawn",false))
 	var command: bool = battle and not rules.get("commander_downed",false) and not left_field
 	var can_withdraw: bool = battle and _view.get("can_withdraw",false) and not left_field
+	_nodes.Resume.visible = command and not _confirm and _view.get("control_mode","direct")=="direct"
 	if not can_withdraw: _confirm = false
 	_nodes.Title.text = _w(phase if not phase.is_empty() else "Unavailable")
 	_nodes.Title.add_theme_font_size_override("font_size",22 if not _large else 26)
-	var teams := []
-	for row in rules.get("teams",[]):
-		var who := _w("own" if is_same(row.team_key,_view.get("team_key")) else "other")
-		var parts := []
-		for stat in ["ready","reserve","routed","casualties"]:
-			if row.has(stat): parts.append("%s %s" % [_w(stat),row[stat]])
-		if row.get("withdrawn",false): parts.append(_w("withdrawn"))
-		teams.append("%s %s   %s" % [who,row.team_key," · ".join(parts)])
-	_text("Strength","\n".join(teams))
-	var player: Dictionary = _view.get("player",{})
-	var stats := []
-	for stat in ["hp","ammo","morale","direction"]:
-		if player.get(stat) != null: stats.append("%s %s" % [_w(stat),_w(player[stat])])
-	_text("Vitals"," · ".join(stats))
+	_text("Strength",_strength(rules))
+	_text("Vitals",_vitals())
 	_text("Objective",str(_view.get("objective","")))
 	_text("Captions",str(_view.get("subtitle","")) if _captions else "")
 	_nodes.Formations.visible = deploy or battle
@@ -341,7 +439,11 @@ func _render() -> void:
 	var actions: Array = _view.get("bindable_actions",[]).filter(func(a):return a is String and a != "menu")
 	var can_bind: bool = _view.get("allow_rebind",false) and not actions.is_empty()
 	if not can_bind or not actions.has(_capture): _capture = ""
-	_choices("Binding",actions,actions.map(func(a):return Words.action_name(a,_language)))
+	var captions := []
+	for action in actions:
+		var key := _desktop_key(action)
+		captions.append(Words.action_name(action,_language)+( " · "+key if not key.is_empty() else ""))
+	_choices("Binding",actions,captions)
 	_nodes.BindingRow.visible = can_bind
 	_nodes.Rebind.visible = can_bind
 	if not _capture.is_empty(): _nodes.Rebind.text = _w("key")
@@ -439,7 +541,7 @@ func _appearance() -> void:
 	_nodes.Title.add_theme_color_override("font_color",Color("#ffe0a1"))
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree(): return
+	if not is_visible_in_tree() or _field_capture: return
 	if event is InputEventKey and event.echo: return
 	if _capture.is_empty():
 		var focus := get_viewport().gui_get_focus_owner()

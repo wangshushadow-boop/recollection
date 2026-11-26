@@ -23,10 +23,8 @@ var _pending_frame := false
 var _pending_events := []
 var _target: Variant
 var _first := false
-var _look := Vector2.ZERO
-var _aim := Vector2.ZERO
-var _camera_mode := ""
-var _camera_actor := {}
+var _field_capture := false
+var _prior_mouse_mode := Input.MOUSE_MODE_VISIBLE
 var _last_actor := {}
 var _last_control_revision := -1
 var _deployment_sequence := 0
@@ -42,6 +40,7 @@ func _enter_tree() -> void:
 	Engine.max_physics_steps_per_frame = 2
 
 func _exit_tree() -> void:
+	if _field_capture: Input.mouse_mode = _prior_mouse_mode
 	Engine.max_physics_steps_per_frame = _previous_physics_step_limit
 
 func mount(app: RefCounted, id: String) -> Dictionary:
@@ -67,6 +66,12 @@ func mount(app: RefCounted, id: String) -> Dictionary:
 	_audio.set_hud_captions(true)
 	opened = _input_port.configure(id,"player",{},0,_batch,_order)
 	if not opened.ok: return opened
+	_input_port.set_process_input(false)
+	_input_port.set_process_unhandled_input(false)
+	_input_port.context_changed.connect(_input_context_changed)
+	_input_port.bind_order_target(_order_target)
+	get_window().focus_exited.connect(_lost_focus)
+	_hud.resume_requested.connect(_resume_controls)
 	_input_port.bind_combat_view(func(h):return R.ok(_player.get("player",{})) if h==_player.get("actor_handle") else R.fail("NotFound","actor"))
 	opened = _camera.open_field(id,_pose,_camera_permission,app.field_camera_sweep,_picker,Vector3(-35,0,0))
 	if not opened.ok: return opened
@@ -86,17 +91,46 @@ func begin() -> void:
 	_hud.set_process(false)
 	_launch.hide()
 	_audio.transition_music("battle")
+	_prior_mouse_mode = Input.mouse_mode
+	_input_port.set_process_input(true)
+	_input_port.set_process_unhandled_input(true)
 	get_viewport().gui_release_focus()
+	_input_context_changed(_input_port.view().mode)
+
+func _input_context_changed(mode: String) -> void:
+	var capture: bool = running and not _exiting and not _last_audio_end and mode in ["battle","command"] and not _own_actor().is_empty() and _player.get("control_mode","direct")=="direct"
+	if capture==_field_capture: return
+	_field_capture = capture
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if capture else Input.MOUSE_MODE_VISIBLE
+	_hud.set_field_capture(capture)
+
+func _lost_focus() -> void:
+	if _field_capture: _input_port.set_context("ui")
+
+func _resume_controls() -> void:
+	if running and not _exiting and not _last_audio_end:
+		get_viewport().gui_release_focus()
+		_input_port.set_context("battle")
 
 func _batch(batch: Dictionary) -> Dictionary:
-	var reply: Dictionary = application.field_command("field.input",{"batch":batch},_hud_state.revision,"input/%s"%batch.source_tick)
-	if reply.ok:
-		for intent in batch.inputs:
-			if intent.has("yaw"):
-				var absolute := Vector2(intent.yaw,intent.pitch)*0.000001
-				_look += Vector2(wrapf(absolute.x-_aim.x,-PI,PI),absolute.y-_aim.y)
-				_aim = absolute
-	return reply
+	return application.field_command("field.input",{"batch":batch},_hud_state.revision,"input/%s"%batch.source_tick)
+
+func _order_target(kind: String) -> Dictionary:
+	var target := {"position":null,"formation":null}
+	if kind=="move":
+		var center := get_viewport().get_visible_rect().get_center()
+		var hit := _camera.pick(scope,center)
+		if hit.ok and hit.value!=null and hit.value.visible_entity==null:
+			target.position = hit.value.position_mm
+			_target = target.position
+	elif kind=="follow":
+		for group: Dictionary in _hud_state.get("formations",[]):
+			if _own_actor() in group.members:
+				target.formation = group.id
+				break
+	elif kind=="face_enemy" and not _hud_state.get("targets",[]).is_empty():
+		target.formation = _hud_state.targets[0]
+	return target
 
 func _order(order: Dictionary, revisions: Dictionary) -> Dictionary:
 	var command := order.duplicate()
@@ -113,22 +147,35 @@ func _hud_view() -> Dictionary:
 	projection.selection = local.selection
 	projection.command_feedback = local.feedback
 	projection.allow_rebind = true
-	projection.bindable_actions = _input_port.profile_view().bindings.keys()
+	var bindings: Dictionary = _input_port.profile_view().bindings
+	projection.bindable_actions = bindings.keys()
+	projection.bindings = bindings
+	projection.input_mode = local.mode
+	projection.command_page = local.command_page
+	projection.command_choices = local.command_choices
+	projection.orders_open = local.orders_open
+	projection.scoreboard_held = local.score_held
 	projection.subtitle = _audio.caption_text()
 	if _target != null: projection.target_position = _target
 	return R.ok(projection)
 
 func _hud_action(action: String,data: Dictionary) -> Dictionary:
-	if data.scope_id!=scope or data.revision!=_hud_state.revision: return R.fail("StaleVersion","hud")
+	if data.scope_id!=scope: return R.fail("StaleVersion","hud")
+	if action=="withdraw":
+		# Confirmation concerns the local side; a render/physics tick boundary
+		# may advance the revision while that same confirmation is on screen.
+		if _hud_state.phase!="battle" or not _hud_state.get("can_withdraw",false):
+			return R.fail("InvalidState","withdraw")
+		return application.field_command("field.withdraw",{},_hud_state.revision)
+	if data.revision!=_hud_state.revision: return R.fail("StaleVersion","hud")
 	match action:
 		"rebind": return _input_port.rebind(data.binding,data.event)
 		"select": return _input_port.select_formations(data.ids)
 		"order":
-			var status := _input_port.set_context("command")
-			if status.ok: status = _input_port.select_formations(data.formation_ids)
+			var status := _input_port.select_formations(data.formation_ids)
 			if status.ok: status = _input_port.set_target(data.target_position,data.target_formation_id)
 			return _input_port.queue_order(data.kind,data.parameters) if status.ok else status
-		"deploy","withdraw","downed":
+		"deploy","downed":
 			var body := data.duplicate()
 			body.erase("scope_id")
 			body.erase("revision")
@@ -177,12 +224,12 @@ func _refresh_views() -> Dictionary:
 		if not h.is_empty() and h!=_last_actor:
 			var aligned := _input_port.align_look(_player.heading)
 			if not aligned.ok: return aligned
-			_aim = aligned.value
-			_look = Vector2.ZERO
 		_last_actor = h
 		_last_control_revision = rev
+		if running and not h.is_empty(): _input_context_changed(_input_port.view().mode)
 	_input_port.set_delegate_candidate(_hud_state.get("delegate_candidate",""))
-	return _input_port.set_formations(own,revisions)
+	own.sort()
+	return _input_port.set_formations(own,revisions,_hud_state.formations)
 
 func before_step(tick: int) -> Dictionary:
 	if not running or _exiting: return R.ok()
@@ -210,10 +257,15 @@ func after_step() -> Dictionary:
 	if _hud_state.phase=="ended" and not _last_audio_end:
 		_last_audio_end = true
 		_audio.transition_music("victory" if _hud_state.rules.outcome.winner_team_keys.has(_hud_state.team_key) else "defeat")
+	if _field_capture and (_last_audio_end or _own_actor().is_empty() or _player.get("control_mode","direct")!="direct"):
+		_input_port.set_context("ui")
 	return R.ok()
 
 func present_frame(delta: float) -> Dictionary:
-	if _exiting or not _pending_frame: return R.ok()
+	if _exiting or not running: return R.ok()
+	if not _pending_frame:
+		if not _visual_state.is_empty(): _present_camera(delta)
+		return R.ok()
 	var visual: Dictionary = application.field_view("visual")
 	if not visual.ok: return visual
 	_visual_state = visual.value
@@ -224,16 +276,23 @@ func present_frame(delta: float) -> Dictionary:
 	_pending_events.clear()
 	_pending_frame = false
 	if _last_audio_end: _hud.set_process(true)
+	_present_camera(delta)
+	return _hud.refresh()
+
+func _present_camera(delta: float) -> void:
+	var controls := _input_port.view()
+	_first = controls.first_person
 	var desired := _mode()
 	var focus: Dictionary = {} if desired=="deployment" else _own_actor()
-	if desired!=_camera_mode or focus!=_camera_actor:
-		if _camera.set_mode(scope,desired,focus).ok:
-			_camera_mode = desired
-			_camera_actor = focus
-	var look := _look
-	_look = Vector2.ZERO
-	_camera.update_view(scope,_visual_state.tick,delta,look)
-	return _hud.refresh()
+	var current := _camera.state()
+	if desired!=current.mode or focus!=current.target:
+		_camera.set_mode(scope,desired,focus)
+	_camera.set_zoom_held(_field_capture and controls.zoom_held)
+	if desired in ["first","third","mounted"]:
+		_camera.update_player_view(scope,_visual_state.tick,delta,controls.preview_aim+controls.orbit_offset,controls.camera_distance_steps)
+	else:
+		_camera.update_view(scope,_visual_state.tick,delta)
+	_visuals.set_first_person_actor(focus if _camera.state().mode=="first" else {})
 
 func _own_actor() -> Dictionary:
 	var actor: Variant = _player.get("actor_handle")
@@ -264,17 +323,6 @@ func _picker(id: String, name_or_path: String) -> Dictionary:
 		if name_or_path=="field/%s/%s"%[row.handle.index,row.handle.generation]: return R.ok(row.handle)
 	return R.fail("NotFound","visibility")
 
-func _unhandled_input(event: InputEvent) -> void:
-	if _exiting or _last_audio_end or not running: return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_V:
-		_first = not _first
-		get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_RIGHT and event.pressed and _input_port.view().mode=="command":
-		var hit := _camera.pick(scope,event.position)
-		if hit.ok and hit.value!=null:
-			_target = hit.value.position_mm
-			_input_port.set_target(_target)
-
 func _process(_dt: float) -> void:
 	if _exiting or scope.is_empty(): return
 	if not running:
@@ -287,6 +335,8 @@ func active_playbacks() -> Array[WeakRef]:
 
 func release() -> void:
 	_exiting = true
+	if running: Input.mouse_mode = _prior_mouse_mode
+	_field_capture = false
 	_hud.release_scope()
 	_audio.stop_scope(scope)
 	_camera.release_scope(scope)

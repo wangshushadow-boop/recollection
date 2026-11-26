@@ -32,7 +32,15 @@ const WORDS := {
 	"order_hold":["命令坚守","Order hold"], "cycle_layout":["切换阵型","Cycle layout"],
 	"order_cancel":["取消命令","Cancel order"],
 	"key":["请按新按键（Esc 取消）","Press a new key (Esc cancels)"], "language":["English","中文"],
-	"controller":["返回战场控制 · F6","Resume field controls · F6"], "accepted":["已提交","Submitted"],
+	"controller":["返回战场控制","Resume field controls"], "accepted":["已提交","Submitted"],
+	"movement":["移动命令","Movement orders"], "formation":["阵型命令","Formation orders"], "toggle":["战术命令","Tactical orders"],
+	"follow":["跟随","Follow"], "advance":["推进","Advance"], "retreat":["撤退","Retreat"],
+	"face":["朝向指定方向","Face direction"], "face_enemy":["面向敌人","Face enemy"],
+	"toggle_fire":["切换射击","Toggle fire"], "toggle_mount":["切换骑乘","Mount / dismount"],
+	"toggle_delegate":["切换委派","Toggle delegation"], "menu":["菜单","Menu"],
+	"view_toggle":["切换视角","Switch view"], "zoom":["拉近视野","Zoom"], "free_look":["自由环视","Free look"],
+	"scoreboard":["战况","Battle status"], "weapon_next":["下一件武器","Next weapon"], "walk_toggle":["步行／跑步","Walk / run"],
+	"camera_nearer":["拉近第三人称镜头","Closer chase camera"], "camera_farther":["拉远第三人称镜头","Farther chase camera"],
 	"queued":["已排队","Queued"], "active":["执行中","Active"], "completed":["完成","Complete"],
 	"denied":["拒绝","Denied"], "failed":["失败","Failed"], "cancelled":["已取消","Cancelled"],
 	"victory":["获胜","Victory"], "defeat":["失利","Defeat"], "draw":["平局","Draw"],
@@ -61,6 +69,8 @@ static func word(key: Variant, language: String) -> String:
 	return WORDS[name][int(language == "en")] if WORDS.has(name) else name
 
 static func action_name(action: String, language: String) -> String:
+	if action.begins_with("order_key_"):
+		return ("兵令键 " if language=="zh" else "Order key ")+action.trim_prefix("order_key_")
 	var slot := action.trim_prefix("select_")
 	if action.begins_with("select_") and slot.is_valid_int():
 		return ("选择编队 " if language=="zh" else "Select formation ")+slot

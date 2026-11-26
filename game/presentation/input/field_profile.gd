@@ -21,6 +21,8 @@ const COMMAND := {
 	"order_move":["m/1/0","j/0"], "order_charge":[KEY_R,"j/3"], "order_hold":[KEY_H,"j/1"],
 	"cycle_layout":[KEY_F,"j/10"], "delegate":[KEY_G,"j/9"], "order_cancel":[KEY_X,"j/12"]}
 const GLOBAL := {"menu":[KEY_ESCAPE,"j/6"], "command_mode":[KEY_TAB,"j/4"]}
+const FIELD_KEYS := {"view_toggle":KEY_R,"zoom":KEY_SHIFT,"free_look":KEY_QUOTELEFT,"scoreboard":KEY_TAB,
+	"weapon_next":"m/4/0","walk_toggle":KEY_CAPSLOCK,"camera_nearer":KEY_KP_ADD,"camera_farther":KEY_KP_SUBTRACT}
 var bindings: Dictionary
 var options := OPTIONS.duplicate()
 
@@ -28,12 +30,24 @@ func _init(name: String = DEFAULT_NAME) -> void:
 	_path = "user://"+name+".json" if name.is_valid_identifier() or name == DEFAULT_NAME else ""
 	bindings = _defaults()
 
-static func _defaults() -> Dictionary:
+static func _defaults(legacy := false) -> Dictionary:
 	var all := GLOBAL.duplicate()
 	all.merge(BATTLE)
 	all.merge(COMMAND)
 	for i in range(1,10):
 		all["select_" + str(i)] = [KEY_0+i]
+	if not legacy:
+		all.command_mode = [KEY_B,"j/4"]
+		all.sprint = ["j/7"]
+		all.crouch = [KEY_Z,"j/8"]
+		all.interact = [KEY_F,"j/2"]
+		all.mount = ["j/3"]
+		all.dismount = ["j/12"]
+		all.cancel_attack = ["j/1"]
+		all.equip_melee = [KEY_KP_1,"j/13"]
+		all.equip_ranged = [KEY_KP_2,"j/14"]
+		for action in FIELD_KEYS: all[action] = [FIELD_KEYS[action]]
+		for i in range(1,10): all["order_key_"+str(i)] = [KEY_F1+i-1]
 	var result := {}
 	for action in all:
 		var slots := {}
@@ -48,10 +62,15 @@ static func family(token: String) -> String:
 
 static func scope(action: String) -> String:
 	if GLOBAL.has(action): return "global"
+	if action.begins_with("order_key_") or action=="scoreboard": return "field"
+	if FIELD_KEYS.has(action): return "battle"
 	return "battle" if BATTLE.has(action) else "command"
 
 static func _overlap(a: String, b: String) -> bool:
-	return scope(a) == scope(b) or scope(a) == "global" or scope(b) == "global"
+	return scope(a) == scope(b) or scope(a) in ["global","field"] or scope(b) in ["global","field"]
+
+static func _formation_key(action: String) -> bool:
+	return action=="select_all" or (action.begins_with("select_") and action.trim_prefix("select_").is_valid_int())
 
 static func token_for(event: InputEvent) -> String:
 	var mods := 0
@@ -71,11 +90,37 @@ static func token_for(event: InputEvent) -> String:
 
 func action_for(token: String, mode: String) -> String:
 	for action in bindings:
-		if scope(action) not in [mode,"global"]:
+		if scope(action) not in [mode,"global"] and not (scope(action)=="field" and mode in ["battle","command"]):
 			continue
 		if bindings[action].get(family(token)) == token:
 			return action
+	if mode=="command":
+		for action in ["look_left","look_right","look_up","look_down"]:
+			if bindings[action].get(family(token))==token: return action
+	# In battle an existing explicit equipment binding takes precedence over the
+	# optional formation shortcut. Legacy battle/command bindings can coexist.
+	if mode=="battle" and family(token)=="desktop":
+		for action in bindings:
+			if _formation_key(action) and bindings[action].get("desktop")==token: return action
 	return ""
+
+func key_label(action: String) -> String:
+	return desktop_key_name(bindings.get(action,{}).get("desktop",""))
+
+static func desktop_key_name(token: String) -> String:
+	if token.is_empty(): return "—"
+	var parts := token.split("/")
+	if parts.size()!=3: return token
+	var flags := int(parts[2])
+	var prefix := ""
+	for bit in [[1,"Shift+"],[2,"Ctrl+"],[4,"Alt+"],[8,"Meta+"]]:
+		if flags & bit[0]: prefix += bit[1]
+	if parts[0]=="m":
+		var buttons := {"1":"LMB","2":"RMB","3":"MMB","4":"Wheel ↑","5":"Wheel ↓"}
+		return prefix+str(buttons.get(parts[1],"M"+parts[1]))
+	var code := int(parts[1])
+	if DisplayServer.get_name()!="headless": code = DisplayServer.keyboard_get_keycode_from_physical(code)
+	return prefix+OS.get_keycode_string(code)
 
 func _set_binding(table: Dictionary, action: String, token: String) -> Dictionary:
 	if not table.has(action) or token.is_empty():
@@ -150,9 +195,12 @@ func load_saved() -> Dictionary:
 	var decoded := C.decode(file.get_buffer(file.get_length()))
 	if not decoded.ok or typeof(decoded.value) != TYPE_DICTIONARY: return R.fail("InvalidArgument","input_profile")
 	var data: Dictionary = decoded.value
-	var table := _defaults()
-	if typeof(data.get("options")) != TYPE_DICTIONARY or not _settings(data.options) or typeof(data.get("bindings")) != TYPE_DICTIONARY or data.bindings.size() != table.size():
+	if typeof(data.get("options")) != TYPE_DICTIONARY or not _settings(data.options) or typeof(data.get("bindings")) != TYPE_DICTIONARY:
 		return R.fail("InvalidArgument","input_profile")
+	var legacy: bool = not data.bindings.has("view_toggle")
+	var defaults := _defaults(legacy)
+	if data.bindings.size()!=defaults.size(): return R.fail("InvalidArgument","input_profile")
+	var table := defaults.duplicate(true)
 	if typeof(data.bindings.get("menu")) != TYPE_DICTIONARY or data.bindings.menu != table.menu: return R.fail("InvalidArgument","reserved_menu")
 	# Validate the finished map, allowing a pair of bindings that changed places.
 	for action in table:
@@ -161,11 +209,25 @@ func load_saved() -> Dictionary:
 	for action in table:
 		if action == "menu": continue
 		var slots: Dictionary = data.bindings[action]
-		if slots.is_empty(): return R.fail("InvalidArgument","binding")
+		if legacy and slots.is_empty(): return R.fail("InvalidArgument","binding")
 		for slot in slots:
 			var token: Variant = slots[slot]
 			if typeof(token) != TYPE_STRING or family(token) != slot or not _set_binding(table,action,token).ok:
 				return R.fail("InvalidArgument","binding")
+	if legacy:
+		# Keep player overrides first, then install only new defaults whose keys are free.
+		var modern := _defaults()
+		var migrated := {}
+		for action in modern: migrated[action] = {} if action!="menu" else modern.menu
+		for action in table:
+			for slot in table[action]:
+				if table[action][slot] != defaults[action].get(slot):
+					var retained := _set_binding(migrated,action,table[action][slot])
+					if not retained.ok: return retained
+		for action in modern:
+			for slot in modern[action]:
+				if not migrated[action].has(slot): _set_binding(migrated,action,modern[action][slot])
+		table = migrated
 	bindings = table
 	options = data.options.duplicate()
 	return R.ok()

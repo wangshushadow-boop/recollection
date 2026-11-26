@@ -52,6 +52,24 @@ var _lod_radius := -1.0
 var _skinned := 0
 var _far := 0
 var _mounts := 0
+var _first_person_actor := {}
+
+func set_first_person_actor(handle: Dictionary) -> void:
+	if handle==_first_person_actor: return
+	_set_head_visible(_first_person_actor,true)
+	_first_person_actor = handle.duplicate()
+	_set_head_visible(_first_person_actor,false)
+	_lod_tick = -100
+
+func _set_head_visible(handle: Dictionary, shown: bool) -> void:
+	if handle.is_empty(): return
+	var p: Proxy = _actors.get(handle.index)
+	if p==null or p.generation!=handle.generation or p.figure==null: return
+	# The imported skin combines the face and bare limbs. Equipment and the
+	# rig stay live so weapon changes and attack animations remain visible.
+	for part: MeshInstance3D in p.figure.root.find_children("*","MeshInstance3D",true,false):
+		if part.name in [&"body",&"garment-hair",&"garment-helmet",&"garment-hat",&"garment-beard",&"garment-scarf"]:
+			part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shown else GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 
 func open_field(scope_id: String) -> Dictionary:
 	if not is_inside_tree() or scope_id.is_empty() or not _scope.is_empty():
@@ -235,6 +253,11 @@ func _select_near(eye: Vector3, radius: float) -> void:
 		if p.phase != "Downed" and p.distance <= radius*radius:
 			possible.append(p)
 	possible.sort_custom(func(a: Proxy,b: Proxy): return a.distance < b.distance if a.distance != b.distance else a.index < b.index)
+	if not _first_person_actor.is_empty():
+		var owner_proxy: Proxy = _actors.get(_first_person_actor.index)
+		if owner_proxy!=null and owner_proxy.generation==_first_person_actor.generation and owner_proxy.phase!="Downed":
+			possible.erase(owner_proxy)
+			possible.push_front(owner_proxy)
 	var targets := {}
 	for j in mini(NEAR_LIMIT,possible.size()):
 		var p := possible[j]
@@ -242,6 +265,7 @@ func _select_near(eye: Vector3, radius: float) -> void:
 		if p.figure == null:
 			p.figure = _models[p.role].instantiate(_host)
 			p.figure.root.name = "Agent_%d_%d" % [p.index,p.generation]
+			if p.index==_first_person_actor.get("index",-1): _set_head_visible(_first_person_actor,false)
 			p.last_pose = -1.0
 			if p.figure.tunic: p.figure.tunic.material_override = _tints[posmod(p.team,2)]
 	for index: int in _near.keys():
@@ -336,6 +360,7 @@ func report() -> Dictionary:
 
 func release_scope(scope_id: String) -> void:
 	if scope_id != _scope: return
+	_first_person_actor = {}
 	if _host != null: _host.free()
 	_host = null
 	_batches = null

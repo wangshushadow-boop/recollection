@@ -29,6 +29,13 @@ metadata/entity_handle = "wall"
 [node name="Shape" type="CollisionShape3D" parent="GrazingWall"]
 shape = SubResource("Wall")
 
+[node name="ShoulderWall" type="StaticBody3D" parent="."]
+position = Vector3(-5.62,1.78,1.8)
+metadata/entity_handle = "shoulder_wall"
+
+[node name="Shape" type="CollisionShape3D" parent="ShoulderWall"]
+shape = SubResource("Wall")
+
 [node name="AuthorizedTarget" type="StaticBody3D" parent="."]
 position = Vector3(0,0.93,-4.2)
 collision_layer = 2

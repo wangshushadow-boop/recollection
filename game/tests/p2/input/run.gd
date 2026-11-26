@@ -1,5 +1,6 @@
 extends SceneTree
 const Field = preload("res://presentation/input/ports/field_input.gd")
+const Profile = preload("res://presentation/input/field_profile.gd")
 const Combat = preload("res://mission/combat/ports/field_combat.gd")
 const Form = preload("res://mission/formation/ports/field_formation.gd")
 const S = preload("res://contracts/schema.gd")
@@ -140,8 +141,8 @@ func formation_case() -> bool:
 	root.add_child(label)
 	field.bind_feedback(label)
 	check(field.set_formations([4,9],{4:0,9:0}).ok,"list")
-	field.handle_event(key(KEY_TAB))
-	field.handle_event(key(KEY_TAB,false))
+	field.handle_event(key(KEY_B))
+	field.handle_event(key(KEY_B,false))
 	field.handle_event(key(KEY_2))
 	field.handle_event(key(KEY_2,false))
 	field.handle_event(key(KEY_H))
@@ -181,6 +182,15 @@ func formation_case() -> bool:
 	field.handle_event(key(KEY_R,false))
 	var both := field.step(3)
 	check(both.value.orders[0].order.formation_ids==[4,9] and both.value.orders[0].order.target_formation_id==9 and both.value.orders[0].receipt.error.code=="Unauthorized" and form.advance(3).ok,"all-selection cannot gain authority")
+	field.set_context("battle")
+	field.set_formations([4],{4:form.view(4).value.control_revision})
+	field.select_formations([4])
+	field.bind_order_target(func(_kind):return {"position":null,"formation":null})
+	for code in [KEY_F1,KEY_F3]:
+		field.handle_event(key(code))
+		field.handle_event(key(code,false))
+	var result := field.step(4)
+	check(result.value.orders.size()==1 and result.value.orders[0].receipt.ok and form.advance(4).ok and form.view(4).value.active.order_type=="free_attack","F1 F3 publishes a general charge before an enemy is identified")
 	field.free()
 	label.free()
 	return true
@@ -233,6 +243,32 @@ func events_and_settings() -> bool:
 	return true
 
 func run() -> void:
+	var legacy := Profile.new(profile_name)
+	var old_map := Profile._defaults(true)
+	old_map.move_forward.desktop = Profile.token_for(key(KEY_I))
+	check(legacy._save(old_map,legacy.options).ok,"write prior player layout")
+	var migrated := Profile.new(profile_name)
+	check(migrated.load_saved().ok and migrated.action_for(Profile.token_for(key(KEY_I)),"battle")=="move_forward" and migrated.action_for(Profile.token_for(key(KEY_R)),"battle")=="view_toggle" and migrated.action_for(Profile.token_for(key(KEY_TAB)),"battle")=="scoreboard","old profile retains personal bindings and gains new defaults")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://"+profile_name+".json"))
+	var controls := fresh_field()
+	controls.handle_event(key(KEY_W))
+	check(controls.step(1).value.batch.inputs.back().stance=="sprint","default keyboard run")
+	controls.handle_event(key(KEY_CAPSLOCK))
+	controls.handle_event(key(KEY_CAPSLOCK,false))
+	check(controls.step(2).value.batch.inputs.back().stance=="walk","walk mode persists after releasing Caps Lock")
+	controls.handle_event(key(KEY_KP_ADD))
+	check(controls.view().camera_distance_steps==-1,"keypad plus brings camera nearer")
+	controls.set_formations([4],{4:0})
+	controls.handle_event(key(KEY_F1))
+	check(controls.view().command_page=="movement","movement order menu opens")
+	controls.handle_event(mouse(MOUSE_BUTTON_RIGHT))
+	controls.handle_event(mouse(MOUSE_BUTTON_RIGHT,false))
+	check(not controls.view().orders_open and not controls.step(3).value.batch.inputs.any(func(i): return i.has("held")),"closing orders doesn't raise shield")
+	controls.bind_combat_view(func(_actor):return R.ok({"mount_handle":{"index":80,"generation":1}}))
+	controls.handle_event(key(KEY_Z))
+	var rider := controls.step(4).value.batch as Dictionary
+	check(rider.inputs.any(func(i):return i.get("action")=="dismount") and rider.inputs.back().stance!="crouch","mounted Z requests a dismount without a crouch stance")
+	controls.free()
 	var before := failures
 	for direction in ["up","left","right","thrust"]:
 		var desktop := device_case(false,direction)

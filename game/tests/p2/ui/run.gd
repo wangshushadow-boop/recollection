@@ -27,6 +27,14 @@ var sent := []
 var failures := 0
 var checks := 0
 var encounter_template := {}
+var field_overlay := {}
+
+class FieldClicks extends Node:
+	var buttons := []
+	func _unhandled_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			buttons.append(event.button_index)
+			get_viewport().set_input_as_handled()
 
 func _initialize() -> void:
 	run.call_deferred()
@@ -72,6 +80,8 @@ func query() -> Dictionary:
 	if phase=="ended":
 		v.result = rules.view().outcome.duplicate()
 		v.result.slot_outcomes = [{"end_status":"wounded"},{"end_status":"withdrawn"}]
+	v.bindings = input.profile_view().bindings
+	v.merge(field_overlay,true)
 	return R.ok(v)
 
 func submit(action: String, data: Dictionary) -> Dictionary:
@@ -148,6 +158,39 @@ func click(id: String) -> void:
 		e.pressed = state
 		root.push_input(e,true)
 	await frames()
+
+func captured_field() -> void:
+	var field := FieldClicks.new()
+	root.add_child(field)
+	control("Settings").grab_focus()
+	hud.set_field_capture(true)
+	await frames()
+	check(not control("Settings").is_visible_in_tree() and root.gui_get_focus_owner()==null,"captured field releases GUI focus and hides buttons")
+	var hint := control("FieldHints") as Label
+	check(hint.is_visible_in_tree() and hint.text.contains("攻击") and hint.text.contains("格挡"),"field controls show active keyboard/mouse bindings")
+	check(root.get_visible_rect().encloses(hint.get_global_rect()) and root.get_visible_rect().encloses(control("FieldInfo").get_global_rect()),"captured readouts fit inside the viewport")
+	var count := sent.size()
+	for pos in [Vector2(root.size)*0.5,Vector2(45,65)]:
+		for button in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
+			for down in [true,false]:
+				var e := InputEventMouseButton.new()
+				e.button_index = button
+				e.position = pos
+				e.global_position = pos
+				e.pressed = down
+				root.push_input(e,true)
+	check(field.buttons==[MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT,MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT] and sent.size()==count,"both combat buttons pass through reticle and former command panel")
+	field_overlay = {"orders_open":true,"command_page":"movement","command_choices":[{"key":"K","id":"charge"}]}
+	hud.refresh()
+	check(control("FieldInfo").text.contains("K 冲锋"),"orders display current binding and selection")
+	field_overlay.scoreboard_held = true
+	hud.refresh()
+	check(control("FieldInfo").text.contains("本方") and control("FieldInfo").text.contains("对方"),"held battle status uses projected teams")
+	field_overlay.clear()
+	hud.set_field_capture(false)
+	hud.refresh()
+	check(control("Settings").is_visible_in_tree() and not hint.is_visible_in_tree(),"released cursor restores command controls")
+	field.free()
 
 func select_option(id: String, index: int) -> void:
 	var pick := control(id) as OptionButton
@@ -289,6 +332,7 @@ func run() -> void:
 	check(form.view(0).value.active==null,"no premature authority update")
 	advance()
 	check(form.view(0).value.active.order_type=="hold" and form.view(1).value.active.order_type=="hold","multi formation hold")
+	await captured_field()
 	await click("ApplyLayout")
 	advance()
 	check(form.view(0).value.layout=="square" and form.view(1).value.layout=="square","layout")

@@ -7,6 +7,10 @@ const C = preload("res://contracts/canonical.gd")
 const MODES := ["first","third","mounted","deployment","spectator"]
 const SETTINGS := "user://field-camera.json"
 const ARM_RADIUS_MM := 160
+const CHASE_DISTANCE := 2.65
+const SHOULDER := .43
+const MOUNTED_BACK := .75
+const HELD_MAGNIFICATION := 1.6
 var _scope := ""
 # A callback can publish another view or rebind the same scope name before it returns.
 var _revision := 0
@@ -20,7 +24,13 @@ var _focus := Vector3.ZERO
 var _yaw := 0.0
 var _pitch := -0.18
 var _distance := 5.0
+var _chase_distance := CHASE_DISTANCE
+var _distance_steps := 0
 var _arm := 0.0
+var _follow_pivot := Vector3.ZERO
+var _zoom_held := false
+var _zoom_blend := 0.0
+var _base_fov := 75.0
 var _shake := true
 var _last_tick := -1
 var _ready_view := false
@@ -28,6 +38,7 @@ var _layers := 0
 
 func _ready() -> void:
 	_layers = cull_mask
+	_base_fov = fov
 	_hide_view()
 
 func open_field(scope: String, pose_reader: Callable, permission_reader: Callable, sweep_reader: Callable, visible_entity: Callable, deployment_focus: Vector3) -> Dictionary:
@@ -113,6 +124,10 @@ func set_mode(scope: String, mode: String, handle: Dictionary = {}) -> Dictionar
 		_yaw = atan2(-heading.x,-heading.z)
 	_mode = mode
 	_target = handle.duplicate()
+	if mode=="deployment" or mode=="spectator":
+		_zoom_held=false
+		_zoom_blend=0.0
+		_apply_fov()
 	_arm = 0.0
 	_hide_view()
 	return R.ok()
@@ -143,6 +158,16 @@ func _safe_length(origin: Vector3, offset: Vector3, tick: int, ignore: Array) ->
 	return R.ok(maxf(0,offset.length()*float(result.value.fraction_ppm)*.000001-.025))
 
 func update_view(scope: String, tick: int, dt: float, look := Vector2.ZERO, zoom := 0.0, impact := 0.0) -> Dictionary:
+	return _update_frame(scope,tick,dt,look,zoom,impact,false)
+
+# Rejoining the player's look uses the current combat angles, including after a free-look orbit.
+func update_player_view(scope: String, tick: int, dt: float, aim: Vector2, distance_steps := 0) -> Dictionary:
+	var zoom := (distance_steps-_distance_steps)*0.35
+	var updated := _update_frame(scope,tick,dt,Vector2(angle_difference(_yaw,aim.x),aim.y-_pitch),zoom,0,true)
+	if updated.ok: _distance_steps = distance_steps
+	return updated
+
+func _update_frame(scope: String, tick: int, dt: float, look: Vector2, zoom: float, impact: float, combat_aim: bool) -> Dictionary:
 	if scope!=_scope or _scope.is_empty() or _mode.is_empty(): return R.fail("InvalidState","camera_scope")
 	var revision := _revision
 	var read := _authorized_pose(revision,_mode,_target)
@@ -151,7 +176,7 @@ func update_view(scope: String, tick: int, dt: float, look := Vector2.ZERO, zoom
 		return read
 	if tick<0 or tick<_last_tick or not is_finite(dt) or dt<0 or not look.is_finite() or not is_finite(zoom) or not is_finite(impact):
 		return R.fail("InvalidArgument","camera_frame")
-	var result := _place(read.value,tick,dt,look,zoom,impact)
+	var result := _place(read.value,tick,dt,look,zoom,impact,combat_aim)
 	if not result.ok and revision==_revision:
 		if result.error.field in ["camera_query","camera_hit","camera_pivot_obstructed"]:
 			var confirmed := _confirm_view(revision,read.value)
@@ -163,14 +188,18 @@ func update_view(scope: String, tick: int, dt: float, look := Vector2.ZERO, zoom
 			_recover(tick)
 	return result
 
-func _place(pose: Dictionary,tick: int,dt: float,look: Vector2,zoom: float,impact: float) -> Dictionary:
+func _place(pose: Dictionary,tick: int,dt: float,look: Vector2,zoom: float,impact: float,combat_aim := false) -> Dictionary:
 	var revision := _revision
 	var yaw := wrapf(_yaw+look.x,-PI,PI)
 	var pitch := clampf(_pitch+look.y,-1.40,1.35)
-	var distance := clampf(_distance+zoom,1.0,20.0)
+	var chase := _mode=="third" or _mode=="mounted"
+	var personal := chase or _mode=="first"
+	if combat_aim and personal: pitch=clampf(_pitch+look.y,-PI/2,PI/2)
+	var distance := clampf((_chase_distance if personal else _distance)+zoom,1.0,20.0)
 	var elevation := clampf(pitch,-1.40,-.28) if _mode=="deployment" else pitch
 	var view_basis := Basis.from_euler(Vector3(elevation,yaw,0))
 	var pivot: Vector3 = pose.pivot
+	var follow := pivot
 	var extent := distance
 	if _mode=="first":
 		var head_start: Vector3 = pose.feet+Vector3.UP*.26
@@ -181,21 +210,32 @@ func _place(pose: Dictionary,tick: int,dt: float,look: Vector2,zoom: float,impac
 	elif _mode=="deployment":
 		extent = 12.0+distance*2.5
 	elif _mode=="mounted":
-		extent += 1.4
-	var wanted := extent
+		extent += MOUNTED_BACK
+	var offset := view_basis.z*extent
+	if chase:
+		# Only follow the last verified target, with a short lag for ordinary strides.
+		if _ready_view and _follow_pivot.distance_squared_to(pivot)<1.0:
+			follow += ((_follow_pivot-pivot)*exp(-18.0*dt)).limit_length(.22)
+		offset += follow-pivot + view_basis.x*SHOULDER + view_basis.y*.14
+	var wanted := offset.length()
 	if extent>0.0:
-		var safe := _safe_length(pivot,view_basis.z*extent,tick,pose.ignore)
+		# Sweep from the authoritative pivot through the complete shoulder offset.
+		var safe := _safe_length(pivot,offset,tick,pose.ignore)
 		if not safe.ok: return safe
 		wanted = safe.value
 	var confirmed := _confirm_view(revision,pose)
 	if not confirmed.ok: return confirmed
 	# Retract immediately; smooth only travel inside the checked segment.
-	_arm = minf(wanted,move_toward(_arm,wanted,45*minf(dt,.15)))
+	_arm = wanted if chase and not _ready_view else minf(wanted,move_toward(_arm,wanted,45*minf(dt,.15)))
 	var roll := clampf(impact,-1,1)*.018 if _shake else 0.0
-	global_transform = Transform3D(view_basis.rotated(view_basis.z,roll),pivot+view_basis.z*_arm)
+	global_transform = Transform3D(view_basis.rotated(view_basis.z,roll),pivot+offset.normalized()*_arm)
+	_follow_pivot = follow
 	_yaw = yaw
 	_pitch = pitch
-	_distance = distance
+	if personal: _chase_distance = distance
+	else: _distance = distance
+	_zoom_blend = move_toward(_zoom_blend,float(_zoom_held),dt*8.0) if personal else 0.0
+	_apply_fov()
 	_last_tick = tick
 	_ready_view = true
 	_revision += 1
@@ -239,6 +279,16 @@ func pick(scope: String, screen_point: Vector2, max_distance := 300.0) -> Dictio
 func state() -> Dictionary:
 	return {"scope_id":_scope,"mode":_mode,"target":_target.duplicate(),"fov":fov,"shake":_shake,"active":_ready_view}
 
+func set_zoom_held(held: bool) -> void:
+	_zoom_held = held and not _scope.is_empty() and _mode in ["first","third","mounted"]
+
+func _apply_fov() -> void:
+	if _zoom_blend==0.0:
+		fov = _base_fov
+	else:
+		var magnification := lerpf(1.0,HELD_MAGNIFICATION,smoothstep(0.0,1.0,_zoom_blend))
+		fov = rad_to_deg(2.0*atan(tan(deg_to_rad(_base_fov)*.5)/magnification))
+
 func set_options(field_of_view: float, shake: bool) -> Dictionary:
 	if not is_finite(field_of_view) or field_of_view<45 or field_of_view>105:
 		return R.fail("InvalidArgument","camera_fov")
@@ -255,7 +305,8 @@ func set_options(field_of_view: float, shake: bool) -> Dictionary:
 	if not wrote or DirAccess.rename_absolute(tmp,ProjectSettings.globalize_path(SETTINGS))!=OK:
 		DirAccess.remove_absolute(tmp)
 		return R.fail("Unavailable","camera_settings")
-	fov = milli*.001
+	_base_fov = milli*.001
+	_apply_fov()
 	_shake = shake
 	return R.ok()
 
@@ -269,7 +320,8 @@ func _load_options() -> Dictionary:
 	var angle: Variant = parsed.value.get("fov_mdeg")
 	var shake: Variant = parsed.value.get("shake")
 	if not V.integer(angle,45000,105000) or not shake is bool: return R.fail("InvalidArgument","camera_settings")
-	fov = angle*.001
+	_base_fov = angle*.001
+	_apply_fov()
 	_shake = shake
 	return R.ok()
 
@@ -281,6 +333,9 @@ func _hide_view() -> void:
 
 func _recover(tick: int) -> void:
 	_hide_view()
+	set_zoom_held(false)
+	_zoom_blend=0.0
+	_apply_fov()
 	_mode = ""
 	_target = {}
 	_arm = 0.0
@@ -309,3 +364,8 @@ func release_scope(scope: String) -> void:
 	_yaw = 0
 	_pitch = -.18
 	_distance = 5.0
+	_chase_distance = CHASE_DISTANCE
+	_distance_steps = 0
+	_zoom_held = false
+	_zoom_blend = 0.0
+	_apply_fov()

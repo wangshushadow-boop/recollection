@@ -8,6 +8,15 @@ const S = preload("res://contracts/schema.gd")
 const V = preload("res://contracts/values.gd")
 const Profile = preload("res://presentation/input/field_profile.gd")
 const LAYOUTS := ["line","shield_wall","loose","square","circle","wedge","column"]
+const ORDER_PAGES := {
+	"":[ "movement","formation","toggle","toggle_fire","toggle_mount","toggle_delegate","face","shield_wall","line"],
+	"movement":["move","follow","charge","advance","","hold","retreat"],
+	"formation":["line","shield_wall","loose","circle","square","wedge","column"],
+	"toggle":["face","face_enemy","toggle_fire","toggle_mount","toggle_delegate"]}
+const ORDER_LABELS := {"movement":"移动","formation":"阵型","toggle":"战术","move":"到此位置","follow":"跟随指挥官编队",
+	"charge":"冲锋","advance":"接敌","hold":"坚守","retreat":"撤退","face":"面向此方向","face_enemy":"面向敌阵",
+	"toggle_fire":"停射／射击","toggle_mount":"上马／下马","toggle_delegate":"委托／收回指挥","line":"横队","shield_wall":"盾墙",
+	"loose":"疏阵","circle":"圆阵","square":"方阵","wedge":"楔阵","column":"纵队"}
 
 var _profile: Profile
 var _mission := ""
@@ -17,6 +26,15 @@ var _revision := 0
 var _send_batch: Callable
 var _send_order: Callable
 var _read_combat: Callable
+var _read_order_target: Callable
+var _formation_states := {}
+var _page := ""
+var _orders_open := false
+var _walk_mode := false
+var _distance_steps := 0
+var _choices := {}
+var _first_person := false
+var _orbit := Vector2.ZERO
 var _queued_release := {}
 var _mode := "battle"
 var _before_menu := "battle"
@@ -122,6 +140,9 @@ func align_look(heading: Vector3) -> Dictionary:
 func bind_combat_view(read_actor: Callable) -> void:
 	_read_combat = read_actor
 
+func bind_order_target(reader: Callable) -> void:
+	_read_order_target = reader
+
 func _combat_view() -> Dictionary:
 	if not _read_combat.is_valid() or _actor.is_empty(): return {}
 	var result: Variant = _read_combat.call(_actor.duplicate())
@@ -137,7 +158,7 @@ func set_weapon_slot(slot: int) -> Dictionary:
 func set_interaction_target(target: String) -> void:
 	_interaction_target = target
 
-func set_formations(ids: Array, revisions: Dictionary) -> Dictionary:
+func set_formations(ids: Array, revisions: Dictionary, states: Array = []) -> Dictionary:
 	var seen := {}
 	for id in ids:
 		if not V.integer(id,0,V.MAX_U32) or seen.has(id) or not V.integer(revisions.get(id)):
@@ -145,6 +166,9 @@ func set_formations(ids: Array, revisions: Dictionary) -> Dictionary:
 		seen[id] = true
 	_formations = ids.duplicate()
 	_revisions = revisions.duplicate()
+	_formation_states.clear()
+	for row in states:
+		if row is Dictionary and seen.has(row.get("id")): _formation_states[row.id] = row
 	return select_formations(_selection.filter(func(id): return seen.has(id)))
 
 func select_formations(ids: Array) -> Dictionary:
@@ -170,7 +194,12 @@ func set_delegate_candidate(actor: String) -> void:
 	_delegate = actor
 
 func queue_order(kind: String, parameters: Dictionary = {}) -> Dictionary:
-	if _mode != "command" or _selection.is_empty() or _mission.is_empty() or _stepping:
+	if _mode not in ["command","ui"]:
+		return _feedback(R.fail("InvalidState","selection_or_context"))
+	return _queue_order(kind,parameters,_selection)
+
+func _queue_order(kind: String, parameters: Dictionary, ids: Array) -> Dictionary:
+	if ids.is_empty() or _mission.is_empty() or _stepping:
 		return _feedback(R.fail("InvalidState","selection_or_context"))
 	var target: Variant = _target_position if kind == "move" else null
 	var enemy: Variant = _target_formation if kind in ["charge","follow","face_enemy"] else null
@@ -179,7 +208,7 @@ func queue_order(kind: String, parameters: Dictionary = {}) -> Dictionary:
 	_sequence += 1
 	var order := {"mission_id":_mission, "issuer_id":_issuer, "client_sequence":_sequence,
 		"order_id":"%s/input/%d" % [_issuer,_sequence], "issued_tick":0, "order_type":kind,
-		"formation_ids":_selection, "target_position":target, "target_formation_id":enemy, "parameters":parameters}
+		"formation_ids":ids, "target_position":target, "target_formation_id":enemy, "parameters":parameters}
 	var checked := S.validate_shape("FormationOrder",order)
 	if not checked.ok: return _feedback(checked)
 	_orders.append({"order":checked.value,"revisions":_revisions.duplicate()})
@@ -208,7 +237,9 @@ func _feedback(result: Dictionary) -> Dictionary:
 
 func rebind(action: String, event: InputEvent) -> Dictionary:
 	var result := _profile.rebind(action,event)
-	if result.ok: _flush()
+	if result.ok:
+		_choices.clear()
+		_flush()
 	return result if result.ok else _feedback(result)
 
 func set_options(changes: Dictionary) -> Dictionary:
@@ -218,7 +249,25 @@ func set_options(changes: Dictionary) -> Dictionary:
 
 func view() -> Dictionary:
 	return {"mode":_mode,"selection":_selection.duplicate(),"direction":_direction,"layout":LAYOUTS[_layout],
-		"feedback":_last_feedback.duplicate(true),"last_order_sequence":_sequence}
+		"feedback":_last_feedback.duplicate(true),"last_order_sequence":_sequence,
+		"first_person":_first_person,"zoom_held":_axis("zoom")>0,"free_look":_axis("free_look")>0,"orbit_offset":_orbit,
+		"camera_distance_steps":_distance_steps,"preview_aim":Vector2(_look_after(_mouse * _profile.options.mouse_sensitivity))*0.000001,
+		"score_held":_axis("scoreboard")>0,"command_page":_page,"orders_open":_orders_open or _mode=="command",
+		"command_choices":_command_choices()}
+
+func _command_choices() -> Array:
+	if _choices.has(_page): return _choices[_page]
+	var choices := []
+	var menu: Array = ORDER_PAGES[_page]
+	for i in menu.size():
+		var id: String = menu[i]
+		if id.is_empty(): continue
+		var choice := {"key":_profile.key_label("order_key_"+str(i+1)),"label":ORDER_LABELS[id],"id":id}
+		choice.make_read_only()
+		choices.append(choice)
+	choices.make_read_only()
+	_choices[_page] = choices
+	return choices
 
 func profile_view() -> Dictionary:
 	return {"bindings":_profile.bindings.duplicate(true),"options":_profile.options.duplicate()}
@@ -240,6 +289,9 @@ func _flush() -> void:
 	_orders.clear()
 	_queued_release.clear()
 	_mouse = Vector2.ZERO
+	_orbit = Vector2.ZERO
+	_orders_open = false
+	_page = ""
 	if not _sent_attack.is_empty(): _edges.append(_attack_intent("cancel",_sent_attack))
 	if not _sent_guard.is_empty(): _edges.append(_block_intent(false,_sent_guard))
 	_attack = ""
@@ -272,6 +324,7 @@ func _joy_connection(device: int, connected: bool) -> void:
 		if not _sent_guard.is_empty(): _edges.append(_block_intent(false,_sent_guard))
 		_guard = ""
 		_guard_source = ""
+	if lost.has("free_look") and not _held.values().has("free_look"): _orbit = Vector2.ZERO
 	for k in _blocked.keys():
 		if k.begins_with(prefix): _blocked.erase(k)
 
@@ -294,7 +347,10 @@ func handle_event(event: InputEvent) -> bool:
 	if _mission.is_empty() or _stepping or event == null: return false
 	if event is InputEventMouseMotion:
 		if is_inside_tree() and get_viewport().gui_get_focus_owner() != null: return false
-		if _mode != "battle" or not event.relative.is_finite(): return false
+		if _mode not in ["battle","command"] or not event.relative.is_finite(): return false
+		if _axis("free_look")>0:
+			_orbit_delta(event.relative*_profile.options.mouse_sensitivity)
+			return true
 		_mouse += event.relative
 		_aim(event.relative)
 		return true
@@ -314,6 +370,15 @@ func handle_event(event: InputEvent) -> bool:
 	if token.is_empty(): return false
 	var base := _fallback_token(token)
 	var source := "pad/%d/%s" % [event.device,token] if event is InputEventJoypadButton else "desktop/" + base
+	if _mode=="battle" and _orders_open and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_RIGHT and event.pressed:
+		_page = ""
+		_orders_open = false
+		_blocked[source] = true
+		return true
+	if event is InputEventMouseButton and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN,MOUSE_BUTTON_WHEEL_LEFT,MOUSE_BUTTON_WHEEL_RIGHT] and event.pressed:
+		var used := _button(source,token,1.0,event.shift_pressed)
+		_button(source,token,0.0,event.shift_pressed)
+		return used
 	return _button(source,token,1.0 if event.pressed else 0.0,event is InputEventWithModifiers and event.shift_pressed)
 
 func _button(source: String, token: String, strength: float, additive: bool) -> bool:
@@ -353,11 +418,21 @@ func _look_stick() -> Vector2:
 	return Vector2(_axis("look_right")-_axis("look_left"),_axis("look_down")-_axis("look_up"))
 
 func _aim(delta: Vector2) -> void:
+	if _axis("free_look")>0: return
 	if delta.length_squared() < 0.0001: return
 	if absf(delta.x) > absf(delta.y):
 		_direction = "right" if delta.x > 0 else "left"
 	else:
 		_direction = "thrust" if delta.y > 0 else "up"
+
+func _look_after(delta: Vector2) -> Vector2i:
+	var yaw: int = V.yaw_microradians((_yaw-delta.x)*0.000001).value if delta.x!=0 else _yaw
+	var pitch := clampi(_pitch+roundi(delta.y)*(1 if _profile.options.invert_y else -1),-1570796,1570796)
+	return Vector2i(yaw,pitch)
+
+func _orbit_delta(delta: Vector2) -> void:
+	_orbit.x = wrapf(_orbit.x-delta.x*0.000001,-PI,PI)
+	_orbit.y = clampf(_orbit.y+delta.y*0.000001*(1 if _profile.options.invert_y else -1),-PI/2,PI/2)
 
 func _attack_intent(phase: String, direction: String) -> Dictionary:
 	return {"actor_handle":_actor,"input_phase":phase,"direction":direction,"weapon_slot":_weapon_slot,"target_hint":null}
@@ -367,6 +442,10 @@ func _block_intent(held: bool, direction: String) -> Dictionary:
 
 func _action(action: String, pressed: bool, additive: bool, source: String) -> void:
 	if action == "menu" and pressed:
+		if _mode=="battle" and _orders_open:
+			_page = ""
+			_orders_open = false
+			return
 		if _mode == "ui" and is_inside_tree():
 			get_viewport().gui_release_focus()
 		set_context(_before_menu if _mode == "ui" else "ui")
@@ -374,10 +453,25 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 	if action == "command_mode" and pressed and _mode in ["battle","command"]:
 		set_context("battle" if _mode == "command" else "command")
 		return
+	if _mode in ["battle","command"] and pressed:
+		if action.begins_with("order_key_"):
+			_order_key(action.trim_prefix("order_key_").to_int())
+			return
+		if Profile._formation_key(action):
+			_command_action(action,additive)
+			_orders_open = true
+			_page = ""
+			return
+	if action=="free_look" and not pressed: _orbit=Vector2.ZERO
 	if _mode == "command" and pressed:
 		_command_action(action,additive)
 		return
 	if _mode != "battle" or _actor.is_empty(): return
+	if action=="crouch" and pressed and _combat_view().get("mount_handle")!=null:
+		action = "dismount"
+		_held[source] = action
+	if action=="block" and pressed and (not _attack.is_empty() or not _queued_release.is_empty()):
+		action = "cancel_attack"
 	if action.begins_with("look_"):
 		_aim(_look_stick())
 	elif action == "attack":
@@ -414,6 +508,21 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 			_guard = ""
 	elif pressed:
 		match action:
+			"view_toggle": _first_person = not _first_person
+			"walk_toggle": _walk_mode = not _walk_mode
+			"camera_nearer": _distance_steps = maxi(-4,_distance_steps-1)
+			"camera_farther": _distance_steps = mini(6,_distance_steps+1)
+			"weapon_next":
+				var current := _combat_view()
+				var weapons: Array = current.get("weapons",[])
+				if weapons.size()>1:
+					var slot: int = current.weapon_slot
+					for i in range(_edges.size()-1,-1,-1):
+						if _edges[i].has("slot"):
+							slot = _edges[i].slot
+							break
+					slot = (slot+1)%weapons.size()
+					_edges.append({"actor_handle":_actor,"slot":slot,"item_ref":null})
 			"cancel_attack":
 				if not _queued_release.is_empty():
 					var cancel := _queued_release.duplicate()
@@ -427,6 +536,9 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 				var slot := 0 if action == "equip_melee" else 1
 				_edges.append({"actor_handle":_actor,"slot":slot,"item_ref":null})
 			"jump","interact","mount","dismount":
+				if action=="interact":
+					if _combat_view().get("mount_handle")!=null: action="dismount"
+					elif _interaction_target.begins_with("field/"): action="mount"
 				var target := "self" if action == "jump" or action == "dismount" else _interaction_target
 				if not target.is_empty(): _edges.append({"actor_handle":_actor,"target_ref":target,"action":action})
 
@@ -446,12 +558,56 @@ func _command_action(action: String, additive: bool) -> void:
 			if id in ids: ids.erase(id)
 			else: ids.append(id)
 			select_formations(ids)
-	elif action.begins_with("order_"): queue_order(action.trim_prefix("order_"))
+	elif action.begins_with("order_"): _issue_choice(action.trim_prefix("order_"))
 	elif action == "cycle_layout":
 		_layout = (_layout+1) % LAYOUTS.size()
 		queue_order("layout",{"layout":LAYOUTS[_layout]})
 	elif action == "delegate":
 		queue_order("delegate",{"actor":_delegate})
+
+func _order_key(number: int) -> void:
+	var options: Array = ORDER_PAGES[_page]
+	if number<1 or number>options.size() or options[number-1]=="": return
+	var choice: String = options[number-1]
+	if _selection.is_empty(): select_formations(_formations)
+	if _selection.is_empty():
+		_feedback(R.fail("Unavailable","formations"))
+		return
+	if ORDER_PAGES.has(choice):
+		_page = choice
+		_orders_open = true
+		return
+	_page = ""
+	_orders_open = false
+	_issue_choice(choice)
+
+func _issue_choice(choice: String) -> void:
+	var ids := _selection.duplicate()
+	if choice in ["move","follow","charge","face_enemy"] and _read_order_target.is_valid():
+		var target: Dictionary = _read_order_target.call(choice)
+		var picked := set_target(target.get("position"),target.get("formation"))
+		if not picked.ok:
+			_feedback(picked)
+			return
+	if choice=="charge" and _target_formation==null: choice = "free_attack"
+	if choice=="follow": ids.erase(_target_formation)
+	if choice in LAYOUTS:
+		_layout = LAYOUTS.find(choice)
+		_queue_order("layout",{"layout":choice},ids)
+	elif choice=="face":
+		_queue_order("face",{"facing_microradians":_look_after(_mouse*_profile.options.mouse_sensitivity).x},ids)
+	elif choice=="toggle_fire":
+		var holding := ids.all(func(id):return _formation_states.get(id,{}).get("fire_mode")=="hold_fire")
+		_queue_order("fire_at_will" if holding else "hold_fire",{},ids)
+	elif choice=="toggle_mount":
+		var mounted := ids.all(func(id):return _formation_states.get(id,{}).get("mounted",false))
+		_queue_order("dismount" if mounted else "mount",{},ids)
+	elif choice=="toggle_delegate":
+		for id in ids:
+			var delegated: Variant = _formation_states.get(id,{}).get("delegate")
+			_queue_order("delegate",{"actor":"" if delegated==_delegate else _delegate},[id])
+	else:
+		_queue_order(choice,{},ids)
 
 func _call(port: Callable, args: Array) -> Dictionary:
 	if not port.is_valid(): return R.fail("Unavailable","input_port")
@@ -511,19 +667,28 @@ func step(tick: int) -> Dictionary:
 			_queued_release = {}
 		elif phase != null and phase != "Windup" and not inputs.any(func(i): return i.get("input_phase") == "start"):
 			_queued_release = {}
-	if _mode == "battle" and not _actor.is_empty():
+	if _mode in ["battle","command"] and not _actor.is_empty():
 		var stick := _look_stick().limit_length(1.0)
+		if _axis("free_look")>0:
+			_orbit_delta(stick*_profile.options.stick_sensitivity)
+			stick = Vector2.ZERO
 		var delta: Vector2 = _mouse * _profile.options.mouse_sensitivity + stick * _profile.options.stick_sensitivity
-		if delta.x != 0:
-			_yaw = V.yaw_microradians((_yaw-delta.x)*0.000001).value
-		_pitch = clampi(_pitch+roundi(delta.y)*(1 if _profile.options.invert_y else -1),-1570796,1570796)
+		var aim := _look_after(delta)
+		_yaw = aim.x
+		_pitch = aim.y
 		if delta != Vector2.ZERO: inputs.append({"actor_handle":_actor,"yaw":_yaw,"pitch":_pitch})
 		if not _attack.is_empty() and not inputs.any(func(i): return i.has("input_phase")):
 			inputs.append(_attack_intent("hold",_attack))
 	if not _actor.is_empty():
 		var move := Vector2(_axis("move_right")-_axis("move_left"),_axis("move_back")-_axis("move_forward")).limit_length(1.0)
 		var world := Vector3(move.x,0,move.y).normalized().rotated(Vector3.UP,_yaw*0.000001)
-		var stance := "crouch" if _axis("crouch") > 0 else ("sprint" if _axis("sprint") > 0 else "walk")
+		var keyboard_move := false
+		for source: String in _held:
+			if source.begins_with("desktop/") and str(_held[source]).begins_with("move_"):
+				keyboard_move = true
+				break
+		var run := _axis("sprint")>0 or (keyboard_move and not _walk_mode)
+		var stance := "crouch" if _axis("crouch")>0 else ("sprint" if run else "walk")
 		inputs.append({"actor_handle":_actor,"desired_direction":[roundi(world.x*1000000),0,roundi(world.z*1000000)],"speed_fraction":minf(1.0,move.length()),"stance":stance})
 	var batch := S.validate_shape("IntentBatch",{"mission_id":_mission,"source_tick":tick,"control_revision":_revision,"inputs":inputs})
 	if not batch.ok: return _feedback(batch)
