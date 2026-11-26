@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-041",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "可见兵员的战图投影、双入口缩放与集成验收",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-039",
+    "P2-FIELD-INTEGRATION-040",
+    "P2-FIELD-INTEGRATION-042",
+    "P2-UI-BATTLE-004"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/field_desktop.gd",
+    "development/reports/tests/P2/river-ui/",
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+  "worktree": "D:/work/game/recollection",
+  "scope": "可见兵员的战图投影、双入口缩放与集成验收",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "普通与常驻入口验证，检查地图采样权属、移动转向、人物状态与退出流程。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}

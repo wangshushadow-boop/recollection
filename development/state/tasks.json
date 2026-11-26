@@ -689,7 +689,8 @@
       "child_ids": [
         "P2-UI-BATTLE-001",
         "P2-UI-BATTLE-002",
-        "P2-UI-BATTLE-003"
+        "P2-UI-BATTLE-003",
+        "P2-UI-BATTLE-004"
       ]
     },
     "P2-FIELD-INTEGRATION": {
@@ -746,7 +747,11 @@
         "P2-FIELD-INTEGRATION-035",
         "P2-FIELD-INTEGRATION-036",
         "P2-FIELD-INTEGRATION-037",
-        "P2-FIELD-INTEGRATION-038"
+        "P2-FIELD-INTEGRATION-038",
+        "P2-FIELD-INTEGRATION-039",
+        "P2-FIELD-INTEGRATION-040",
+        "P2-FIELD-INTEGRATION-042",
+        "P2-FIELD-INTEGRATION-041"
       ]
     },
     "GATE-P2": {
@@ -3021,6 +3026,61 @@
       "integrated_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
       "evidence": [
         "development/reports/tests/P2/field-hud-contact/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-039": {
+      "status": "DONE",
+      "owner": "title_menu",
+      "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+      "candidate_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "integrated_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "evidence": [
+        "development/reports/tests/P2/river-ui/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-040": {
+      "status": "DONE",
+      "owner": "window_pref",
+      "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+      "candidate_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "integrated_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "evidence": [
+        "development/reports/tests/P2/river-ui/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-042": {
+      "status": "DONE",
+      "owner": "root",
+      "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+      "candidate_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "integrated_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "evidence": [
+        "development/reports/tests/P2/river-ui/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-UI-BATTLE-004": {
+      "status": "DONE",
+      "owner": "battle_visual / title_menu",
+      "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+      "candidate_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "integrated_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "evidence": [
+        "development/reports/tests/P2/river-ui/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-041": {
+      "status": "DONE",
+      "owner": "root",
+      "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+      "candidate_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "integrated_commit": "256c03d90dccef567df80b6bb2c598dcc39ff0a3",
+      "evidence": [
+        "development/reports/tests/P2/river-ui/README.md"
       ],
       "child_ids": []
     }

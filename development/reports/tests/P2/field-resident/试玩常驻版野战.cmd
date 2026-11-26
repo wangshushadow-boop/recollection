@@ -1,9 +1,10 @@
 @echo off
 setlocal
+set "RECOLLECTION_WINDOW_DIR=%APPDATA%\Godot\app_userdata\recollection"
 chcp 65001 >nul
 for %%I in ("%~dp0..\..\..\..\..") do set "repo=%%~fI"
-set "base=bdd47ccfefb8547bb7afd7259b88cd6d95517186"
-set "trial=%repo%\out\resident\play-bdd47cc"
+set "base=256c03d90dccef567df80b6bb2c598dcc39ff0a3"
+set "trial=%repo%\out\resident\play-256c03d"
 set "engine=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64.exe"
 set "console=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64_console.exe"
 set "RECOLLECTION_MOVE_WORKERS=1"
@@ -21,7 +22,8 @@ tar -xf "%~dp0experiment.zip" -C "%trial%" game || goto :failed
 "%console%" --headless --path "%trial%\game" --import || goto :failed
 "%console%" --headless --path "%trial%\game" --script res://native/verify.gd || goto :failed
 if /i "%~1"=="--check-only" exit /b 0
-start "" "%engine%" --path "%trial%\game" --resolution 960x600 -- --profile=client
+set "RECOLLECTION_REMEMBER_WINDOW=1"
+start "" "%engine%" --path "%trial%\game" -- --profile=client
 exit /b %errorlevel%
 :failed
 echo 无法启动常驻版野战，请检查 Godot 4.7.2 Standard、Git 及上方错误信息。

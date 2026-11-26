@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-UI-BATTLE-004",
+  "kind": "EXECUTION",
+  "parent": "P2-UI-BATTLE",
+  "stage": "P2",
+  "module_id": "UI",
+  "title": "编队部署卡、人物状态栏、本地战图与菜单原画",
+  "spec": "docs/systems/game/presentation/ui/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-003"
+  ],
+  "requirements": [
+    "ACC-01",
+    "UX-01",
+    "UX-02",
+    "UX-03"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-UI-02",
+    "T-UI-03",
+    "T-UI-04"
+  ],
+  "allowed_paths": [
+    "game/presentation/ui/",
+    "game/tests/p2/ui/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+  "worktree": "D:/work/game/recollection",
+  "scope": "编队部署卡、人物状态栏、本地战图与菜单原画",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "检查中英文和大字设置、部署到开战、状态和地图方位。",
+    "实际窗口改变尺寸后界面等比缩放且可点击。"
+  ],
+  "status": "DONE",
+  "owner": "battle_visual / title_menu"
+}

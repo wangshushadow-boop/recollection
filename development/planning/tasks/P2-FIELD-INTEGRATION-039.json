@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-039",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "主菜单首屏与河原入口",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-038"
+  ],
+  "requirements": [
+    "UX-01",
+    "UX-02"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/desktop.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+  "worktree": "D:/work/game/recollection",
+  "scope": "主菜单首屏与河原入口",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "首屏可打开河原；新建、存读档、训练与人物流程使用既有入口。"
+  ],
+  "status": "DONE",
+  "owner": "title_menu"
+}

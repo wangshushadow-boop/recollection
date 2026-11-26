@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-040",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "客户端窗口大小与最大化记忆",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-038"
+  ],
+  "requirements": [
+    "UX-02"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/main.gd",
+    "game/bootstrap/window_preferences.gd",
+    "game/tests/p2/window_preferences/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+  "worktree": "D:/work/game/recollection",
+  "scope": "客户端窗口大小与最大化记忆",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "由真实客户端退出并重开，恢复窗口大小和最大化；两个启动脚本互通。"
+  ],
+  "status": "DONE",
+  "owner": "window_pref"
+}

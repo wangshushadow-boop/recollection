@@ -1,6 +1,6 @@
 # 河原野战移动数据常驻试玩版
 
-双击[试玩常驻版野战.cmd](试玩常驻版野战.cmd)，在主菜单进入河原并点击「开始野战」。当前入口从本地提交 `bdd47cc` 建立独立游戏副本，导入资源并实际调用原生移动内核。环境为 Windows x64、Godot 4.7.2 Standard，用户数据继续使用 `out/resident/play-bbcdc93/appdata`。下文的性能数字来自原采样版本。[镜头和快捷键](../field-controls/README.md) · [战斗界面与守阵自卫实测](../field-hud-contact/README.md)
+双击[试玩常驻版野战.cmd](试玩常驻版野战.cmd)，在主菜单进入河原并点击「开始野战」。当前入口从本地提交 `256c03d` 建立独立游戏副本，导入资源并实际调用原生移动内核。环境为 Windows x64、Godot 4.7.2 Standard，游戏存档继续使用 `out/resident/play-bbcdc93/appdata`；窗口偏好与普通版共用。下文的性能数字来自原采样版本。[最新界面与窗口实测](../river-ui/README.md) · [镜头和快捷键](../field-controls/README.md) · [守阵自卫实测](../field-hud-contact/README.md)
 
 ## 版本与采样条件
 

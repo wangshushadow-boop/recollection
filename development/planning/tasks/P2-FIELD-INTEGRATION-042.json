@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-042",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "显示己方首波兵种人数和公开目标位置",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-037"
+  ],
+  "requirements": [
+    "BAT-01",
+    "BAT-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_deployment.gd",
+    "game/mission/runtime/field_mission.gd",
+    "game/tests/p2/field_boot/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "6eab6fccadf3eb2176f2879f58a701d2dace2f84",
+  "worktree": "D:/work/game/recollection",
+  "scope": "显示己方首波兵种人数和公开目标位置",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "按首波配额排除预备队；面向当前观察方投影己方部署和公开目标。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}
