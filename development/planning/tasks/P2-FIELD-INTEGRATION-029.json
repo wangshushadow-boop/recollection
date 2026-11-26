@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-029",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "野战 AI 按调度读取个体输入和移动列",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-026"
+  ],
+  "requirements": [
+    "BAT-01",
+    "MIS-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-01",
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_brains.gd",
+    "game/mission/runtime/field_pipeline.gd",
+    "game/tests/p2/field_brains/",
+    "game/tests/p2/field_pipeline/",
+    "development/reports/tests/P2/field-sparse-inputs/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9f8f7a7b8b4270ea1b6173045ca4c500170affe2",
+  "worktree": "D:/work/game/recollection",
+  "scope": "野战 AI 按调度读取个体输入和移动列",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "同图同种子桌面站立及接战对比，记录帧时间、模拟速度和实际 AI 工作量。",
+    "逐步比对 1260 步有指令回放，验证命中、事务回滚和失败重试。"
+  ],
+  "status": "DONE",
+  "owner": "sparse_pipeline / sparse_brains"
+}

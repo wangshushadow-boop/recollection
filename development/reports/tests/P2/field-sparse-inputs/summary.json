@@ -1,0 +1,263 @@
+{
+  "base": {
+    "idle": {
+      "first_hit": 0,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 76.11,
+        "p50": 76.284,
+        "p95": 85.001
+      },
+      "gpu_ms": {
+        "mean": 6.748,
+        "p50": 5.772,
+        "p95": 8.825
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.498,
+        "p50": 17.498,
+        "p95": 19.506
+      },
+      "fps": 13.139,
+      "steps_per_second": 26.278,
+      "field_step_ms": {
+        "mean": 29.31,
+        "p50": 29.299,
+        "p95": 33.485
+      },
+      "_think_ms": {
+        "mean": 9.965,
+        "p50": 9.915,
+        "p95": 11.29
+      },
+      "_walk_ms": {
+        "mean": 11.645,
+        "p50": 11.443,
+        "p95": 14.612
+      },
+      "_fight_ms": {
+        "mean": 1.422,
+        "p50": 1.372,
+        "p95": 1.792
+      },
+      "full_ai_rows_per_step": {
+        "mean": 500,
+        "p50": 500,
+        "p95": 500
+      },
+      "steps_with_full_ai_rows": 320,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0
+    },
+    "contact": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        986,
+        1260
+      ],
+      "frames": 137,
+      "per_frame_steps": {
+        "2": 137
+      },
+      "frame_ms": {
+        "mean": 78.541,
+        "p50": 76.676,
+        "p95": 89.096
+      },
+      "gpu_ms": {
+        "mean": 6.036,
+        "p50": 5.173,
+        "p95": 8.201
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.124,
+        "p50": 17.091,
+        "p95": 18.114
+      },
+      "fps": 12.732,
+      "steps_per_second": 25.464,
+      "field_step_ms": {
+        "mean": 30.712,
+        "p50": 30.356,
+        "p95": 37.612
+      },
+      "_think_ms": {
+        "mean": 10.927,
+        "p50": 10.774,
+        "p95": 12.919
+      },
+      "_walk_ms": {
+        "mean": 11.913,
+        "p50": 11.833,
+        "p95": 13.097
+      },
+      "_fight_ms": {
+        "mean": 1.599,
+        "p50": 1.514,
+        "p95": 2.472
+      },
+      "full_ai_rows_per_step": {
+        "mean": 496.32,
+        "p50": 496,
+        "p95": 500
+      },
+      "steps_with_full_ai_rows": 275,
+      "admitted_individuals_per_step": {
+        "mean": 41.284,
+        "p50": 41,
+        "p95": 43
+      },
+      "positive_hits": 61,
+      "damage": 2112,
+      "shots": 85
+    }
+  },
+  "final": {
+    "idle": {
+      "first_hit": 0,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 62.859,
+        "p50": 61.675,
+        "p95": 73.294
+      },
+      "gpu_ms": {
+        "mean": 6.579,
+        "p50": 5.771,
+        "p95": 8.84
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.107,
+        "p50": 16.859,
+        "p95": 18.936
+      },
+      "fps": 15.909,
+      "steps_per_second": 31.817,
+      "field_step_ms": {
+        "mean": 22.886,
+        "p50": 22.512,
+        "p95": 27.486
+      },
+      "_think_ms": {
+        "mean": 5.191,
+        "p50": 5.049,
+        "p95": 6.148
+      },
+      "_walk_ms": {
+        "mean": 11.129,
+        "p50": 10.627,
+        "p95": 14.378
+      },
+      "_fight_ms": {
+        "mean": 1.353,
+        "p50": 1.296,
+        "p95": 1.845
+      },
+      "full_ai_rows_per_step": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 0,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0
+    },
+    "contact": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        986,
+        1260
+      ],
+      "frames": 137,
+      "per_frame_steps": {
+        "2": 137
+      },
+      "frame_ms": {
+        "mean": 68.357,
+        "p50": 66.357,
+        "p95": 82.34
+      },
+      "gpu_ms": {
+        "mean": 6.102,
+        "p50": 5.235,
+        "p95": 8.282
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.048,
+        "p50": 16.991,
+        "p95": 18.241
+      },
+      "fps": 14.629,
+      "steps_per_second": 29.258,
+      "field_step_ms": {
+        "mean": 25.656,
+        "p50": 25.322,
+        "p95": 31.597
+      },
+      "_think_ms": {
+        "mean": 6.572,
+        "p50": 6.271,
+        "p95": 7.899
+      },
+      "_walk_ms": {
+        "mean": 11.824,
+        "p50": 11.828,
+        "p95": 12.955
+      },
+      "_fight_ms": {
+        "mean": 1.589,
+        "p50": 1.497,
+        "p95": 2.478
+      },
+      "full_ai_rows_per_step": {
+        "mean": 12.625,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 7,
+      "admitted_individuals_per_step": {
+        "mean": 41.284,
+        "p50": 41,
+        "p95": 43
+      },
+      "positive_hits": 61,
+      "damage": 2112,
+      "shots": 85
+    }
+  },
+  "workload_check": "Commands, tick-by-tick admitted individuals, positive hostile hit counts, damage and projectile counts match across each entire scenario."
+}

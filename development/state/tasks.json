@@ -456,7 +456,8 @@
       ],
       "child_ids": [
         "P2-COM-001",
-        "P2-COM-002"
+        "P2-COM-002",
+        "P2-COM-003"
       ]
     },
     "P2-MOV": {
@@ -730,7 +731,8 @@
         "P2-FIELD-INTEGRATION-025",
         "P2-FIELD-INTEGRATION-026",
         "P2-FIELD-INTEGRATION-027",
-        "P2-FIELD-INTEGRATION-028"
+        "P2-FIELD-INTEGRATION-028",
+        "P2-FIELD-INTEGRATION-029"
       ]
     },
     "GATE-P2": {
@@ -2829,6 +2831,28 @@
       "integrated_commit": "b0e59d23ca4271ae59e91ecffdd2a019c63b7270",
       "evidence": [
         "development/reports/tests/P2/field-job-batches/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-029": {
+      "status": "DONE",
+      "owner": "sparse_pipeline / sparse_brains",
+      "base_commit": "9f8f7a7b8b4270ea1b6173045ca4c500170affe2",
+      "candidate_commit": "8fa478d7e68df964872a473e6cbfaa6c256cc26b",
+      "integrated_commit": "8fa478d7e68df964872a473e6cbfaa6c256cc26b",
+      "evidence": [
+        "development/reports/tests/P2/field-sparse-inputs/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-COM-003": {
+      "status": "DONE",
+      "owner": "sparse_com",
+      "base_commit": "9f8f7a7b8b4270ea1b6173045ca4c500170affe2",
+      "candidate_commit": "8fa478d7e68df964872a473e6cbfaa6c256cc26b",
+      "integrated_commit": "8fa478d7e68df964872a473e6cbfaa6c256cc26b",
+      "evidence": [
+        "development/reports/tests/P2/field-sparse-inputs/README.md"
       ],
       "child_ids": []
     }

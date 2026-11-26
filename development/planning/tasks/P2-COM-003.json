@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "P2-COM-003",
+  "kind": "EXECUTION",
+  "parent": "P2-COM",
+  "stage": "P2",
+  "module_id": "COM",
+  "title": "野战战斗状态增量读取和骑乘、盾牌列",
+  "spec": "docs/systems/game/mission/combat/README.md",
+  "depends_on": [
+    "P2-COM-002"
+  ],
+  "requirements": [
+    "BAI-05",
+    "COM-01",
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "COM-05",
+    "COM-06"
+  ],
+  "acceptance_test_ids": [
+    "T-COM-01",
+    "T-COM-02",
+    "T-COM-03",
+    "T-COM-04",
+    "T-COM-05",
+    "T-COM-06",
+    "T-COM-07"
+  ],
+  "allowed_paths": [
+    "game/mission/combat/",
+    "game/tests/p2/combat_batch/",
+    "game/tests/p2/combat/",
+    "development/reports/tests/P2/field-sparse-inputs/README.md"
+  ],
+  "excluded_paths": [
+    "game/contracts/",
+    "game/bootstrap/",
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9f8f7a7b8b4270ea1b6173045ca4c500170affe2",
+  "worktree": "D:/work/game/recollection",
+  "scope": "野战战斗状态增量读取和骑乘、盾牌列",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "同图同种子桌面站立及接战对比，记录帧时间、模拟速度和实际 AI 工作量。",
+    "逐步比对 1260 步有指令回放，验证命中、事务回滚和失败重试。"
+  ],
+  "status": "DONE",
+  "owner": "sparse_com"
+}
