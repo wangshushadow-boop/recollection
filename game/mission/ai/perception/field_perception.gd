@@ -26,13 +26,14 @@ var _by_team := {}
 var _by_formation := {}
 var _contacts := {}
 var _sense_cache := {}
+var _ranked := {}
 var _visibility := {}
 var _cache_epoch := -1
 var _threat_until := {}
 var _formation_revisions := {}
 var _team_scout := {}
 var _formation_scout := {}
-static var _offsets: Array[Vector2i] = []
+static var _offsets_by_reach: Array[Array] = []
 var examined := 0
 var rays := 0
 var cache_hits := 0
@@ -49,9 +50,11 @@ func begin_tick() -> void:
 		"examined":examined,"rays":rays,"cache_hits":cache_hits,"los_us":los_us,"scouts":scouts}
 
 func commit_tick() -> void:
+	_ranked.clear()
 	_checkpoint = {}
 
 func rollback_tick() -> void:
+	_ranked.clear()
 	_positions = _checkpoint.positions
 	_cells = _checkpoint.cells
 	_grid = _checkpoint.grid
@@ -80,15 +83,22 @@ func _prepare_cell(key: Vector2i) -> void:
 		_grid[key] = _grid[key].duplicate()
 
 func _init() -> void:
-	if not _offsets.is_empty():
+	if not _offsets_by_reach.is_empty():
 		return
+	var offsets: Array[Vector2i] = []
 	for x in range(-4,5):
 		for z in range(-4,5):
-			_offsets.append(Vector2i(x,z))
-	_offsets.sort_custom(func(a,b):
+			offsets.append(Vector2i(x,z))
+	offsets.sort_custom(func(a,b):
 		if a.length_squared() == b.length_squared():
 			return a < b
 		return a.length_squared() < b.length_squared())
+	for reach in range(5):
+		var square: Array[Vector2i] = []
+		for offset in offsets:
+			if absi(offset.x)<=reach and absi(offset.y)<=reach:
+				square.append(offset)
+		_offsets_by_reach.append(square)
 
 static func handle_ok(h: Variant) -> bool:
 	return typeof(h) == TYPE_DICTIONARY and h.size() == 2 and V.integer(h.get("index"),0,V.MAX_U32) and V.integer(h.get("generation"),1,V.MAX_U32)
@@ -212,6 +222,7 @@ func advance(tick: int, epoch: int, changed_nav: bool, points: PackedVector3Arra
 	_owned = {}
 	_contacts = {}
 	_sense_cache = {}
+	_ranked.clear()
 	_by_observer = {}
 	_by_formation = {}
 	_by_team = {}
@@ -292,14 +303,7 @@ func group_view(subject: Variant, team_view: bool, stamp: Dictionary) -> Diction
 	result.make_read_only()
 	return R.ok(result)
 
-func sense(me: Dictionary, radius: float, limit: int, stamp: Dictionary, visible: Callable) -> Dictionary:
-	if not is_finite(radius) or radius <= 0 or radius > MAX_RADIUS or limit < 1 or limit > MAX_CONTACTS:
-		return R.fail("InvalidArgument","perception_range")
-	var id: int = me.handle.index
-	var prior: Variant = _sense_cache.get(id)
-	if prior != null and prior.radius == radius and prior.limit == limit:
-		cache_hits += 1
-		return R.ok(prior.view)
+func _rank(id: int, tick: int, radius: float) -> Dictionary:
 	var self_slot: int = _slots[id]
 	var own_camp := _camp[self_slot]
 	var position := _positions[self_slot]
@@ -309,15 +313,13 @@ func sense(me: Dictionary, radius: float, limit: int, stamp: Dictionary, visible
 	var friends := PackedVector3Array()
 	var opponents := PackedVector3Array()
 	var scanned := 0
-	for offset in _offsets:
-		if absi(offset.x)>reach or absi(offset.y)>reach:
-			continue
+	for offset: Vector2i in _offsets_by_reach[reach]:
 		var bucket: Variant = _grid.get(near+offset)
 		if bucket == null:
 			continue
 		var size: int = bucket.size()
 		# Rotate dense buckets and reserve candidates for neighbouring cells.
-		var first: int = (stamp.tick+id) % size if size > 16 else 0
+		var first: int = (tick+id) % size if size > 16 else 0
 		for n in mini(mini(size,16),EXAMINED-scanned):
 			var index: int = bucket[(first+n)%size]
 			scanned += 1
@@ -332,10 +334,55 @@ func sense(me: Dictionary, radius: float, limit: int, stamp: Dictionary, visible
 				opponents.append(key)
 		if scanned >= EXAMINED:
 			break
-	examined += scanned
 	# Godot sorts the bounded samples natively by squared distance, then handle.
 	friends.sort()
 	opponents.sort()
+	return {"friends":friends,"opponents":opponents,"scanned":scanned}
+
+func _rank_chunk(part: int, parts: int, jobs: Array, tick: int, results: Array) -> void:
+	for i in range(part*jobs.size()/parts,(part+1)*jobs.size()/parts):
+		var id: int = jobs[i].subject.index
+		results[i] = _rank(id,tick,18.0)
+
+func _rank_scheduled(jobs: Array, tick: int, batches: int) -> PackedByteArray:
+	# The Mission thread holds the board fixed until join. Workers only read
+	# spatial columns; LOS and all contact/counter updates stay ordered in sense().
+	var no_enemies := PackedByteArray()
+	no_enemies.resize(jobs.size())
+	if jobs.size()<8:
+		return no_enemies
+	var parts := clampi(batches,1,jobs.size())
+	var results := []
+	results.resize(jobs.size())
+	var work := _rank_chunk.bind(parts,jobs,tick,results)
+	if parts==1:
+		work.call(0)
+	else:
+		var ticket := WorkerThreadPool.add_group_task(work,parts-1,parts-1)
+		work.call(parts-1)
+		WorkerThreadPool.wait_for_group_task_completion(ticket)
+	for i in jobs.size():
+		var id: int = jobs[i].subject.index
+		var ranked: Dictionary = results[i]
+		_ranked[id] = ranked
+		no_enemies[i] = int(ranked.opponents.is_empty())
+	return no_enemies
+
+func sense(me: Dictionary, radius: float, limit: int, stamp: Dictionary, visible: Callable) -> Dictionary:
+	if not is_finite(radius) or radius <= 0 or radius > MAX_RADIUS or limit < 1 or limit > MAX_CONTACTS:
+		return R.fail("InvalidArgument","perception_range")
+	var id: int = me.handle.index
+	var prior: Variant = _sense_cache.get(id)
+	if prior != null and prior.radius == radius and prior.limit == limit:
+		cache_hits += 1
+		return R.ok(prior.view)
+	var ranked: Variant = _ranked.get(id) if radius==18.0 else null
+	if ranked==null:
+		ranked = _rank(id,stamp.tick,radius)
+	var position := _positions[_slots[id]]
+	var friends: PackedVector3Array = ranked.friends
+	var opponents: PackedVector3Array = ranked.opponents
+	examined += ranked.scanned
 	var enemies := []
 	var allies := []
 	for k in mini(limit,friends.size()):

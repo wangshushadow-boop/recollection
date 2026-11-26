@@ -146,6 +146,24 @@ func _stamp(layer: String, subject: Variant) -> Dictionary:
 	stamp.make_read_only()
 	return stamp
 
+func _rank_scheduled(jobs: Array, batches: int) -> PackedByteArray:
+	# Only rank the current individual grants. A rejected prefetch leaves all
+	# jobs on the normal ordered sense/collect path.
+	if _board != null and not _busy and not _closed:
+		var valid := true
+		for job in jobs:
+			if not job is Dictionary or job.get("layer")!="individual" or not is_same(_issued.get(job.get("id")),job):
+				valid = false
+				break
+		if valid:
+			_busy = true
+			var no_enemies: PackedByteArray = _board._rank_scheduled(jobs,_tick,batches)
+			_busy = false
+			return no_enemies
+	var ordered := PackedByteArray()
+	ordered.resize(jobs.size())
+	return ordered
+
 func sense(handle: Dictionary, radius := 18.0, limit := 8) -> Dictionary:
 	if _board == null or _busy:
 		return R.fail("InvalidState","ai_scope")

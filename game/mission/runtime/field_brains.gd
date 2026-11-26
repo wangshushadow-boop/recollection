@@ -6,6 +6,22 @@ const Board = preload("res://mission/ai/ports/field_ai.gd")
 const Tactics = preload("res://mission/ai/tactical/ports/field_tactics.gd")
 const Squads = preload("res://mission/ai/formation/ports/field_formation_ai.gd")
 const Individual = preload("res://mission/ai/individual/ports/field_individual.gd")
+const AI_BATCHES := 4
+
+class MemberWork:
+	var job: Dictionary
+	var observed: Dictionary
+	var combat: Dictionary
+	var rules: Dictionary
+	var local: Dictionary
+	var decision: Dictionary
+	var destination: Variant
+
+	# Only used when there are no enemy candidates. The FSM can then ask
+	# for one move to the formation slot or exit, after choosing its action.
+	func record_move(_from: Vector3, to: Vector3, _nav: int) -> bool:
+		destination = to
+		return true
 
 var _scope: String
 var _engine: RefCounted
@@ -252,7 +268,7 @@ func _formation(job: Dictionary, nav: int, tasks: Dictionary, metrics: Dictionar
 		metrics.orders += 1
 	return brain.commit(d.token,batch)
 
-func _individual(job: Dictionary, nav: int, combat: RefCounted, cache: Dictionary, proposals: Dictionary, metrics: Dictionary) -> Dictionary:
+func _prepare_member(job: Dictionary, nav: int, combat: RefCounted, cache: Dictionary) -> Dictionary:
 	var row: Dictionary = _units[job.subject.index]
 	var group: int = row.formation_id
 	if not cache.has(group):
@@ -266,19 +282,49 @@ func _individual(job: Dictionary, nav: int, combat: RefCounted, cache: Dictionar
 	if not observed.ok: return observed
 	var physical: Dictionary = combat.view(job.subject)
 	if not physical.ok: return physical
-	var local := {"nav_revision":nav,"can_travel":_path,"slot_position":row.slot_position,"heading":row.heading,"exit_position":_teams[row.team_key].exit_position}
+	var work := MemberWork.new()
+	work.job = job
+	work.observed = observed.value
+	work.combat = physical.value
+	work.rules = state.value.member_constraint
+	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":row.slot_position,"heading":row.heading,"exit_position":_teams[row.team_key].exit_position}
 	for key in ["threat_handle","threat_direction","react_at","reaction_skill"]:
-		if row.has(key): local[key] = row[key]
-	var decision: Dictionary = _draft.decide(job,observed.value,physical.value,state.value.member_constraint,local)
-	if not decision.ok: return decision
-	var admitted: Dictionary = _ai.collect(job,decision.value.intents)
+		if row.has(key): work.local[key] = row[key]
+	return R.ok(work)
+
+func _admit_member(work: MemberWork, proposals: Dictionary, metrics: Dictionary) -> Dictionary:
+	if not work.decision.ok: return work.decision
+	var plan: Dictionary = work.decision.value
+	if work.destination != null and not _path(work.observed.self.position,work.destination,work.local.nav_revision):
+		plan = _draft._without_quiet_move(plan)
+	var admitted: Dictionary = _ai.collect(work.job,plan.intents)
 	if not admitted.ok: return admitted
-	proposals[job.id] = decision.value
+	proposals[work.job.id] = plan
 	metrics.individual += 1
-	var mode: String = decision.value.mode
+	var mode: String = plan.mode
 	metrics.modes[mode] = metrics.modes.get(mode,0)+1
-	var by_role: Dictionary = metrics.role_modes.get_or_add(row.role,{})
+	var by_role: Dictionary = metrics.role_modes.get_or_add(_units[work.job.subject.index].role,{})
 	by_role[mode] = by_role.get(mode,0)+1
+	return R.ok()
+
+func _decide_range(part: int, members: Array[MemberWork], batches: int) -> void:
+	var begin := part * members.size() / batches
+	var end := (part+1) * members.size() / batches
+	for i in range(begin,end):
+		var work := members[i]
+		work.decision = _draft.decide(work.job,work.observed,work.combat,work.rules,work.local)
+
+func _flush_quiet(members: Array[MemberWork], proposals: Dictionary, metrics: Dictionary) -> Dictionary:
+	var batches := mini(AI_BATCHES,maxi(1,members.size()/8))
+	if batches > 1:
+		var group := WorkerThreadPool.add_group_task(_decide_range.bind(members,batches),batches,batches)
+		WorkerThreadPool.wait_for_group_task_completion(group)
+	else:
+		_decide_range(0,members,1)
+	for work in members:
+		var admitted := _admit_member(work,proposals,metrics)
+		if not admitted.ok: return admitted
+	members.clear()
 	return R.ok()
 
 func decide(tick: int, nav: int, units: Array, combat: RefCounted, player_handle: Variant) -> Dictionary:
@@ -322,10 +368,32 @@ func _dispatch(tick: int,nav: int,combat: RefCounted,player: Variant) -> Diction
 		metrics.formation += 1
 	var states := {}
 	var proposals := {}
-	for job in jobs:
-		if job.layer!="individual" or job.subject==player: continue
-		var result := _individual(job,nav,combat,states,proposals,metrics)
-		if not result.ok: return result
+	var individuals := jobs.filter(func(job):return job.layer=="individual" and job.subject!=player)
+	var quiet: PackedByteArray = _ai._rank_scheduled(individuals,AI_BATCHES)
+	var pending: Array[MemberWork] = []
+	for i in individuals.size():
+		# Resolve earlier moves before this member can issue any LOS or path queries.
+		if not quiet[i] and not pending.is_empty():
+			var flushed := _flush_quiet(pending,proposals,metrics)
+			if not flushed.ok: return flushed
+		var prepared := _prepare_member(individuals[i],nav,combat,states)
+		if not prepared.ok:
+			if not pending.is_empty():
+				var earlier := _flush_quiet(pending,proposals,metrics)
+				if not earlier.ok: return earlier
+			return prepared
+		if prepared.value == null: continue
+		var work: MemberWork = prepared.value
+		if quiet[i]:
+			work.local.can_travel = work.record_move
+			pending.append(work)
+		else:
+			work.decision = _draft.decide(work.job,work.observed,work.combat,work.rules,work.local)
+			var admitted := _admit_member(work,proposals,metrics)
+			if not admitted.ok: return admitted
+	if not pending.is_empty():
+		var flushed := _flush_quiet(pending,proposals,metrics)
+		if not flushed.ok: return flushed
 	if not _path_error.is_empty(): return _path_error
 	drained = _ai.drain()
 	if not drained.ok or drained.value.size()!=proposals.size():

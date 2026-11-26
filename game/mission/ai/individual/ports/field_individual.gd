@@ -121,6 +121,30 @@ static func _move(own: Dictionary, destination: Vector3, local: Dictionary, rule
 static func _cancel(own: Dictionary, combat: Dictionary) -> Dictionary:
 	return {"actor_handle":own.handle,"input_phase":"cancel","direction":combat.direction,"weapon_slot":combat.weapon_slot,"target_hint":null}
 
+static func _stop(handle: Dictionary) -> Dictionary:
+	return {"actor_handle":handle,"desired_direction":[0,0,0],"speed_fraction":0.0,"stance":"walk"}
+
+# A quiet member can propose at most one move. An unreachable destination has
+# the same outcome as _move returning empty, including stopping a previous drive.
+func _without_quiet_move(proposal: Dictionary) -> Dictionary:
+	var own: Dictionary = proposal.job.subject
+	var prior: Dictionary = _members.get(own.index,{})
+	var intents: Array = proposal.intents.slice(1)
+	if prior.get("handle")==own and prior.get("moving",false):
+		var stop := _stop(own)
+		stop.desired_direction.make_read_only()
+		stop.make_read_only()
+		intents.push_front(stop)
+	intents.make_read_only()
+	var state: Dictionary = proposal.state.duplicate()
+	state.moving = false
+	state.make_read_only()
+	var corrected := proposal.duplicate()
+	corrected.intents = intents
+	corrected.state = state
+	corrected.make_read_only()
+	return corrected
+
 
 static func _attack(own: Dictionary, combat: Dictionary, target: Dictionary, tick: int) -> Dictionary:
 	if combat.phase == "Guard":
@@ -263,7 +287,7 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 		break_until = old.get("break_until",-1)
 	var moving := not move.is_empty()
 	if not moving and was_moving and mode != "Incapacitated":
-		move = {"actor_handle":own.handle,"desired_direction":[0,0,0],"speed_fraction":0.0,"stance":"walk"}
+		move = _stop(own.handle)
 	var intents := []
 	for intent in [move,look,action]:
 		if not intent.is_empty():
