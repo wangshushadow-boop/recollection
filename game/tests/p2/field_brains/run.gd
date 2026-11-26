@@ -166,6 +166,60 @@ func tick_once(t: int, discarded: Dictionary) -> Dictionary:
 func _initialize() -> void:
 	run.call_deferred()
 
+func verify_roster_retry(tick: int) -> void:
+	check(form.begin_tick().ok and form.advance(tick).ok,"begin warmed roster check")
+	var rows: Array = project().rows
+	var old_handle: Dictionary = rows[0].handle
+	for invalid in [{"index":0,"generation":2},{"index":0.0,"generation":1},
+			{"index":0,"generation":true},{"index":0,"generation":1,"extra":true},handle(1)]:
+		rows[0].handle = invalid
+		var rejected: Dictionary = field.decide(tick,nav,rows,com,handle(8))
+		check(not rejected.ok and rejected.error.field=="field_ai_member","warmed index rejects invalid membership "+str(invalid))
+		field.rollback_tick()
+	rows[0].handle = old_handle
+	var original: Dictionary = field.decide(tick,nav,rows,com,handle(8))
+	check(original.ok,"same tick accepts the original roster")
+	field.rollback_tick()
+	form.rollback_tick()
+
+	# Each branch changes the same FORM group from the same committed revision.
+	# A cache keyed only by the candidate revision could admit the other generation.
+	for generation in [2,3]:
+		check(form.begin_tick().ok and form.advance(tick).ok,"begin generation fork")
+		rows = project().rows
+		var replacement := {"index":8,"generation":generation}
+		check(form.assign_members(8,[replacement]).ok,"replace a member without changing count")
+		rows[8].handle = {"index":8,"generation":generation-1}
+		var stale: Dictionary = field.decide(tick,nav,rows,com,replacement)
+		check(not stale.ok and stale.error.field=="field_ai_member","old generation rejected after replacement")
+		field.rollback_tick()
+		rows[8].handle = replacement
+		var accepted: Dictionary = field.decide(tick,nav,rows,com,replacement)
+		check(accepted.ok,"matching replacement accepted on retried revision")
+		field.rollback_tick()
+		form.rollback_tick()
+
+	check(form.begin_tick().ok and form.advance(tick).ok,"begin same-size member transfer")
+	rows = project().rows
+	check(form.assign_members(0,[]).ok and form.assign_members(1,[handle(0)]).ok
+		and form.assign_members(0,[handle(1)]).ok,"swap members across two formations")
+	var stale_group: Dictionary = field.decide(tick,nav,rows,com,handle(8))
+	check(not stale_group.ok and stale_group.error.field=="field_ai_member","reject obsolete formation for a live handle")
+	field.rollback_tick()
+	for i in 2:
+		var dest: Dictionary = form.view(1-i).value
+		rows[i].formation_id = dest.id
+		rows[i].order_revision = dest.active.client_sequence if dest.active!=null else 0
+	rows.reverse()
+	check(field.decide(tick,nav,rows,com,handle(8)).ok,"accept valid reordered and transferred members")
+	field.rollback_tick()
+	form.rollback_tick()
+	check(form.begin_tick().ok and form.advance(tick).ok,"begin restored roster")
+	var retry: Dictionary = field.decide(tick,nav,project().rows,com,handle(8))
+	check(original.ok and retry==original,"retry reproduces decisions with previous membership and row order")
+	field.rollback_tick()
+	form.rollback_tick()
+
 func run() -> void:
 	engine=Adapter.new(root,true)
 	var opened: Dictionary=engine.open_scope(SCOPE)
@@ -193,6 +247,7 @@ func run() -> void:
 	for key in counts: check(counts[key]>0,"actual work "+key)
 	for pair in [["infantry","Melee"],["archer","Aim"],["cavalry","MountedStrike"],["mounted_archer","MountedArchery"]]:
 		check(modes.get(pair[0],{}).has(pair[1]),"observed "+str(pair))
+	if faults==0: verify_roster_retry(122)
 	print("FIELD_BRAINS counts=",counts," modes=",modes," checks=",checks," failures=",faults)
 	engine.release_scope(SCOPE)
 	quit(1 if faults else 0)

@@ -19,6 +19,7 @@ var _domains: Array = []
 var _valid := true
 var _roster := {}
 var _identity: Array = []
+var _member_indexes := {}
 var _vitals: Array = []
 var _sequence := {}
 var _checkpoint := {}
@@ -143,20 +144,29 @@ func _index(tick: int,nav: int,units: Array) -> Dictionary:
 		if not row.heading.is_finite() or not row.slot_position.is_finite() or (row.get("terrain")!=null and not row.terrain is Dictionary):
 			return R.fail("InvalidArgument","field_ai_pose")
 		var handle: Dictionary = row.handle
-		var member: Dictionary = _form.member_formation(handle)
-		if not member.ok or member.value!=row.formation_id or _units.has(handle.index):
-			return R.fail("StaleVersion","field_ai_member")
-		if not _groups.has(member.value):
-			var f: Dictionary = _form.view(member.value)
-			if not f.ok: return f
-			_groups[member.value] = {"team_key":f.value.team_key,"control_revision":f.value.control_revision,
+		var id: int = row.formation_id
+		if not _groups.has(id):
+			var f: Dictionary = _form.view(id)
+			if not f.ok: return R.fail("StaleVersion","field_ai_member")
+			var index: Dictionary = _member_indexes.get(id,{})
+			# FORM rolls back its numeric revision; compare its owned snapshot as well.
+			if index.is_empty() or index.revision!=f.value.members_revision or index.members!=f.value.members:
+				var generations := {}
+				for member: Dictionary in f.value.members:
+					generations[member.index] = member.generation
+				index = {"revision":f.value.members_revision,"members":f.value.members,"generations":generations}
+			_groups[id] = {"team_key":f.value.team_key,"control_revision":f.value.control_revision,
 				"order_revision":row.get("order_revision"),"members_revision":f.value.members_revision,"order_state":_order_state(f.value),
-				"count":0,"roster_size":f.value.members.size(),"center":Vector3.ZERO,"heading":row.heading,
+				"count":0,"member_index":index,"center":Vector3.ZERO,"heading":row.heading,
 				"terrain":row.get("terrain"),"slot_error":0.0}
-		var g: Dictionary = _groups[member.value]
+		var g: Dictionary = _groups[id]
+		var actor_index: Variant = handle.get("index")
+		var generation: Variant = handle.get("generation")
+		if handle.size()!=2 or not actor_index is int or not generation is int or g.member_index.generations.get(actor_index)!=generation or _units.has(actor_index):
+			return R.fail("StaleVersion","field_ai_member")
 		if not is_same(g.team_key,row.team_key) or g.control_revision!=row.get("control_revision") or g.order_revision!=row.get("order_revision"):
 			return R.fail("StaleVersion","field_ai_group")
-		identity.append([handle.index,handle.generation,row.team_key,member.value,row.get("role"),g.control_revision,g.order_revision])
+		identity.append([actor_index,generation,row.team_key,id,row.get("role"),g.control_revision,g.order_revision])
 		var condition := [row.get("hp",100),row.get("ammo",0),row.get("morale",70)]
 		if vitals.size()<_vitals.size() and condition!=_vitals[vitals.size()]:
 			changes.append({"handle":handle,"hp":condition[0],"ammo":condition[1],"morale":condition[2]})
@@ -168,7 +178,7 @@ func _index(tick: int,nav: int,units: Array) -> Dictionary:
 		g.slot_error = maxf(g.slot_error,row.position.distance_to(row.slot_position))
 		g.count += 1
 	for g: Dictionary in _groups.values():
-		if g.count!=g.roster_size:
+		if g.count!=g.member_index.members.size():
 			return R.fail("StaleVersion","field_ai_roster")
 		g.center /= g.count
 	var read: Dictionary
@@ -375,6 +385,9 @@ func _clear() -> void:
 func commit_tick() -> void:
 	if _busy or not _accepted: return
 	for domain in _domains: domain.commit_tick()
+	_member_indexes.clear()
+	for id in _groups:
+		_member_indexes[id] = _groups[id].member_index
 	for team in _watched:
 		_visible[team] = _visible_groups(team)
 	_l3 = _draft
