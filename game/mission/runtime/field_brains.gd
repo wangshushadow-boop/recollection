@@ -37,6 +37,8 @@ var _roster := {}
 var _identity: Array = []
 var _member_indexes := {}
 var _vitals: Array = []
+var _field_cache := {}
+var _field := {}
 var _sequence := {}
 var _checkpoint := {}
 var _draft: RefCounted
@@ -212,11 +214,89 @@ func _index(tick: int,nav: int,units: Array) -> Dictionary:
 	_vitals = vitals
 	return read
 
+# The field pipeline owns these pose columns and formation snapshots for the opening of this step.
+func _field_roster_matches() -> bool:
+	if _field_cache.is_empty() or not is_same(_field_cache.token,_field.token):
+		return false
+	for id in _field_cache.groups:
+		var prior: Dictionary = _field_cache.groups[id]
+		var current: Dictionary = _field.groups.get(id,{})
+		if current.is_empty() or current.members_revision!=prior.members_revision or current.members!=prior.member_index.members:
+			return false
+		if current.control_revision!=prior.control_revision or _field.layout_cache.get(id,{}).get("order_revision",0)!=prior.order_revision:
+			return false
+	return true
+
+func _publish_field(tick: int,nav: int,combat: RefCounted) -> Dictionary:
+	var humans: Array = _field.humans
+	var vitals: Dictionary = combat.field_ai_vitals(_scope,humans)
+	if not vitals.ok: return vitals
+	var rows := []
+	var offsets := {}
+	for i in humans.size():
+		var h: Dictionary = humans[i]
+		var id: int = _field.membership[h.index]
+		var pos: Vector3 = _field.positions[i]
+		var actor: Dictionary = vitals.value.actors[i]
+		rows.append({"handle":h,"team_key":_field.rows[h.index].components.team_key,"role":_field.roles[h.index],
+			"formation_id":id,"control_revision":_field.groups[id].control_revision,
+			"order_revision":_field.layout_cache.get(id,{}).get("order_revision",0),
+			"position":pos,"heading":_field.look.get(h.index,_field.headings[i]),
+			"slot_position":_field.targets.get(h.index,pos),"hp":actor.hp,"ammo":actor.ammo,"morale":actor.morale})
+		var group_offsets: Array = offsets.get_or_add(id,[])
+		group_offsets.append(i)
+	var published := _index(tick,nav,rows)
+	if not published.ok: return published
+	var members := {}
+	for i in rows.size():
+		var row: Dictionary = rows[i]
+		members[row.handle.index] = {"handle":row.handle,"formation_id":row.formation_id,
+			"team_key":row.team_key,"role":row.role,"offset":i}
+	_units = members
+	_field_cache = {"token":_field.token,"members":members,"groups":_groups,"offsets":offsets}
+	return published
+
+func _index_field(tick: int,nav: int,combat: RefCounted) -> Dictionary:
+	if not _field_roster_matches():
+		return _publish_field(tick,nav,combat)
+	_units = _field_cache.members
+	for id in _field_cache.groups:
+		var group: Dictionary = _field_cache.groups[id].duplicate()
+		group.order_state = _order_state(_field.groups[id])
+		_groups[id] = group
+	var changes := []
+	for change: Dictionary in _field.changes:
+		var row: Dictionary = _units.get(change.handle.index,{})
+		if not row.is_empty() and row.handle==change.handle:
+			# _index compares with this snapshot when rebuilding or returning to the row-based port.
+			if changes.is_empty():
+				_vitals = _vitals.duplicate()
+			_vitals[row.offset] = [change.hp,change.ammo,change.morale]
+			changes.append(change)
+	return _ai.advance(tick,nav,_roster,_field.positions,[],changes)
+
 func _ground(id: int, nav: int) -> Dictionary:
 	var g: Dictionary = _groups[id]
 	if g.terrain!=null: return R.ok(g.terrain)
 	var origin: Vector3 = g.center
-	var across: Vector3 = g.heading.cross(Vector3.UP).normalized()
+	var heading: Vector3 = g.heading
+	var slot_error: float = g.slot_error
+	if not _field.is_empty() and not is_same(_groups,_field_cache.groups):
+		# Only a scheduled formation consumes its center, maximum slot error and first member's heading.
+		var offsets: Array = _field_cache.offsets[id]
+		var humans: Array = _field.humans
+		var positions: PackedVector3Array = _field.positions
+		var targets: Dictionary = _field.targets
+		var first: int = offsets[0]
+		heading = _field.look.get(humans[first].index,_field.headings[first])
+		origin = Vector3.ZERO
+		slot_error = 0.0
+		for i: int in offsets:
+			var pos := positions[i]
+			origin += pos
+			slot_error = maxf(slot_error,pos.distance_to(targets.get(humans[i].index,pos)))
+		origin /= offsets.size()
+	var across: Vector3 = heading.cross(Vector3.UP).normalized()
 	if across==Vector3.ZERO: across=Vector3.RIGHT
 	var paths := []
 	for half: float in [0.5,1.0,2.0]:
@@ -229,7 +309,7 @@ func _ground(id: int, nav: int) -> Dictionary:
 		if not reply.value[i*2].reachable or not reply.value[i*2+1].reachable:
 			break
 		width = [1.0,2.0,4.0][i]
-	return R.ok({"reachable":width>=1.0,"clear_width":width,"spacing":1.0,"yaw":atan2(-g.heading.x,-g.heading.z),"slot_error":g.slot_error})
+	return R.ok({"reachable":width>=1.0,"clear_width":width,"spacing":1.0,"yaw":atan2(-heading.x,-heading.z),"slot_error":slot_error})
 
 func _tactical(job: Dictionary) -> Dictionary:
 	var team: Variant = job.subject
@@ -287,7 +367,15 @@ func _prepare_member(job: Dictionary, nav: int, combat: RefCounted, cache: Dicti
 	work.observed = observed.value
 	work.combat = physical.value
 	work.rules = state.value.member_constraint
-	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":row.slot_position,"heading":row.heading,"exit_position":_teams[row.team_key].exit_position}
+	var slot: Vector3
+	var heading: Vector3
+	if _field.is_empty():
+		slot = row.slot_position
+		heading = row.heading
+	else:
+		slot = _field.targets.get(job.subject.index,_field.positions[row.offset])
+		heading = _field.look.get(job.subject.index,_field.headings[row.offset])
+	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":slot,"heading":heading,"exit_position":_teams[row.team_key].exit_position}
 	for key in ["threat_handle","threat_direction","react_at","reaction_skill"]:
 		if row.has(key): work.local[key] = row[key]
 	return R.ok(work)
@@ -328,9 +416,16 @@ func _flush_quiet(members: Array[MemberWork], proposals: Dictionary, metrics: Di
 	return R.ok()
 
 func decide(tick: int, nav: int, units: Array, combat: RefCounted, player_handle: Variant) -> Dictionary:
+	return _decide(tick,nav,units,{},combat,player_handle)
+
+func decide_compact(tick: int, nav: int, columns: Dictionary, combat: RefCounted, player_handle: Variant) -> Dictionary:
+	return _decide(tick,nav,[],columns,combat,player_handle)
+
+func _decide(tick: int,nav: int,units: Array,columns: Dictionary,combat: RefCounted,player_handle: Variant) -> Dictionary:
 	if not _valid or _busy or not _checkpoint.is_empty():
 		return R.fail("InvalidState","field_brains")
-	_checkpoint = {"roster":_roster,"identity":_identity,"vitals":_vitals,"sequence":_sequence.duplicate()}
+	_checkpoint = {"roster":_roster,"identity":_identity,"vitals":_vitals,"sequence":_sequence.duplicate(),"field_cache":_field_cache}
+	_field = columns
 	_busy = true
 	var computed := R.ok()
 	for domain in _domains:
@@ -338,7 +433,11 @@ func decide(tick: int, nav: int, units: Array, combat: RefCounted, player_handle
 		if not computed.ok: break
 	if computed.ok:
 		_draft = _l3.fork()
-		computed = _index(tick,nav,units)
+		if _field.is_empty():
+			_field_cache = {}
+			computed = _index(tick,nav,units)
+		else:
+			computed = _index_field(tick,nav,combat)
 	if computed.ok: computed = _dispatch(tick,nav,combat,player_handle)
 	_busy = false
 	if not computed.ok: rollback_tick()
@@ -441,6 +540,7 @@ func accept_actions(action_receipts: Array,move_receipts: Array) -> Dictionary:
 
 func _clear() -> void:
 	_draft = null
+	_field = {}
 	_checkpoint = {}
 	_groups = {}
 	_units = {}
@@ -467,5 +567,6 @@ func rollback_tick() -> void:
 	_roster = _checkpoint.roster
 	_identity = _checkpoint.identity
 	_vitals = _checkpoint.vitals
+	_field_cache = _checkpoint.field_cache
 	_sequence = _checkpoint.sequence
 	_clear()

@@ -93,7 +93,9 @@ func projection() -> void:
 	var shot := [attack("release",1)]
 	var rejected: Dictionary = fork.step_field(4,shot,poses,func(_q,_tick): return R.fail("Unavailable","sweep"))
 	check(not rejected.ok and fork.field_view(SCOPE,[A]).value == sim.field_view(SCOPE,[A]).value,"uncommitted release and clock discarded")
+	check(fork.field_ai_changes(SCOPE).value.actors.is_empty(),"failed release discards ammo delta")
 	fork.step_field(4,shot,poses,clear)
+	check(fork.field_ai_changes(SCOPE).value == fork.field_ai_vitals(SCOPE,[A]).value and sim.field_ai_changes(SCOPE).value.actors.is_empty(),"committed ammo delta is branch local")
 	var at_four: Dictionary = fork.field_view(SCOPE,[A]).value
 	check(at_four.tick==4 and at_four.projectile_count==1 and at_four.actors[0].ammo==7 and at_four.actors[0].phase=="Active","committed branch with flight")
 	var p: Dictionary = at_four.projectiles[0]
@@ -114,6 +116,40 @@ func projection() -> void:
 	fork.step_field(7,[],{},clear)
 	fork.step_field(8,[],{},clear)
 	check(fork.view(B).value.phase=="Ready" and visible.actors[1].mount_handle==HORSE,"fall recovery and detached old link")
+
+
+func sparse_projections() -> void:
+	var sim := Combat.new(SCOPE)
+	sim.enlist(A,{"team":0,"role":"cavalry","morale":25})
+	sim.enlist(B,{"team":0,"role":"infantry","shield":10})
+	sim.enlist(HORSE,{"team":0,"role":"mount"})
+	var seed: Array = sim.field_ai_vitals(SCOPE,[B,A]).value.actors
+	check(seed[1] == {"handle":A,"hp":100,"ammo":8,"morale":25} and seed[0].handle == B,"ordered authoritative AI seed")
+	var opening: Dictionary = sim.field_motion_traits(SCOPE).value
+	var poses := {0:{"position_mm":[0,0,0]},1:{"position_mm":[1000,0,0]}}
+	sim.step_field(1,[],poses,Callable())
+	check(sim.field_ai_changes(SCOPE).value == sim.field_ai_vitals(SCOPE,[B]).value and sim.view(B).value.morale == 64,"initial rout propagates neighbor morale")
+	sim.step_field(2,[],poses,Callable(),[{"actor_handle":A,"delta":45}])
+	check(sim.field_ai_changes(SCOPE).value == sim.field_ai_vitals(SCOPE,[A]).value,"regroup reports actual morale")
+	var fork: RefCounted = sim.fork()
+	check(fork.mount(A,HORSE).ok and fork.field_motion_traits(SCOPE).value.mounts.get(0) == HORSE and opening.mounts.is_empty(),"same-tick mount and detached opening")
+	var frozen: Dictionary = fork.field_motion_traits(SCOPE).value
+	var projectile := {"attacker":A,"target":B,"attack_id":"test","contact_order":0,"projectile":true,"team":1,"power":15,"region":"shield"}
+	var guard := {"actor_handle":B,"direction":"up","held":true}
+	var sample := func(_t,_active): return R.ok([projectile])
+	check(fork.step(3,[guard],sample).ok and fork.field_motion_traits(SCOPE).value.shielded.is_empty() and frozen.shielded.has(1),"broken shield updates MOV, retains prior snapshot")
+	check(fork.field_ai_changes(SCOPE).value.actors.is_empty(),"shield-only contact produces no vital delta")
+	projectile.region = "body"
+	check(fork.step(4,[],sample).ok and fork.field_ai_changes(SCOPE).value == fork.field_ai_vitals(SCOPE,[B]).value and fork.view(B).value.hp==85,"body hit reports current hp")
+	check(fork.dismount(A).ok and fork.field_motion_traits(SCOPE).value.mounts.is_empty() and frozen.mounts.get(0)==HORSE,"same-tick dismount")
+	fork.remove_actor(B)
+	var replacement := {"index":1,"generation":2}
+	fork.enlist(replacement,{"team":0,"role":"archer","hp":45,"ammo":2})
+	check(not fork.field_ai_vitals(SCOPE,[B]).ok and fork.field_ai_changes(SCOPE).value.actors == [{"handle":replacement,"hp":45,"ammo":2,"morale":70}],"generation reuse discards retired delta")
+	check(sim.field_motion_traits(SCOPE).value==opening and sim.field_ai_changes(SCOPE).value==sim.field_ai_vitals(SCOPE,[A]).value,"discarded fork retained original traits and last delta")
+	for t in range(3,61):
+		sim.step_field(t,[],poses,Callable())
+	check(sim.field_ai_changes(SCOPE).value == sim.field_ai_vitals(SCOPE,[B]).value and sim.view(B).value.morale==65,"periodic morale recovery")
 
 
 func view_load(population: int) -> void:
@@ -148,6 +184,7 @@ func view_load(population: int) -> void:
 func _initialize() -> void:
 	canonical_parity()
 	projection()
+	sparse_projections()
 	if "--view-load" in OS.get_cmdline_user_args():
 		view_load(500)
 		view_load(1000)

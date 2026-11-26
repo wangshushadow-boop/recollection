@@ -391,12 +391,22 @@ func _advance_groups(desired: Dictionary, rows: Array, tick: int) -> Dictionary:
 	var advanced: Dictionary = _form.advance(tick)
 	if not advanced.ok: return advanced
 	var groups := {}
-	var membership_by_index := {}
+	var same_members := is_same(rows,_frame.get("roster"))
 	for id in desired:
 		var group: Dictionary = _form.view(id)
 		if group.ok:
 			groups[id]=group.value
-			for h in group.value.members:membership_by_index[h.index]=id
+			if same_members and _frame.groups[id].members_revision!=group.value.members_revision:
+				same_members=false
+		else:
+			same_members=false
+	_draft["groups"]=groups
+	if same_members:
+		_draft["membership"]=_frame.membership
+		return R.ok()
+	var membership_by_index := {}
+	for id in groups:
+		for h in groups[id].members:membership_by_index[h.index]=id
 	for row in rows:
 		if row.source_slot!=null and not membership_by_index.has(row.handle.index):
 			var membership: Dictionary = _form.member_formation(row.handle)
@@ -404,7 +414,6 @@ func _advance_groups(desired: Dictionary, rows: Array, tick: int) -> Dictionary:
 				var new_group:Dictionary=_form.view(membership.value).value
 				groups[membership.value]=new_group
 				for h in new_group.members:membership_by_index[h.index]=membership.value
-	_draft["groups"]=groups
 	_draft["membership"]=membership_by_index
 	return R.ok()
 
@@ -420,7 +429,9 @@ func _project_slots(points: PackedVector3Array, origin: Vector3) -> Dictionary:
 	return R.ok(projected)
 
 func _formations() -> Dictionary:
-	var targets := {}
+	var slot_sources := {}
+	var previous: Dictionary = _frame.get("slot_sources",{})
+	var same_slots := is_same(_draft.roster,_frame.get("roster"))
 	for id in _draft.groups:
 		var g: Dictionary = _draft.groups[id]
 		if g.members.is_empty(): continue
@@ -439,9 +450,14 @@ func _formations() -> Dictionary:
 		var signature := [g.members_revision,g.layout,g.facing_microradians,g.active,_draft.nav]
 		if old.is_empty() or old.signature!=signature or old.anchor.distance_squared_to(goal)>4.0:
 			var rebuilt: Dictionary = _form.build_slot_targets(id,goal,g.facing_microradians*.000001,1.45,INF,_project_slots.bind(leader.value.position))
-			if not rebuilt.ok:
-				if rebuilt.error.code!="Unavailable": return rebuilt
-				continue
+			if not rebuilt.ok and rebuilt.error.code!="Unavailable": return rebuilt
+			# Projection failures change terrain feedback and can finish the active order.
+			# A successful retry clears that feedback before the AI validates its snapshot.
+			if not rebuilt.ok or not g.terrain_feedback.is_empty():
+				var refreshed: Dictionary = _form.view(id)
+				if not refreshed.ok: return refreshed
+				_draft.groups[id]=refreshed.value
+			if not rebuilt.ok: continue
 			var revision: int = old.get("order_revision",0)
 			if old.is_empty() or old.signature!=signature: revision+=1
 			old={"anchor":goal,"signature":signature,"slots":rebuilt.value.slots,"order_revision":revision}
@@ -455,7 +471,13 @@ func _formations() -> Dictionary:
 				if not route.ok: return route
 				var assigned: Dictionary = _move.assign(h,lane,slot.position-goal,_draft.stage)
 				if not assigned.ok: return assigned
-		for slot in old.slots: targets[slot.member.index]=slot.position
+		slot_sources[id]=old.slots
+		if not is_same(old.slots,previous.get(id)): same_slots=false
+	_draft["slot_sources"]=slot_sources
+	if same_slots and slot_sources.size()==previous.size(): return R.ok(_frame.targets)
+	var targets := {}
+	for slots in slot_sources.values():
+		for slot in slots: targets[slot.member.index]=slot.position
 	return R.ok(targets)
 
 func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
@@ -463,6 +485,7 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if not mounted.ok:return mounted
 	var targets := _formations()
 	if not targets.ok: return targets
+	_draft["targets"]=targets.value
 	# The opening AI reads only positions and headings. Profile/formation changes
 	# before movement can change velocity or routes, but neither of those columns.
 	var motion: Dictionary
@@ -472,25 +495,18 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		var prior: Dictionary=_move.read_poses(_draft.token,_draft.stage)
 		if not prior.ok:return prior
 		motion=prior.value
-	var positions: PackedVector3Array=motion.positions
-	var headings: PackedVector3Array=motion.headings
-	var state:Dictionary=_draft.com.field_view(_mission,_draft.humans,0)
-	if not state.ok:return state
-	_draft["members_state"]=state.value.actors
-	var units := []
-	for i in _draft.humans.size():
-		var h:Dictionary=_draft.humans[i]
-		var row:Dictionary=_draft.rows[h.index]
-		var id:int=_draft.membership[h.index]
-		var group:Dictionary=_draft.groups[id]
-		var actor:Dictionary=state.value.actors[i]
-		var pos:Vector3=positions[i]
-		units.append({"handle":h,"formation_id":id,"team_key":row.components.team_key,"role":_draft.roles[h.index],
-			"heading":_draft.look.get(h.index,headings[i]),"slot_position":targets.value.get(h.index,pos),
-			"position":pos,"control_revision":group.control_revision,"order_revision":_draft.layout_cache.get(id,{}).get("order_revision",0),
-			"ammo":actor.ammo,"hp":actor.hp,"morale":actor.morale,"terrain":null})
 	var player: Variant = _draft.player if _rules.view().control_mode!="delegate" else null
-	var decision: Dictionary = _brains.decide(batch.source_tick,_draft.nav,units,_draft.com,player)
+	var decision: Dictionary
+	if _brains.has_method("decide_compact"):
+		var changes: Dictionary = _draft.com.field_ai_changes(_mission)
+		if not changes.ok: return changes
+		var columns := {"token":_draft.token,"humans":_draft.humans,"rows":_draft.rows,"roles":_draft.roles,
+			"membership":_draft.membership,"groups":_draft.groups,"layout_cache":_draft.layout_cache,
+			"targets":targets.value,"positions":motion.positions,"headings":motion.headings,
+			"look":_draft.look,"changes":changes.value.actors}
+		decision = _brains.decide_compact(batch.source_tick,_draft.nav,columns,_draft.com,player)
+	else:
+		decision = _decide_legacy(batch.source_tick,motion,targets.value,player)
 	if not decision.ok: return decision
 	_draft["ai"]=decision.value.actions
 	_draft["ai_moves"]=decision.value.moves
@@ -515,6 +531,21 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 			else:
 				return R.fail("InvalidArgument","field.interaction")
 	return R.ok()
+
+func _decide_legacy(tick: int, motion: Dictionary, targets: Dictionary, player: Variant) -> Dictionary:
+	var state: Dictionary = _draft.com.field_view(_mission,_draft.humans,0)
+	if not state.ok: return state
+	var units := []
+	for i in _draft.humans.size():
+		var h: Dictionary = _draft.humans[i]
+		var id: int = _draft.membership[h.index]
+		var actor: Dictionary = state.value.actors[i]
+		var pos: Vector3 = motion.positions[i]
+		units.append({"handle":h,"formation_id":id,"team_key":_draft.rows[h.index].components.team_key,"role":_draft.roles[h.index],
+			"heading":_draft.look.get(h.index,motion.headings[i]),"slot_position":targets.get(h.index,pos),
+			"position":pos,"control_revision":_draft.groups[id].control_revision,"order_revision":_draft.layout_cache.get(id,{}).get("order_revision",0),
+			"ammo":actor.ammo,"hp":actor.hp,"morale":actor.morale,"terrain":null})
+	return _brains.decide(tick,_draft.nav,units,_draft.com,player)
 
 func _mount_target(rider: Dictionary, target_ref: String) -> Dictionary:
 	for row in _draft.roster:
@@ -620,13 +651,17 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var previous: Dictionary=_frame.get("projections",{})
 	var projections: Array[PoseProjection]=[]
 	var ridden := {}
+	var traits: Dictionary = _draft.com.field_motion_traits(_mission)
+	if not traits.ok: return traits
+	var mounts: Dictionary = traits.value.mounts
+	var shielded: Dictionary = traits.value.shielded
 	for i in _draft.humans.size():
 		var h: Dictionary=_draft.humans[i]
-		var state: Dictionary=_draft.members_state[i]
+		var mount: Variant=mounts.get(h.index)
 		var heading: Vector3=_draft.look.get(h.index,headings[i])
-		projections.append(_project_actor(previous.get(h.index),_draft.rows[h.index],positions[i],velocities[i],heading,state.mount_handle!=null,state.shield>0))
-		if state.mount_handle!=null:
-			var index: int=state.mount_handle.index
+		projections.append(_project_actor(previous.get(h.index),_draft.rows[h.index],positions[i],velocities[i],heading,mount!=null,shielded.has(h.index)))
+		if mount!=null:
+			var index: int=mount.index
 			projections.append(_project_actor(previous.get(index),_draft.rows[index],positions[i],velocities[i],heading,false,false))
 			ridden[index]=true
 	for row in _draft.horses:
@@ -735,6 +770,7 @@ func _publish() -> void:
 	_layout_specs=_draft.layout_cache
 	for key in _draft.resolved_mount_orders:_mount_orders.erase(key)
 	_frame={"roster":_draft.roster,"rows":_draft.rows,"ending_rows":_draft.ending_rows,"groups":_draft.groups,"nav":_draft.nav,"humans":_draft.humans,"token":_draft.token,
+		"membership":_draft.membership,"slot_sources":_draft.slot_sources,"targets":_draft.targets,
 		"roles":_draft.roles,"horses":_draft.horses,"motion":_draft.motion,"projections":_draft.projections,"combat_poses":_draft.combat_poses,
 		"look":_draft.look,"pose":_draft.pose,"metrics":_draft.metrics,"combat_report":_draft.combat_report}
 	_draft={}

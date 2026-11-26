@@ -16,6 +16,10 @@ var _shots := {}
 var _ride_paths := {}
 var _pending_spread := {}
 var _sampling := {}
+var _vital_changes := {}
+# Sparse MOV projections share immutable maps across forks until a link or shield changes.
+var _mounts := {}
+var _shielded := {}
 
 
 func _init(scope_id: String = "") -> void:
@@ -29,6 +33,11 @@ func fork():
 	copy._shots = _shots.duplicate()
 	copy._ride_paths = _ride_paths.duplicate()
 	copy._pending_spread = _pending_spread.duplicate()
+	copy._vital_changes = _vital_changes.duplicate()
+	_mounts.make_read_only()
+	_shielded.make_read_only()
+	copy._mounts = _mounts
+	copy._shielded = _shielded
 	return copy
 
 
@@ -71,6 +80,11 @@ func enlist(handle: Dictionary, profile: Dictionary) -> Dictionary:
 		"morale":morale, "routing":routing, "commander":profile.get("commander",false), "last_spread":-SPREAD_TICKS})
 	if routing:
 		_pending_spread[handle.index] = {"handle":_actors[handle.index].handle, "initial":true}
+	_vital_changes[handle.index] = true
+	if _actors[handle.index].shield > 0:
+		if _shielded.is_read_only():
+			_shielded = _shielded.duplicate()
+		_shielded[handle.index] = true
 	return R.ok()
 
 
@@ -92,6 +106,9 @@ func mount(rider: Dictionary, horse: Dictionary) -> Dictionary:
 	_actors[rider.index] = a
 	_actors[horse.index] = b
 	_ride_paths[horse.index] = {}
+	if _mounts.is_read_only():
+		_mounts = _mounts.duplicate()
+	_mounts[rider.index] = b.handle
 	return R.ok()
 
 
@@ -106,6 +123,9 @@ func _unlink(rider: Dictionary, horse: Dictionary, fallen: bool) -> void:
 	_actors[rider.index] = a
 	_actors[horse.index] = b
 	_ride_paths.erase(horse.index)
+	if _mounts.is_read_only():
+		_mounts = _mounts.duplicate()
+	_mounts.erase(rider.index)
 
 
 func dismount(rider: Dictionary) -> Dictionary:
@@ -131,7 +151,61 @@ func remove_actor(handle: Dictionary) -> Dictionary:
 	var removed := super.remove_actor(handle)
 	if removed.ok:
 		_view_cache.erase(handle.index)
+		_vital_changes.erase(handle.index)
+		_remove_shield(handle.index)
 	return removed
+
+
+func _remove_shield(index: int) -> void:
+	if _shielded.has(index):
+		if _shielded.is_read_only():
+			_shielded = _shielded.duplicate()
+		_shielded.erase(index)
+
+
+func field_motion_traits(scope_id: String) -> Dictionary:
+	if scope_id.is_empty() or scope_id != _scope_id:
+		return R.fail("NotFound", "combat_scope")
+	_mounts.make_read_only()
+	_shielded.make_read_only()
+	return R.ok({"mounts":_mounts, "shielded":_shielded})
+
+
+static func _vitals(state: Dictionary) -> Dictionary:
+	var row := {"handle":state.handle, "hp":state.hp, "ammo":state.ammo, "morale":state.morale}
+	row.make_read_only()
+	return row
+
+
+# Roster bootstrap reads current authority, including actors that did not change this tick.
+func field_ai_vitals(scope_id: String, handles: Array) -> Dictionary:
+	if scope_id.is_empty() or scope_id != _scope_id:
+		return R.fail("NotFound", "combat_scope")
+	if handles.size() > MAX_VIEW_ACTORS:
+		return R.fail("InvalidArgument", "view_limit")
+	var rows := []
+	var seen := {}
+	for handle in handles:
+		if typeof(handle) != TYPE_DICTIONARY:
+			return R.fail("InvalidArgument", "actor_handle")
+		var state := _actor(handle, _actors)
+		if state.is_empty():
+			return R.fail("NotFound", "actor_handle")
+		if seen.has(handle.index):
+			return R.fail("Conflict", "actor_handle")
+		seen[handle.index] = true
+		rows.append(_vitals(state))
+	return R.ok({"actors":rows})
+
+
+# Non-draining. A rejected/retried field tick sees the same last successful combat changes.
+func field_ai_changes(scope_id: String) -> Dictionary:
+	if scope_id.is_empty() or scope_id != _scope_id:
+		return R.fail("NotFound", "combat_scope")
+	var rows := []
+	for index in _vital_changes:
+		rows.append(_vitals(_actors[index]))
+	return R.ok({"actors":rows})
 
 
 # Local authority assembly read. Poses come from MOV. Shots retain their own IDs after the shooter retires.
@@ -196,6 +270,26 @@ func _query_active(tick: int, active: Array, states: Dictionary, query: Callable
 	return result
 
 
+func step(tick: Variant, intents: Array, query_contacts: Callable = Callable()) -> Dictionary:
+	var opening := _actors
+	var result := super.step(tick, intents, query_contacts)
+	if not result.ok:
+		return result
+	_vital_changes = {}
+	for i in intents.size():
+		var intent: Dictionary = intents[i]
+		if intent.get("input_phase") == "release" and result.value.receipts[i].ok:
+			var index: int = intent.actor_handle.index
+			if _actors[index].ammo != opening[index].ammo:
+				_vital_changes[index] = true
+	for hit: Dictionary in result.value.hits:
+		if hit.damage > 0:
+			_vital_changes[hit.target.index] = true
+		if hit.get("shield_broken",false):
+			_remove_shield(hit.target.index)
+	return result
+
+
 func step_field(tick: Variant, intents: Array, poses: Dictionary, sweep: Callable, morale_events: Array = []) -> Dictionary:
 	if _querying:
 		return R.fail("InvalidState","collision_query")
@@ -255,6 +349,7 @@ func _change_morale(index: int, delta: int, events: Array) -> bool:
 			_track_phase(_timed, index, state.phase)
 		events.append({"type":"routed" if routing else "regrouped", "actor_handle":state.handle, "morale":value})
 	_actors[index] = state
+	_vital_changes[index] = true
 	return changed and routing
 
 
