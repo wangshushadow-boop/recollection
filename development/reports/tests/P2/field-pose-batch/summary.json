@@ -1,0 +1,1068 @@
+{
+  "baseline": {
+    "files": [
+      "PoseVA1.json",
+      "PoseVA2.json",
+      "PoseVA3.json",
+      "PoseVA4.json"
+    ],
+    "step_samples": 1280,
+    "frame_samples": 637,
+    "frame_step_histogram": {
+      "2": 637
+    },
+    "step_ms": [
+      30.125,
+      29.794,
+      34.139
+    ],
+    "frame_ms": [
+      79.313,
+      78.293,
+      87.972
+    ],
+    "fps": 12.608228379233816,
+    "sps": 25.216456758467633,
+    "field_step_per_frame_ms": 60.2479262166405,
+    "outside_field_step_ms": 19.0653579277865,
+    "gpu_viewport_ms": [
+      6.776,
+      5.891,
+      8.854
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "projections": {
+    "files": [
+      "PoseVB1.json",
+      "PoseVB2.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      31.287,
+      31.202,
+      35.567
+    ],
+    "frame_ms": [
+      80.426,
+      80.184,
+      89.622
+    ],
+    "fps": 12.433724436526482,
+    "sps": 24.867448873052965,
+    "field_step_per_frame_ms": 62.581987421383644,
+    "outside_field_step_ms": 17.84443710691825,
+    "gpu_viewport_ms": [
+      6.736,
+      5.766,
+      8.836
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "final": {
+    "files": [
+      "PoseVC1.json",
+      "PoseVC2.json",
+      "PoseVC3.json",
+      "PoseVC4.json"
+    ],
+    "step_samples": 1280,
+    "frame_samples": 636,
+    "frame_step_histogram": {
+      "2": 636
+    },
+    "step_ms": [
+      28.171,
+      27.747,
+      32.131
+    ],
+    "frame_ms": [
+      73.043,
+      71.703,
+      81.048
+    ],
+    "fps": 13.690569367531857,
+    "sps": 27.381138735063715,
+    "field_step_per_frame_ms": 56.3124072327044,
+    "outside_field_step_ms": 16.730573899371066,
+    "gpu_viewport_ms": [
+      6.726,
+      5.824,
+      8.944
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "worker2": {
+    "files": [
+      "PoseVW2a.json",
+      "PoseVW2b.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      28.531,
+      28.193,
+      33.233
+    ],
+    "frame_ms": [
+      74.095,
+      73.358,
+      84.908
+    ],
+    "fps": 13.49615582372917,
+    "sps": 26.99231164745834,
+    "field_step_per_frame_ms": 57.04725157232704,
+    "outside_field_step_ms": 17.047921383647804,
+    "gpu_viewport_ms": [
+      6.804,
+      5.781,
+      9.063
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "worker4": {
+    "files": [
+      "PoseVW4a.json",
+      "PoseVW4b.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      27.916,
+      27.495,
+      32.419
+    ],
+    "frame_ms": [
+      72.753,
+      71.584,
+      82.733
+    ],
+    "fps": 13.74506398759521,
+    "sps": 27.49012797519042,
+    "field_step_per_frame_ms": 55.817317610062894,
+    "outside_field_step_ms": 16.936072327044023,
+    "gpu_viewport_ms": [
+      6.61,
+      5.768,
+      8.703
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "worker8": {
+    "files": [
+      "PoseVW8a.json",
+      "PoseVW8b.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 319,
+    "frame_step_histogram": {
+      "2": 319
+    },
+    "step_ms": [
+      28.569,
+      28.287,
+      33.757
+    ],
+    "frame_ms": [
+      74.433,
+      73.772,
+      86.726
+    ],
+    "fps": 13.43489043573098,
+    "sps": 26.86978087146196,
+    "field_step_per_frame_ms": 57.12836363636364,
+    "outside_field_step_ms": 17.304695924764893,
+    "gpu_viewport_ms": [
+      6.747,
+      6.756,
+      8.807
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {},
+    "matched_phase_ms_per_frame": {},
+    "matched_step_work": {}
+  },
+  "before_detail": {
+    "files": [
+      "PoseVAD1.json",
+      "PoseVAD2.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      30.22,
+      29.792,
+      34.392
+    ],
+    "frame_ms": [
+      79.592,
+      78.422,
+      88.168
+    ],
+    "fps": 12.564008784849765,
+    "sps": 25.12801756969953,
+    "field_step_per_frame_ms": 60.44322012578616,
+    "outside_field_step_ms": 19.149210691823903,
+    "gpu_viewport_ms": [
+      6.828,
+      6.919,
+      8.78
+    ],
+    "phases_ms": {
+      "_fight": [
+        2.685,
+        2.647,
+        3.219
+      ],
+      "_snapshot": [
+        0.012,
+        0.012,
+        0.013
+      ],
+      "_start": [
+        1.71,
+        1.679,
+        2.226
+      ],
+      "_think": [
+        10.915,
+        10.721,
+        12.573
+      ],
+      "_walk": [
+        10.729,
+        10.566,
+        12.327
+      ],
+      "ai_actor_read": [
+        1.034,
+        1.002,
+        1.247
+      ],
+      "ai_input": [
+        1.787,
+        1.746,
+        2.064
+      ],
+      "brains_total": [
+        7.572,
+        7.418,
+        8.716
+      ],
+      "clearance": [
+        1.58,
+        1.566,
+        1.792
+      ],
+      "combat_pose": [
+        1.199,
+        1.191,
+        1.378
+      ],
+      "combat_sim": [
+        0.728,
+        0.696,
+        1.129
+      ],
+      "formation_slots": [
+        0.344,
+        0.333,
+        0.428
+      ],
+      "individual_jobs": [
+        4.354,
+        4.341,
+        4.698
+      ],
+      "move_advance": [
+        3.734,
+        3.681,
+        4.119
+      ],
+      "physics_pack": [
+        1.53,
+        1.509,
+        1.814
+      ],
+      "physics_stage": [
+        2.604,
+        2.444,
+        3.565
+      ],
+      "roster_index": [
+        1.87,
+        1.837,
+        2.132
+      ],
+      "sys.field.ai": [
+        10.919,
+        10.724,
+        12.577
+      ],
+      "sys.field.casualties": [
+        0.003,
+        0.003,
+        0.004
+      ],
+      "sys.field.combat": [
+        2.689,
+        2.65,
+        3.225
+      ],
+      "sys.field.movement": [
+        10.733,
+        10.569,
+        12.33
+      ],
+      "sys.field.results": [
+        0.014,
+        0.014,
+        0.016
+      ],
+      "sys.field.rules": [
+        0.019,
+        0.018,
+        0.021
+      ],
+      "sys.field.start": [
+        1.715,
+        1.685,
+        2.232
+      ]
+    },
+    "frame_spans_mean_ms": {
+      "_process": 2.009415094339624,
+      "after_step": 1.8604433962264144,
+      "apply_snapshot": 2.5156163522012602,
+      "before_step": 2.7292295597484295,
+      "present_frame": 9.919393081761005,
+      "visual_com": 1.222783018867925,
+      "visual_filter": 3.367654088050316,
+      "visual_pack": 1.6503364779874208,
+      "visual_view": 6.283509433962263
+    },
+    "matched_phase_ms_per_frame": {
+      "_fight": 5.374569182389937,
+      "_snapshot": 0.023669811320754717,
+      "_start": 3.4209213836477987,
+      "_think": 21.822138364779875,
+      "_walk": 21.460455974842766,
+      "ai_actor_read": 2.068254716981132,
+      "ai_input": 3.57427358490566,
+      "brains_total": 15.133327044025158,
+      "clearance": 3.160867924528302,
+      "combat_pose": 2.399575471698113,
+      "combat_sim": 1.4589119496855347,
+      "formation_slots": 0.6891037735849056,
+      "individual_jobs": 8.709672955974842,
+      "move_advance": 7.469638364779874,
+      "physics_pack": 3.0618616352201258,
+      "physics_stage": 5.2069842767295595,
+      "roster_index": 3.739698113207547,
+      "sys.field.ai": 21.82956289308176,
+      "sys.field.casualties": 0.006393081761006289,
+      "sys.field.combat": 5.382452830188679,
+      "sys.field.movement": 21.467770440251574,
+      "sys.field.results": 0.028845911949685533,
+      "sys.field.rules": 0.03713207547169812,
+      "sys.field.start": 3.430198113207547
+    },
+    "matched_step_work": {
+      "_fight": 0.0,
+      "_snapshot": 0.0,
+      "_start": 0.0,
+      "_think": 0.0,
+      "_walk": 0.0,
+      "ai_actor_read": 500.0,
+      "ai_input": 500.0,
+      "brains_total": 500.0,
+      "clearance": 0.0,
+      "combat_pose": 600.0,
+      "combat_sim": 0.0,
+      "formation_slots": 8.0,
+      "individual_jobs": 41.581761006289305,
+      "move_advance": 1582.867924528302,
+      "physics_pack": 600.0,
+      "physics_stage": 600.0,
+      "roster_index": 500.0,
+      "sys.field.ai": 1.0,
+      "sys.field.casualties": 1.0,
+      "sys.field.combat": 1.0,
+      "sys.field.movement": 1.0,
+      "sys.field.results": 1.0,
+      "sys.field.rules": 1.0,
+      "sys.field.start": 1.0
+    },
+    "exclusive_wall_ms": {
+      "AI": 21.822138364779875,
+      "movement": 21.460455974842766,
+      "combat": 5.374569182389937,
+      "other_simulation": 11.78605660377358,
+      "presentation": 11.928808176100627,
+      "input_and_after": 4.589672955974844,
+      "remainder": 2.6307295597484313
+    },
+    "ideal_fps_if_AI_MOV_improve": {
+      "2x": 17.255917823412325,
+      "4x": 21.217689541398823,
+      "zero_cost": 27.540746447763343
+    }
+  },
+  "after_detail": {
+    "files": [
+      "PoseVCD1.json",
+      "PoseVCD2.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      28.887,
+      28.562,
+      32.757
+    ],
+    "frame_ms": [
+      74.766,
+      74.365,
+      82.439
+    ],
+    "fps": 13.375110223736572,
+    "sps": 26.750220447473144,
+    "field_step_per_frame_ms": 57.76176729559749,
+    "outside_field_step_ms": 17.00397169811321,
+    "gpu_viewport_ms": [
+      6.722,
+      6.729,
+      8.718
+    ],
+    "phases_ms": {
+      "_fight": [
+        1.367,
+        1.329,
+        1.775
+      ],
+      "_snapshot": [
+        0.011,
+        0.011,
+        0.012
+      ],
+      "_start": [
+        1.705,
+        1.682,
+        2.19
+      ],
+      "_think": [
+        10.532,
+        10.348,
+        12.179
+      ],
+      "_walk": [
+        11.132,
+        10.754,
+        14.047
+      ],
+      "ai_actor_read": [
+        1.033,
+        1.005,
+        1.225
+      ],
+      "ai_input": [
+        1.482,
+        1.456,
+        1.748
+      ],
+      "body_reuse": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "brains_total": [
+        7.619,
+        7.438,
+        8.827
+      ],
+      "clearance": [
+        1.549,
+        1.537,
+        1.738
+      ],
+      "combat_sim": [
+        0.754,
+        0.729,
+        1.149
+      ],
+      "formation_slots": [
+        0.34,
+        0.329,
+        0.413
+      ],
+      "individual_jobs": [
+        4.366,
+        4.337,
+        4.747
+      ],
+      "move_advance": [
+        3.723,
+        3.674,
+        4.103
+      ],
+      "physics_pack": [
+        2.634,
+        2.452,
+        3.866
+      ],
+      "physics_stage": [
+        1.887,
+        1.538,
+        3.525
+      ],
+      "reuse": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "roster_index": [
+        1.898,
+        1.867,
+        2.153
+      ],
+      "sys.field.ai": [
+        10.536,
+        10.352,
+        12.183
+      ],
+      "sys.field.casualties": [
+        0.003,
+        0.003,
+        0.004
+      ],
+      "sys.field.combat": [
+        1.37,
+        1.333,
+        1.778
+      ],
+      "sys.field.movement": [
+        11.136,
+        10.757,
+        14.051
+      ],
+      "sys.field.results": [
+        0.014,
+        0.014,
+        0.015
+      ],
+      "sys.field.rules": [
+        0.018,
+        0.018,
+        0.02
+      ],
+      "sys.field.start": [
+        1.71,
+        1.687,
+        2.195
+      ]
+    },
+    "frame_spans_mean_ms": {
+      "_process": 1.9631509433962269,
+      "after_step": 1.8635125786163513,
+      "apply_snapshot": 2.5083805031446555,
+      "before_step": 2.7052358490566033,
+      "present_frame": 7.927056603773585,
+      "visual_com": 1.249830188679246,
+      "visual_filter": 1.6814465408805037,
+      "visual_pack": 1.3411761006289311,
+      "visual_view": 4.315540880503147
+    },
+    "matched_phase_ms_per_frame": {
+      "_fight": 2.7364811320754714,
+      "_snapshot": 0.02258490566037736,
+      "_start": 3.411496855345912,
+      "_think": 21.054213836477985,
+      "_walk": 22.25564779874214,
+      "ai_actor_read": 2.06751572327044,
+      "ai_input": 2.963930817610063,
+      "body_reuse": 0.0,
+      "brains_total": 15.226754716981132,
+      "clearance": 3.0992641509433962,
+      "combat_sim": 1.509921383647799,
+      "formation_slots": 0.6801540880503145,
+      "individual_jobs": 8.733949685534592,
+      "move_advance": 7.44612893081761,
+      "physics_pack": 5.265072327044025,
+      "physics_stage": 3.768301886792453,
+      "reuse": 0.0,
+      "roster_index": 3.795682389937107,
+      "sys.field.ai": 21.061713836477985,
+      "sys.field.casualties": 0.005952830188679245,
+      "sys.field.combat": 2.743512578616352,
+      "sys.field.movement": 22.263286163522015,
+      "sys.field.results": 0.02761635220125786,
+      "sys.field.rules": 0.036433962264150944,
+      "sys.field.start": 3.4210534591194968
+    },
+    "matched_step_work": {
+      "_fight": 0.0,
+      "_snapshot": 0.0,
+      "_start": 0.0,
+      "_think": 0.0,
+      "_walk": 0.0,
+      "ai_actor_read": 500.0,
+      "ai_input": 500.0,
+      "body_reuse": 600.0,
+      "brains_total": 500.0,
+      "clearance": 0.0,
+      "combat_sim": 0.0,
+      "formation_slots": 8.0,
+      "individual_jobs": 41.581761006289305,
+      "move_advance": 1582.867924528302,
+      "physics_pack": 600.0,
+      "physics_stage": 600.0,
+      "reuse": 600.0,
+      "roster_index": 500.0,
+      "sys.field.ai": 1.0,
+      "sys.field.casualties": 1.0,
+      "sys.field.combat": 1.0,
+      "sys.field.movement": 1.0,
+      "sys.field.results": 1.0,
+      "sys.field.rules": 1.0,
+      "sys.field.start": 1.0
+    },
+    "exclusive_wall_ms": {
+      "AI": 21.054213836477985,
+      "movement": 22.25564779874214,
+      "combat": 2.7364811320754714,
+      "other_simulation": 11.715424528301895,
+      "presentation": 9.890207547169812,
+      "input_and_after": 4.568748427672954,
+      "remainder": 2.5450157232704456
+    },
+    "ideal_fps_if_AI_MOV_improve": {
+      "2x": 18.82855927713016,
+      "4x": 23.6499750150657,
+      "zero_cost": 31.790561382325578
+    }
+  },
+  "individual": {
+    "PoseVA1": {
+      "fps": 12.47302022966988,
+      "sps": 24.94604045933976,
+      "frame_ms": [
+        80.173,
+        79.141,
+        88.039
+      ],
+      "step_ms": [
+        30.523,
+        30.392,
+        34.132
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVA2": {
+      "fps": 12.01357143130666,
+      "sps": 24.02714286261332,
+      "frame_ms": [
+        83.239,
+        82.389,
+        92.228
+      ],
+      "step_ms": [
+        31.811,
+        31.642,
+        35.718
+      ],
+      "frame_samples": 160,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 160
+      }
+    },
+    "PoseVA3": {
+      "fps": 12.975437578270858,
+      "sps": 25.950875156541716,
+      "frame_ms": [
+        77.069,
+        76.321,
+        84.555
+      ],
+      "step_ms": [
+        29.117,
+        28.895,
+        32.64
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVA4": {
+      "fps": 13.029737713018799,
+      "sps": 26.059475426037597,
+      "frame_ms": [
+        76.748,
+        76.575,
+        80.386
+      ],
+      "step_ms": [
+        29.051,
+        28.998,
+        31.297
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVB1": {
+      "fps": 12.073621756210796,
+      "sps": 24.147243512421593,
+      "frame_ms": [
+        82.825,
+        82.658,
+        90.906
+      ],
+      "step_ms": [
+        32.24,
+        32.144,
+        35.821
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVB2": {
+      "fps": 12.815968019081769,
+      "sps": 25.631936038163538,
+      "frame_ms": [
+        78.028,
+        77.619,
+        88.398
+      ],
+      "step_ms": [
+        30.334,
+        30.214,
+        34.959
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVC1": {
+      "fps": 13.591653391297033,
+      "sps": 27.183306782594066,
+      "frame_ms": [
+        73.575,
+        73.176,
+        81.461
+      ],
+      "step_ms": [
+        28.345,
+        28.04,
+        32.364
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVC2": {
+      "fps": 13.760593709902798,
+      "sps": 27.521187419805596,
+      "frame_ms": [
+        72.671,
+        71.358,
+        80.44
+      ],
+      "step_ms": [
+        27.999,
+        27.537,
+        31.988
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVC3": {
+      "fps": 13.624273554162528,
+      "sps": 27.248547108325056,
+      "frame_ms": [
+        73.398,
+        72.17,
+        81.454
+      ],
+      "step_ms": [
+        28.444,
+        27.973,
+        32.476
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVC4": {
+      "fps": 13.787841881029308,
+      "sps": 27.575683762058617,
+      "frame_ms": [
+        72.528,
+        71.334,
+        81.623
+      ],
+      "step_ms": [
+        27.897,
+        27.452,
+        31.938
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVW2a": {
+      "fps": 13.24776223216295,
+      "sps": 26.4955244643259,
+      "frame_ms": [
+        75.484,
+        74.577,
+        86.248
+      ],
+      "step_ms": [
+        29.105,
+        28.791,
+        33.756
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVW2b": {
+      "fps": 13.754042088060817,
+      "sps": 27.508084176121635,
+      "frame_ms": [
+        72.706,
+        71.554,
+        80.088
+      ],
+      "step_ms": [
+        27.957,
+        27.624,
+        31.656
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVW4a": {
+      "fps": 13.585082861315785,
+      "sps": 27.17016572263157,
+      "frame_ms": [
+        73.61,
+        73.378,
+        82.164
+      ],
+      "step_ms": [
+        28.316,
+        28.205,
+        32.107
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVW4b": {
+      "fps": 13.908857965541722,
+      "sps": 27.817715931083445,
+      "frame_ms": [
+        71.897,
+        70.427,
+        84.332
+      ],
+      "step_ms": [
+        27.515,
+        26.88,
+        32.793
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVW8a": {
+      "fps": 13.103071957894588,
+      "sps": 26.206143915789177,
+      "frame_ms": [
+        76.318,
+        75.747,
+        88.119
+      ],
+      "step_ms": [
+        29.257,
+        28.905,
+        34.512
+      ],
+      "frame_samples": 160,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 160
+      }
+    },
+    "PoseVW8b": {
+      "fps": 13.78620406755448,
+      "sps": 27.57240813510896,
+      "frame_ms": [
+        72.536,
+        70.836,
+        82.462
+      ],
+      "step_ms": [
+        27.881,
+        27.161,
+        32.412
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVAD1": {
+      "fps": 12.465459309840046,
+      "sps": 24.930918619680092,
+      "frame_ms": [
+        80.222,
+        78.704,
+        89.82
+      ],
+      "step_ms": [
+        30.523,
+        30.025,
+        35.015
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVAD2": {
+      "fps": 12.664128902672346,
+      "sps": 25.32825780534469,
+      "frame_ms": [
+        78.963,
+        77.968,
+        86.115
+      ],
+      "step_ms": [
+        29.917,
+        29.539,
+        33.31
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVCD1": {
+      "fps": 13.106878349621446,
+      "sps": 26.213756699242893,
+      "frame_ms": [
+        76.296,
+        76.095,
+        83.975
+      ],
+      "step_ms": [
+        29.508,
+        29.459,
+        33.345
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    },
+    "PoseVCD2": {
+      "fps": 13.654550185624593,
+      "sps": 27.309100371249187,
+      "frame_ms": [
+        73.236,
+        72.04,
+        80.402
+      ],
+      "step_ms": [
+        28.266,
+        27.994,
+        31.871
+      ],
+      "frame_samples": 159,
+      "step_samples": 320,
+      "frame_step_histogram": {
+        "2": 159
+      }
+    }
+  },
+  "rows_per_step": {
+    "reuse_total": 600.0,
+    "reuse": 449.440625,
+    "body_reuse_total": 600.0,
+    "body_reuse": 371.61875
+  },
+  "source": {
+    "mission/runtime/field_pipeline.gd": "e612a27cb42bc59568867fbe77ca095712047dda1540926ec700edcc7f7c174b",
+    "mission/runtime/field_mission.gd": "d3cd0a092b75cac62debe9f0842d224bb733990e5c3edc88620a53ada6cf2e8f",
+    "infrastructure/engine/field_bodies.gd": "510015aa51ef88f29c8e0c8027718b189c0b7026eacd2d5aa11200ba5b58d2f5"
+  }
+}

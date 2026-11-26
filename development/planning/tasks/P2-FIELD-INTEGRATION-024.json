@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-024",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "河原野战位姿批处理与线程池对照",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-023"
+  ],
+  "requirements": [
+    "BAT-01",
+    "MIS-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-01",
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_pipeline.gd",
+    "game/mission/runtime/field_mission.gd",
+    "game/tests/p2/field_pipeline/",
+    "development/reports/tests/P2/field-pose-batch/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "ec87e24a0e8dc4c2edd3c812726085f3e61ca6fd",
+  "worktree": "D:/work/game/recollection",
+  "scope": "在原有领域边界内复用战斗位姿和显示输入，在同一布局上比较串行、2/4/8 分片；提交与裁决保持原序。",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "500 人 100 马同场桌面轻量对照，报告帧时间、完整固定步、实际步速与剩余热点。",
+    "逐步复验 1260 步接战和命中，独立核查授权、代际、物理、回滚与视图边界。"
+  ],
+  "status": "DONE"
+}

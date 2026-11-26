@@ -724,7 +724,9 @@
         "P2-FIELD-INTEGRATION-020",
         "P2-FIELD-INTEGRATION-021",
         "P2-FIELD-INTEGRATION-022",
-        "P2-FIELD-INTEGRATION-023"
+        "P2-FIELD-INTEGRATION-023",
+        "P2-FIELD-INTEGRATION-024",
+        "P2-FIELD-INTEGRATION-025"
       ]
     },
     "GATE-P2": {
@@ -2757,6 +2759,28 @@
       "integrated_commit": "f1bdb4e5901e88b973e7a56cced18f19198b02aa",
       "evidence": [
         "development/reports/tests/P2/field-ai-index/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-024": {
+      "status": "DONE",
+      "owner": "pose_batch / pose_display",
+      "base_commit": "ec87e24a0e8dc4c2edd3c812726085f3e61ca6fd",
+      "candidate_commit": "50e11a22bbc379946faa239174226a0f9a64373b",
+      "integrated_commit": "50e11a22bbc379946faa239174226a0f9a64373b",
+      "evidence": [
+        "development/reports/tests/P2/field-pose-batch/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-025": {
+      "status": "DONE",
+      "owner": "pose_display",
+      "base_commit": "ec87e24a0e8dc4c2edd3c812726085f3e61ca6fd",
+      "candidate_commit": "50e11a22bbc379946faa239174226a0f9a64373b",
+      "integrated_commit": "50e11a22bbc379946faa239174226a0f9a64373b",
+      "evidence": [
+        "development/reports/tests/P2/field-pose-batch/README.md"
       ],
       "child_ids": []
     }

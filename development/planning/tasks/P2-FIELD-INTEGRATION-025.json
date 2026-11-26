@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-025",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "INF-ENGINE",
+  "title": "野战已提交只读物理行复用",
+  "spec": "docs/systems/game/infrastructure/engine/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-021"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/infrastructure/engine/field_bodies.gd",
+    "game/tests/p2/field_engine/run.gd",
+    "development/reports/tests/P2/field-pose-batch/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "ec87e24a0e8dc4c2edd3c812726085f3e61ca6fd",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "对完全相同且不可修改的已验证输入复用物理行，保持碰撞、授权、事务与错误返回。",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "可变嵌套句柄、重复输入、回滚、淘汰句柄和真实移动均通过回归。",
+    "与独立串行位姿候选分开采样。"
+  ],
+  "status": "DONE"
+}
