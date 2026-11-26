@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-046",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "INF-ENGINE",
+  "title": "密集接战时的连续球扫接触查询",
+  "spec": "docs/systems/game/infrastructure/engine/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-032",
+    "P2-FIELD-INTEGRATION-043"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/infrastructure/engine/queries.gd",
+    "game/tests/p2/field_sweep_batch/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "密集接战时的连续球扫接触查询",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "复现第1885步掠过胶囊的球扫，检查真实近似接触、障碍阻挡与不命中，普通/原生桌面越过2400步。"
+  ],
+  "status": "DONE",
+  "owner": "charge"
+}

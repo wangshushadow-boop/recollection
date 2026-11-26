@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-UI-BATTLE-005",
+  "kind": "EXECUTION",
+  "parent": "P2-UI-BATTLE",
+  "stage": "P2",
+  "module_id": "UI",
+  "title": "战斗人物属性、随身装备与冲锋确认",
+  "spec": "docs/systems/game/presentation/ui/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-004",
+    "P2-INPUT-003"
+  ],
+  "requirements": [
+    "ACC-01",
+    "UX-01",
+    "UX-02",
+    "UX-03"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-UI-02",
+    "T-UI-03",
+    "T-UI-04"
+  ],
+  "allowed_paths": [
+    "game/presentation/ui/",
+    "game/tests/p2/ui/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "战斗人物属性、随身装备与冲锋确认",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "显示主将等级、血量及上限、体力规则，I 打开战场行装并可返回；四队冲锋显示回执。"
+  ],
+  "status": "DONE",
+  "owner": "kit_ui"
+}

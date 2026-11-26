@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-043",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "远距离普通冲锋到交战",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-BAI-I-005",
+    "P2-FIELD-INTEGRATION-042"
+  ],
+  "requirements": [
+    "BAI-03",
+    "BAI-05",
+    "BAI-06",
+    "COM-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-I-01",
+    "T-BAI-I-02",
+    "T-BAI-I-03",
+    "T-BAI-I-04"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_brains.gd",
+    "game/tests/p2/field_player_contact/charge.gd",
+    "game/tests/p2/field_player_contact/run.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "远距离普通冲锋到交战",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "0、F1、F3后四队接单，全军推进并产生双方命中；无指令靠近验证敌兵反应。"
+  ],
+  "status": "DONE",
+  "owner": "charge"
+}

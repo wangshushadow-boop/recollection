@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-COM-005",
+  "kind": "EXECUTION",
+  "parent": "P2-COM",
+  "stage": "P2",
+  "module_id": "COM",
+  "title": "战斗实体的实际生命上限",
+  "spec": "docs/systems/game/mission/combat/README.md",
+  "depends_on": [
+    "P2-COM-001"
+  ],
+  "requirements": [
+    "BAI-05",
+    "COM-01",
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "COM-05",
+    "COM-06"
+  ],
+  "acceptance_test_ids": [
+    "T-COM-01",
+    "T-COM-05"
+  ],
+  "allowed_paths": [
+    "game/mission/combat/ports/field_combat.gd"
+  ],
+  "excluded_paths": [
+    "game/contracts/",
+    "game/bootstrap/",
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "战斗实体的实际生命上限",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "所有征召实体保留出生生命上限，受伤后当前值与上限可区分。"
+  ],
+  "status": "DONE",
+  "owner": "stats"
+}

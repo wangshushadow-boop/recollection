@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-044",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "权威生命与主将装备投影",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-042",
+    "P2-COM-005"
+  ],
+  "requirements": [
+    "BAT-01",
+    "BAT-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_mission.gd",
+    "game/mission/runtime/field_pipeline.gd",
+    "game/tests/p2/field_boot/run.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "权威生命与主将装备投影",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "区分主将英雄等级与接管兵阶，体力按已启用规则，装备来自当前出战源槽。"
+  ],
+  "status": "DONE",
+  "owner": "stats"
+}

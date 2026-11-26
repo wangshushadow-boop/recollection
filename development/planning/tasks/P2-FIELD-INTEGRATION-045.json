@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-045",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "河原单机人物、镜头、输入与命中双入口集成",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-041",
+    "P2-FIELD-INTEGRATION-043",
+    "P2-FIELD-INTEGRATION-044",
+    "P2-FIELD-INTEGRATION-046",
+    "P2-UI-BATTLE-005"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/main.gd",
+    "game/bootstrap/field_setup.gd",
+    "game/bootstrap/field_desktop.gd",
+    "development/reports/tests/P2/field-commander/",
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原单机人物、镜头、输入与命中双入口集成",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "同场普通版和原生版真实输入、移动、交战、受击、人物、镜头、行装与返回。"
+  ],
+  "status": "DONE",
+  "owner": "root / qa043"
+}

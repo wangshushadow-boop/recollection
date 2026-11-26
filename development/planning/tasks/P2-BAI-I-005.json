@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-BAI-I-005",
+  "kind": "EXECUTION",
+  "parent": "P2-BAI-I",
+  "stage": "P2",
+  "module_id": "BAI-I",
+  "title": "守兵近距离拦截与归位",
+  "spec": "docs/systems/game/mission/ai/individual/README.md",
+  "depends_on": [
+    "P2-BAI-I-004"
+  ],
+  "requirements": [
+    "BAI-03",
+    "BAI-05",
+    "BAI-06",
+    "COM-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-I-01",
+    "T-BAI-I-02",
+    "T-BAI-I-03",
+    "T-BAI-I-04"
+  ],
+  "allowed_paths": [
+    "game/mission/ai/individual/ports/field_individual.gd",
+    "game/tests/p2/field_player_contact/defense.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "守兵近距离拦截与归位",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "默认军官守兵近距离拦截可见敌人，保持阵地约束与本人指令优先。"
+  ],
+  "status": "DONE",
+  "owner": "charge"
+}

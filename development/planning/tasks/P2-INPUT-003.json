@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-INPUT-003",
+  "kind": "EXECUTION",
+  "parent": "P2-INPUT",
+  "stage": "P2",
+  "module_id": "INPUT",
+  "title": "战斗瞄准与第三人称观察、背包键和指令反馈",
+  "spec": "docs/systems/game/presentation/input/README.md",
+  "depends_on": [
+    "P2-INPUT-002"
+  ],
+  "requirements": [
+    "ACC-01",
+    "BAI-01",
+    "COM-05",
+    "NET-04",
+    "UX-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-01",
+    "T-INPUT-02",
+    "T-INPUT-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/input/",
+    "game/tests/p2/input/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d74a35d024e894e7b5b63f6bc684ce819bac9158",
+  "worktree": "D:/work/game/recollection",
+  "scope": "战斗瞄准与第三人称观察、背包键和指令反馈",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "站定可看到角色正面，移动平滑转向，攻击格挡对准视线。",
+    "I/Esc 与战斗输入隔离并保持旧设置。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}
