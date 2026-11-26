@@ -219,7 +219,7 @@ func step_fixed(tick: Variant, inputs: Array) -> Dictionary:
 	_busy = true
 	var opening := _field != null and _tick == 0 and _needs_opening_wave(staged)
 	if opening:
-		var initial: Dictionary = _field.auto_wave(staged,_spec.battle_limit,_engine,_mission,_clear_sites)
+		var initial: Dictionary = _field.auto_wave(staged,_spec.battle_limit,_engine,_mission,_clear_sites,{},true)
 		if not initial.ok:
 			return _abort_tick(initial,attempted)
 		if initial.value.handles.is_empty() and staged.active_sources==0:

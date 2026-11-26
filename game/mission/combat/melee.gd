@@ -13,6 +13,9 @@ const ACTIVE_TICKS := 2
 const RECOVERY_TICKS := 3
 const STAGGER_TICKS := 2
 const MAX_CHARGE := 4
+const DEFAULT_TIMING := {"windup_ticks":WINDUP_TICKS,"active_ticks":ACTIVE_TICKS,"recovery_ticks":RECOVERY_TICKS}
+const COMMANDER_MELEE := {"windup_ticks":9,"active_ticks":4,"recovery_ticks":9}
+const COMMANDER_BOW := {"windup_ticks":18,"active_ticks":3,"recovery_ticks":9}
 
 var _tick := 0
 var _actors := {}
@@ -69,6 +72,8 @@ func view(handle: Dictionary) -> Dictionary:
 		return R.fail("NotFound", "actor_handle")
 	var visible := state.duplicate(true)
 	visible.erase("hit_set")
+	visible.merge(_timing(state))
+	visible["weapon_kind"] = _weapon(state)
 	return R.ok(visible)
 
 
@@ -88,17 +93,27 @@ static func _track_phase(clocks: Dictionary, index: int, phase: String) -> void:
 		clocks.erase(index)
 
 
+static func _weapon(state: Dictionary) -> String:
+	return state.weapons[state.weapon_slot] if state.has("weapons") else "melee"
+
+
+static func _timing(state: Dictionary) -> Dictionary:
+	if state.get("action_profile","")=="commander":
+		return COMMANDER_BOW if _weapon(state)=="bow" else COMMANDER_MELEE
+	return DEFAULT_TIMING
+
+
 static func _elapsed_phase(state: Dictionary, tick: int) -> String:
 	var elapsed: int = tick - state.since
 	match state.phase:
 		"Windup":
-			if elapsed >= WINDUP_TICKS:
+			if elapsed >= _timing(state).windup_ticks:
 				return "Hold"
 		"Active":
-			if elapsed >= ACTIVE_TICKS:
+			if elapsed >= _timing(state).active_ticks:
 				return "Recovery"
 		"Recovery":
-			if elapsed >= RECOVERY_TICKS:
+			if elapsed >= _timing(state).recovery_ticks:
 				return "Ready"
 		"Stagger":
 			if elapsed >= STAGGER_TICKS:
@@ -107,6 +122,8 @@ static func _elapsed_phase(state: Dictionary, tick: int) -> String:
 
 
 static func _cancel_allowed(state: Dictionary, tick: int) -> bool:
+	if _weapon(state)=="bow" or state.get("action_profile","")=="commander":
+		return state.phase in ["Windup","Hold"]
 	return state.phase == "Windup" and tick - state.since < CANCEL_TICKS
 
 
@@ -127,6 +144,8 @@ static func _apply(state: Dictionary, intent: Dictionary, tick: int) -> Dictiona
 		return R.fail("InvalidArgument", "direction")
 	if intent.has("held"):
 		if intent.held:
+			if _weapon(state)=="bow":
+				return R.fail("InvalidState","guard")
 			if state.phase not in ["Ready", "Guard"] and not _cancel_allowed(state, tick):
 				return R.fail("InvalidState", "guard")
 			state.direction = intent.direction
@@ -333,6 +352,7 @@ func step(tick: Variant, intents: Array, query_contacts: Callable = Callable()) 
 				var swing := {"attacker":state.handle.duplicate(), "attack_id":state.attack_id, "direction":state.direction}
 				if state.has("weapons"):
 					swing.merge({"weapon":state.weapons[state.weapon_slot],"released":state.since,"charge":state.charge,"team":state.team})
+					if swing.weapon=="melee":swing["active_ticks"]=_timing(state).active_ticks
 				active.append(swing)
 		active.sort_custom(func(a, b): return a.attacker.index < b.attacker.index)
 		if not active.is_empty() or _needs_sweep():

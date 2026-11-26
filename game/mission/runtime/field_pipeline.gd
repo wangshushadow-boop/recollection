@@ -80,15 +80,22 @@ func _load_kit(source: Dictionary) -> Dictionary:
 	if not equipped.ok:
 		return equipped
 	var slots: Dictionary = equipped.value.slots
+	var metadata: Dictionary = equipped.value.get("metadata",{})
 	if role==null:
-		role=["infantry","archer","cavalry","mounted_archer"][int(slots.has("ranged"))+2*int(slots.has("mount"))]
-	var profile := {"role":role,"melee":"","ranged":"","mounted":slots.has("mount")}
+		role=metadata.get("role",ROLES[int(slots.has("ranged"))+2*int(slots.has("mount"))])
+	var profile := {"role":role,"melee":"","ranged":"","mounted":slots.has("mount"),"shield":0,"action_profile":metadata.get("action_profile","")}
 	for slot in slots:
 		var item: Dictionary = _registry.get_definition(slots[slot],"item")
 		if not item.ok: return item
 		if slot not in item.value.slot_tags: return R.fail("Conflict","field.equipment_slot")
 		if slot in ["ranged","melee"]: profile[slot] = item.value.category
-	if profile.melee.is_empty() or profile.mounted != (role in ["cavalry","mounted_archer"]) or (not profile.ranged.is_empty()) != (role in ["archer","mounted_archer"]):
+		if slot=="shield":
+			profile.shield = item.value.get("metadata",{}).get("durability")
+			if not V.integer(profile.shield,1,1000000):return R.fail("InvalidArgument","field.shield")
+	if role not in ROLES or profile.action_profile not in ["","commander"] or profile.melee.is_empty() or profile.mounted != (role in ["cavalry","mounted_archer"]):
+		return R.fail("Conflict","field.troop_loadout")
+	# A hero's formation role can remain infantry while carrying a secondary bow.
+	if (role in ["archer","mounted_archer"] and profile.ranged.is_empty()) or (source.troop_def_id!=null and not profile.ranged.is_empty() and role not in ["archer","mounted_archer"]):
 		return R.fail("Conflict","field.troop_loadout")
 	_kits[id] = profile
 	return R.ok()
@@ -289,6 +296,7 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if not movement.ok: return movement
 	_draft = {"stage":movement.value,"nav":nav.value.applied_revision,"com":_com.fork(),"player":_user_handle,
 		"rows":{},"pose":{},"orders":{},"layout_cache":_layout_specs.duplicate(),"look":_frame.get("look",{}).duplicate(),"moves":[],"actions":[],"ai":[],"move_receipts":[]}
+	_draft.aim_pitch = _frame.get("aim_pitch",0.0) if _frame.get("aim_handle")==_user_handle else 0.0
 	_draft["resolved_mount_orders"]=[]
 	_draft["interactions"]=[]
 	var begun: Dictionary = _form.begin_tick()
@@ -320,6 +328,8 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		var combat_role: String = "cavalry" if kit.mounted else kit.role
 		var is_commander: bool = body.hero_id!=null and body.hero_id==_spec.sides[ordinal].get("commander_hero_id")
 		var profile := {"team":ordinal,"role":combat_role,"commander":is_commander}
+		if kit.shield>0: profile.shield=kit.shield
+		if not kit.action_profile.is_empty(): profile.action_profile=kit.action_profile
 		if not kit.ranged.is_empty(): profile["ranged"]=kit.ranged
 		var enlist: Dictionary = _draft.com.enlist(row.handle,profile)
 		if not enlist.ok: return enlist
@@ -440,6 +450,13 @@ func _formations() -> Dictionary:
 		if not leader.ok: return leader
 		var old: Dictionary = _draft.layout_cache.get(id,{})
 		var goal: Vector3 = old.get("anchor",leader.value.position)
+		var zone:Dictionary=_zones[g.team_key]
+		if old.is_empty() and zone.has("opening_slot"):
+			# The general stands ahead of the ranks. Use the ranks themselves as
+			# the initial formation center so they do not march through their general.
+			goal=Vector3.ZERO
+			for member in g.members:goal+=_meters(_draft.rows[member.index].components.spawn_position_mm)
+			goal/=g.members.size()
 		if g.active!=null:
 			if g.active.target_position!=null: goal=_meters(g.active.target_position)
 			elif g.active.target_formation_id!=null:
@@ -449,6 +466,10 @@ func _formations() -> Dictionary:
 					if ahead.ok: goal=ahead.value.position
 			elif g.active.order_type=="retreat": goal=_teams[g.team_key].exit_position
 		var signature := [g.members_revision,g.layout,g.facing_microradians,g.active,_draft.nav]
+		var direct: Variant=null
+		if zone.has("opening_slot") and _draft.aim_handle!=null and _draft.membership.get(_draft.aim_handle.index)==id:
+			direct=_draft.aim_handle
+		signature.append(direct)
 		if old.is_empty() or old.signature!=signature or old.anchor.distance_squared_to(goal)>4.0:
 			var rebuilt: Dictionary = _form.build_slot_targets(id,goal,g.facing_microradians*.000001,1.45,INF,_project_slots.bind(leader.value.position))
 			if not rebuilt.ok and rebuilt.error.code!="Unavailable": return rebuilt
@@ -466,6 +487,9 @@ func _formations() -> Dictionary:
 			var lanes := {}
 			for slot in old.slots:
 				var h: Dictionary = slot.member
+				if h==direct:
+					# The direct player's travel comes from their own MoveIntents, including idle.
+					continue
 				var pose: Dictionary = _move.view(h,_draft.stage)
 				if not pose.ok: return pose
 				var profile: String = pose.value.profile
@@ -488,6 +512,8 @@ func _formations() -> Dictionary:
 func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var mounted:=_apply_mount_requests(batch.source_tick)
 	if not mounted.ok:return mounted
+	var control_mode: String = _rules.view().control_mode
+	_draft.aim_handle=_draft.player if control_mode=="direct" else null
 	var targets := _formations()
 	if not targets.ok: return targets
 	_draft["targets"]=targets.value
@@ -500,7 +526,7 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 		var prior: Dictionary=_move.read_poses(_draft.token,_draft.stage)
 		if not prior.ok:return prior
 		motion=prior.value
-	var player: Variant = _draft.player if _rules.view().control_mode!="delegate" else null
+	var player: Variant = _draft.player if control_mode!="delegate" else null
 	var decision: Dictionary
 	if _brains.has_method("decide_compact"):
 		var changes: Dictionary = _draft.com.field_ai_changes(_mission)
@@ -526,6 +552,7 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 				_draft.moves.append({"intent":intent,"context":_input.context})
 			elif intent.has("yaw"):
 				_draft.look[intent.actor_handle.index]=Vector3.FORWARD.rotated(Vector3.UP,intent.yaw*.000001)
+				_draft.aim_pitch=intent.pitch*.000001
 			elif intent.has("input_phase") or intent.has("held") or intent.has("item_ref"):
 				_draft.actions.append(intent)
 			elif intent.get("action") in ["mount","dismount"]:
@@ -617,16 +644,15 @@ func _apply_mount_requests(tick: int) -> Dictionary:
 			_draft.interactions.append(applied)
 	return R.ok()
 
-static func _project_actor(previous: PoseProjection, row: Dictionary, position: Vector3, velocity: Vector3, heading: Vector3, mounted: bool, shield: bool) -> PoseProjection:
+static func _project_actor(previous: PoseProjection, row: Dictionary, position: Vector3, velocity: Vector3, heading: Vector3, mounted: bool, shield: bool, aim_pitch: Variant=null) -> PoseProjection:
 	var same_geometry := false
 	if previous!=null and is_same(previous.source,row):
 		same_geometry = previous.pose.position==position and previous.pose.heading==heading and previous.body.mounted==mounted and previous.body.shield==shield
-		if same_geometry and previous.pose.velocity==velocity:
+		if same_geometry and previous.pose.velocity==velocity and previous.pose.get("aim_pitch")==aim_pitch:
 			return previous
 	var next := PoseProjection.new()
 	next.source=row
 	next.pose={"position":position,"velocity":velocity,"heading":heading}
-	next.pose.make_read_only()
 	if same_geometry:
 		next.body=previous.body
 	else:
@@ -640,6 +666,16 @@ static func _project_actor(previous: PoseProjection, row: Dictionary, position: 
 	position_mm.make_read_only()
 	facing_ppm.make_read_only()
 	next.combat={"position_mm":position_mm,"facing_ppm":facing_ppm,"speed_mm_tick":roundi(velocity.length()*1000.0/60.0)}
+	if aim_pitch!=null:
+		var muzzle := _mm(origin+Vector3.UP*.44)
+		var aim := _mm(heading*cos(aim_pitch)+Vector3.UP*sin(aim_pitch),1000000)
+		muzzle.make_read_only()
+		aim.make_read_only()
+		next.combat.shot_origin_mm=muzzle
+		next.combat.shot_aim_ppm=aim
+		next.pose.shot_origin=_meters(muzzle)
+		next.pose.aim_pitch=aim_pitch
+	next.pose.make_read_only()
 	next.combat.make_read_only()
 	return next
 
@@ -687,15 +723,18 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var look: Dictionary=_draft.look
 	var same_shields := same_slots and is_same(shielded,_frame.shielded)
 	var ridden := {}
+	var aiming_handle: Variant=_draft.aim_handle
+	var pitch_unchanged: bool=_frame.get("aim_handle")==aiming_handle and _frame.get("aim_pitch")==_draft.aim_pitch
 	for i in _draft.humans.size():
 		var h: Dictionary=_draft.humans[i]
 		var index: int=h.index
 		var heading: Vector3=look.get(index,headings[i])
-		if same_slots and old_positions[i]==positions[i] and old_velocities[i]==velocities[i] and old_look.get(index,old_headings[i])==heading and old_headings[i]==headings[i]:
+		var aim_changed: bool=not pitch_unchanged and (h==aiming_handle or h==_frame.get("aim_handle"))
+		if same_slots and not aim_changed and old_positions[i]==positions[i] and old_velocities[i]==velocities[i] and old_look.get(index,old_headings[i])==heading and old_headings[i]==headings[i]:
 			if same_shields or shielded.has(index)==_frame.shielded.has(index): continue
 		var mount: Variant=mounts.get(index)
 		if not same_slots: slots.append(physical.size())
-		var projection := _project_actor(previous.get(index),_draft.rows[index],positions[i],velocities[i],heading,mount!=null,shielded.has(index))
+		var projection := _project_actor(previous.get(index),_draft.rows[index],positions[i],velocities[i],heading,mount!=null,shielded.has(index),_draft.aim_pitch if h==aiming_handle else null)
 		_store_projection(projection,slots[i],physical,next,pose,combat)
 		if mount!=null:
 			var horse: int=mount.index
@@ -800,7 +839,7 @@ func _publish() -> void:
 		"membership":_draft.membership,"slot_sources":_draft.slot_sources,"targets":_draft.targets,
 		"roles":_draft.roles,"horses":_draft.horses,"motion":_draft.motion,"projections":_draft.projections,"combat_poses":_draft.combat_poses,
 		"human_slots":_draft.human_slots,"physical":_draft.physical,"mounts":_draft.mounts,"shielded":_draft.shielded,
-		"look":_draft.look,"pose":_draft.pose,"metrics":_draft.metrics,"combat_report":_draft.combat_report}
+		"look":_draft.look,"pose":_draft.pose,"metrics":_draft.metrics,"combat_report":_draft.combat_report,"aim_handle":_draft.aim_handle,"aim_pitch":_draft.aim_pitch}
 	_draft={}
 	if not _input.is_empty(): _consumed=_input
 	_input={}

@@ -149,6 +149,7 @@ func _ready() -> void:
 	for child in find_children("*","Control",true,false):
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(_resize)
+	hints.resized.connect(_position_map)
 	_resize()
 
 func _plate(id: String, content: Container) -> PanelContainer:
@@ -161,16 +162,19 @@ func _plate(id: String, content: Container) -> PanelContainer:
 
 func _resize() -> void:
 	var half := minf(size.x*.46,260)
-	var diameter := clampf(minf(size.x*.17,size.y*.24),100,150)
-	tactical.offset_left = 14
-	tactical.offset_right = 14+diameter
-	tactical.offset_bottom = -48
-	tactical.offset_top = -65-diameter
 	board.offset_left = -half
 	board.offset_right = half
 	hints.offset_right = maxf(70,size.x*.52)
+	_position_map()
 	notice.offset_left = tactical.offset_right+10
 	notice.offset_right = maxf(notice.offset_left+70,size.x*.70)
+
+func _position_map() -> void:
+	var diameter := clampf(minf(size.x*.17,size.y*.24),100,150)
+	tactical.offset_left = 14
+	tactical.offset_right = 14+diameter
+	tactical.offset_bottom = minf(-48,hints.offset_bottom-hints.size.y-8)
+	tactical.offset_top = tactical.offset_bottom-17-diameter
 
 func set_strength(own_count: int, enemy_count: int, own_label: String, enemy_label: String) -> void:
 	balance.get_parent().visible = own_count>=0

@@ -243,11 +243,37 @@ func set_field_capture(captured: bool) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if not _field_capture or _view.is_empty() or _view.get("phase")=="ended": return
+	if not _field_capture or _view.get("phase")!="battle" or _view.get("input_mode","battle")!="battle" or _view.get("scoreboard_held",false) or _view.get("free_look",false): return
 	var center := (size*0.5).round()
+	var player: Dictionary = _view.get("player",{})
+	if player.is_empty(): return
+	var phase: String = player.get("phase","Ready")
+	if player.get("weapon_kind")=="bow":
+		if not _view.has("bow_sight") or player.get("ammo",0)<=0: return
+		center = get_global_transform_with_canvas().affine_inverse()*Vector2(_view.bow_sight)
+		var drawn := 0.0
+		if phase=="Windup":
+			drawn = clampf(float(_view.tick-player.since)/maxi(1,player.windup_ticks),0.0,1.0)
+		elif phase=="Hold": drawn = 1.0
+		var radius := lerpf(13.0,4.0,drawn)
+		for arm in 3:
+			var dir := Vector2.UP.rotated(TAU*arm/3.0)
+			_sight_line(center+dir*radius,center+dir*(radius+5),Color("#fff4d7"))
+		return
+	var facing: String = player.get("direction","") if phase in ["Windup","Hold","Active","Guard"] else _view.get("attack_direction","")
+	var selected: Vector2 = {"up":Vector2.UP,"thrust":Vector2.DOWN,"left":Vector2.LEFT,"right":Vector2.RIGHT}.get(facing,Vector2.ZERO)
 	for direction: Vector2 in [Vector2.UP,Vector2.RIGHT,Vector2.DOWN,Vector2.LEFT]:
-		draw_line(center+direction*3,center+direction*8,Color("#171717d0"),3)
-		draw_line(center+direction*3,center+direction*8,Color("#faf5dd"),1)
+		if direction==selected:
+			var tip := center+direction*12
+			var side := direction.orthogonal()*3
+			var ink := Color("#abdcef") if phase=="Guard" else Color("#ffcf71")
+			_sight_line(tip,tip-direction*4+side,ink)
+			_sight_line(tip,tip-direction*4-side,ink)
+		else: _sight_line(center+direction*3,center+direction*7,Color("#faf5dd"))
+
+func _sight_line(a: Vector2,b: Vector2,ink: Color) -> void:
+	draw_line(a,b,Color("#171717d0"),3,true)
+	draw_line(a,b,ink,1.5,true)
 
 func _w(key: Variant) -> String:
 	return Words.word(key,_language)
@@ -320,6 +346,7 @@ func refresh() -> Dictionary:
 		_receipt = ""
 		_page = "menu"
 	_view = v.duplicate(true)
+	if _field_capture: queue_redraw()
 	_revision = v.revision
 	if is_node_ready():
 		_render()
@@ -454,7 +481,8 @@ func _render_kit(player: Dictionary) -> void:
 	for item: Dictionary in player.get("equipped_items",[]):
 		var slot: String = item.slot
 		var label: String = item.name
-		if slot==current: label += "  ·  "+_w("equipped_now")
+		if slot=="shield" and player.has("shield"): label += "  ·  %s %d"%[_w("durability"),player.shield]
+		elif slot==current: label += "  ·  "+_w("equipped_now")
 		rows.append([_w(slot+"_slot"),label])
 	if _has_ammunition(player): rows.append([_w("ammo"),str(player.ammo)])
 	_text("KitCaption",_w("battle_loadout")+"  ·  "+_w("readonly") if not rows.is_empty() else _w("no_kit"))
@@ -499,8 +527,17 @@ func _render_field() -> void:
 	_overlay.tactical.show_contacts(_view.get("tactical_map",{}),_w("map_range"),_w("north"))
 	var slot: int = player.get("weapon_slot",-1)
 	var kit := PackedStringArray()
-	if slot>=0 and slot<weapons.size(): kit.append(_w(weapons[slot]))
-	if _has_ammunition(player): kit.append("%s  %s"%[_w("ammo"),player.ammo])
+	var held_item := ""
+	var spare_item := ""
+	if slot>=0 and slot<weapons.size():
+		var held_slot := "melee" if weapons[slot]=="melee" else "ranged"
+		for item: Dictionary in player.get("equipped_items",[]):
+			if item.slot==held_slot: held_item=item.name
+			elif item.slot in ["melee","ranged"]: spare_item=item.name
+		kit.append(held_item if not held_item.is_empty() else _w(weapons[slot]))
+	if player.get("weapon_kind")=="melee" and player.get("equipped_items",[]).any(func(item):return item.slot=="shield"):
+		kit.append("%s  %d"%[_w("shield_slot"),player.shield])
+	elif _has_ammunition(player): kit.append("%s  %s"%[_w("ammo"),player.ammo])
 	_overlay.weapon.text = "   ·   ".join(kit)
 	_overlay.health.text = _stat(player,"hp","max_hp")
 	_overlay.health_bar.max_value = maxi(1,player.get("max_hp",0))
@@ -555,10 +592,19 @@ func _render_field() -> void:
 	_overlay.notice.text = "\n".join(lines)
 	var hints := PackedStringArray()
 	var actions := ["attack","block","select_all","inventory","scoreboard","menu"]
+	var bow: bool = player.get("weapon_kind")=="bow"
+	if bow: actions = ["attack","block","weapon_next","inventory","menu"]
+	elif weapons.size()>1: actions = ["attack","block","weapon_next","inventory","scoreboard","menu"]
 	if _view.get("orders_open",false): actions = ["select_all","scoreboard","menu"]
 	for action in actions:
 		var key := _desktop_key(action)
-		if not key.is_empty(): hints.append(key+" "+_w(action))
+		var caption: String = action
+		if bow and action=="attack": caption="draw_release"
+		if bow and action=="block": caption="lower_bow"
+		var label := _w(caption)
+		if action=="weapon_next" and weapons.size()==2 and not spare_item.is_empty():
+			label = _w("switch_to")%spare_item
+		if not key.is_empty(): hints.append(key+" "+label)
 	_overlay.hints.text = "    ".join(hints)
 
 func _render() -> void:

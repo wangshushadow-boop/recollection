@@ -168,6 +168,28 @@ func set_weapon_slot(slot: int) -> Dictionary:
 	_weapon_slot = slot
 	return R.ok()
 
+## Godot can deliver wheel and mouse-down before the same battle step.
+func _weapon_view() -> Dictionary:
+	var current := _combat_view()
+	var weapons: Array = current.get("weapons",[])
+	for i in range(_edges.size()-1,-1,-1):
+		if not _edges[i].has("slot"): continue
+		var slot: int = _edges[i].slot
+		if slot>=0 and slot<weapons.size():
+			return current.merged({"weapon_slot":slot,"weapon_kind":weapons[slot],"phase":"Ready"},true)
+		break
+	return current
+
+func _equip(slot: int, current: Dictionary) -> void:
+	if slot>=0 and slot<current.get("weapons",[]).size():
+		if (not _attack.is_empty() or not _queued_release.is_empty()) and (current.get("weapon_kind")=="bow" or current.get("action_profile")=="commander"):
+			var direction: String = _queued_release.get("direction",_attack)
+			_edges.append(_attack_intent("cancel",direction))
+			_attack = ""
+			_queued_release.clear()
+		_guard = ""
+	_edges.append({"actor_handle":_actor,"slot":slot,"item_ref":null})
+
 func set_interaction_target(target: String) -> void:
 	_interaction_target = target
 
@@ -509,8 +531,16 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 	if action=="crouch" and pressed and _combat_view().get("mount_handle")!=null:
 		action = "dismount"
 		_held[source] = action
-	if action=="block" and pressed and (not _attack.is_empty() or not _queued_release.is_empty()):
-		action = "cancel_attack"
+	if action=="block" and pressed:
+		var combat := _weapon_view()
+		var preparing := not _attack.is_empty() or not _queued_release.is_empty()
+		if preparing and combat.get("action_profile")=="commander" and combat.get("weapon_kind")=="melee":
+			# Switching to guard consumes the pending swing, including an early mouse-up.
+			_attack = ""
+			_queued_release.clear()
+		elif preparing:
+			action = "cancel_attack"
+		elif combat.get("weapon_kind")=="bow": return
 	if action.begins_with("look_"):
 		_aim(_look_stick())
 	elif action == "attack":
@@ -520,7 +550,10 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 		if pressed:
 			if not _queued_release.is_empty(): return
 			_attack_source = source
-			var current := _combat_view()
+			var current := _weapon_view()
+			if not _guard.is_empty() and current.get("action_profile")=="commander" and current.get("weapon_kind")=="melee":
+				_edges.append(_block_intent(false,_guard))
+				_guard = ""
 			if V.integer(current.get("weapon_slot"),0,V.MAX_U32): _weapon_slot = current.weapon_slot
 			if current.get("phase") == "Hold":
 				# An explicit click can resume a held action after a focus-loss
@@ -552,16 +585,10 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 			"camera_nearer": _distance_steps = maxi(-4,_distance_steps-1)
 			"camera_farther": _distance_steps = mini(6,_distance_steps+1)
 			"weapon_next":
-				var current := _combat_view()
+				var current := _weapon_view()
 				var weapons: Array = current.get("weapons",[])
 				if weapons.size()>1:
-					var slot: int = current.weapon_slot
-					for i in range(_edges.size()-1,-1,-1):
-						if _edges[i].has("slot"):
-							slot = _edges[i].slot
-							break
-					slot = (slot+1)%weapons.size()
-					_edges.append({"actor_handle":_actor,"slot":slot,"item_ref":null})
+					_equip((current.weapon_slot+1)%weapons.size(),current)
 			"cancel_attack":
 				if not _queued_release.is_empty():
 					var cancel := _queued_release.duplicate()
@@ -573,7 +600,7 @@ func _action(action: String, pressed: bool, additive: bool, source: String) -> v
 				_attack = ""
 			"equip_melee","equip_ranged":
 				var slot := 0 if action == "equip_melee" else 1
-				_edges.append({"actor_handle":_actor,"slot":slot,"item_ref":null})
+				_equip(slot,_weapon_view())
 			"jump","interact","mount","dismount":
 				if action=="interact":
 					if _combat_view().get("mount_handle")!=null: action="dismount"

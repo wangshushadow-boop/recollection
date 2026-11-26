@@ -200,6 +200,36 @@
     "schema_version": 1
   },
   {
+    "id": "field:item/round_shield",
+    "name": "圆盾",
+    "category": "shield",
+    "base_value": 0,
+    "weight": 1,
+    "quality_policy": "standard",
+    "slot_tags": ["shield"],
+    "asset_ref": "models/spear_soldier.glb",
+    "metadata": {"durability": 32},
+    "schema_version": 1
+  },
+  {
+    "id": "field:equipment/commander",
+    "slots": {
+      "melee": "field:item/spear",
+      "ranged": "field:item/bow",
+      "shield": "field:item/round_shield"
+    },
+    "item_ids": [
+      "field:item/spear",
+      "field:item/bow",
+      "field:item/round_shield"
+    ],
+    "metadata": {
+      "role": "infantry",
+      "action_profile": "commander"
+    },
+    "schema_version": 1
+  },
+  {
     "id": "field:equipment/archer",
     "slots": {
       "melee": "field:item/blade",

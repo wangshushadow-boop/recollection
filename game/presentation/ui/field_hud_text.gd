@@ -2,6 +2,9 @@ extends RefCounted
 
 # Battle terminology shared by the controls and their command receipts.
 const WORDS := {
+	"shield_slot":["盾牌","Shield"],"draw_release":["按住拉弓，松开发箭","Hold to draw, release to shoot"],
+	"lower_bow":["收弓","Lower bow"],"durability":["耐久","Durability"],
+	"switch_to":["切换%s","Switch to %s"],
 	"deployment":["野战布阵","Order of battle"], "battle":["野战 · 指挥","Field command"],
 	"commander":["主将","Commander"],"on_foot":["步战","On foot"],"on_horse":["骑乘","Mounted"],
 	"inventory":["背包","Inventory"],"field_kit":["随身行装","Field equipment"],"battle_loadout":["本场配装","Battle loadout"],

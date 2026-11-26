@@ -141,6 +141,16 @@ func _hud_view() -> Dictionary:
 	if _field_capture and _map_actor==_own_actor() and not _tactical_map.is_empty():
 		projection.tactical_map = _tactical_map.merged({"origin":_player.position,"heading":_player.heading})
 	var local := _input_port.view()
+	projection.attack_direction = local.direction
+	# A shoulder camera looks along a parallel line to the bow. Mark its firing
+	# direction at 20 m, without selecting a target or predicting a hit.
+	var player: Dictionary = projection.get("player",{})
+	if _field_capture and player.get("weapon_kind")=="bow" and player.has("shot_origin") and not local.free_look:
+		var aim: Vector2 = local.preview_aim
+		var point: Vector3 = player.shot_origin - Basis.from_euler(Vector3(aim.y,aim.x,0)).z*20.0
+		if not _camera.is_position_behind(point):
+			projection.bow_sight = _camera.unproject_position(point)
+	projection.free_look = local.free_look
 	projection.selection = local.selection
 	projection.command_feedback = local.feedback
 	projection.allow_rebind = true

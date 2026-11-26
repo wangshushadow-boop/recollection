@@ -60,6 +60,10 @@ static func build(spec: Dictionary, scene: Dictionary, ruleset: Dictionary) -> D
 			point_set[owned] = true
 		total_quota += quota
 		director._zones[key] = {"quota":quota,"rally":Entities.freeze(definition.rally_mm),"points":point_set}
+		if definition.has("opening_slot"):
+			if not V.integer(definition.opening_slot,0,100000) or quota!=points.size():return R.fail("InvalidArgument","field.opening_slots")
+			director._zones[key]["opening_slot"]=definition.opening_slot
+			director._zones[key]["opening_points"]=point_set.keys()
 	if total_quota > spec.battle_limit:
 		return R.fail("InvalidArgument","scene.field_zones.quota")
 	for side in spec.sides:
@@ -69,6 +73,9 @@ static func build(spec: Dictionary, scene: Dictionary, ruleset: Dictionary) -> D
 		for allocation in side.roster_allocations:
 			ranges.append(allocation.source_slot_range)
 		ranges.sort_custom(func(a,b): return a[0] < b[0])
+		var zone: Dictionary=director._zones[side.team_key]
+		if zone.has("opening_slot") and (ranges.is_empty() or zone.opening_slot!=ranges[0][0] or zone.opening_slot+zone.quota>ranges[0][1]):
+			return R.fail("InvalidArgument","field.opening_slots")
 		director._sides.append({"team":side.team_key,"ranges":ranges})
 	director._sources = spec.reserved_sources.duplicate()
 	director._sources.sort_custom(func(a,b): return a.source_slot_range[0] < b.source_slot_range[0])
@@ -183,6 +190,11 @@ func deploy(entities: RefCounted, orders: Array, engine: RefCounted, scope: Stri
 		if not bound.ok:
 			return bound
 		var row: Dictionary = bound.value
+		var zone:Dictionary=_zones[row.team_key]
+		if zone.has("opening_slot"):
+			var offset:int=order.source_slot-zone.opening_slot
+			if offset<0 or offset>=zone.quota or row.spawn_position_mm!=zone.opening_points[offset]:
+				return R.fail("Conflict","deployment.opening_slot")
 		if slots.has(order.source_slot) or entities.spawned.has(order.source_slot) or sites.has(row.spawn_position_mm):
 			return R.fail("Conflict","deployment")
 		slots[order.source_slot] = true
@@ -222,7 +234,7 @@ func exclude_teams(keys: Variant, excluded: Dictionary) -> Dictionary:
 		excluded[key] = true
 	return R.ok()
 
-func auto_wave(entities: RefCounted, limit: int, engine: RefCounted, scope: String, clear_sites: Callable, excluded: Dictionary = {}) -> Dictionary:
+func auto_wave(entities: RefCounted, limit: int, engine: RefCounted, scope: String, clear_sites: Callable, excluded: Dictionary = {}, opening:=false) -> Dictionary:
 	var counts := _counts(entities)
 	var possible := []
 	for side in _sides:
@@ -245,6 +257,18 @@ func auto_wave(entities: RefCounted, limit: int, engine: RefCounted, scope: Stri
 		var available: Array = sites.get(side.team,[])
 		var take := mini(mini(limit,available.size()),_zones[side.team].quota-counts.get(side.team,0))
 		var team_orders := []
+		var zone: Dictionary=_zones[side.team]
+		if opening and zone.has("opening_slot"):
+			var clear_points: Dictionary={}
+			for point in available:clear_points[point]=true
+			for offset in zone.quota:
+				if team_orders.size()==take:break
+				var slot: int=zone.opening_slot+offset
+				var point: Array=zone.opening_points[offset]
+				if not entities.spawned.has(slot) and clear_points.has(point):
+					team_orders.append({"source_slot":slot,"components":{"spawn_position_mm":point}})
+			pending.append(team_orders)
+			continue
 		for bounds in side.ranges:
 			var slot: int = bounds[0]
 			while slot < bounds[1] and team_orders.size() < take:

@@ -108,8 +108,9 @@ func inspect_near(i: int, on_horse: bool, bow: bool) -> void:
 	if prop==null: return
 	var hand := prop.get_parent() as BoneAttachment3D
 	var skel := hand.get_parent() as Skeleton3D
-	check(hand.bone_name=="RightHand" and hand.get_bone_idx()==skel.find_bone("RightHand"),"attached to right hand")
-	check(prop.find_children("*","MeshInstance3D",true,false).size()==7 and prop.is_visible_in_tree()==bow and blade.is_visible_in_tree()!=bow,"exclusive equipped visual")
+	check(hand.bone_name=="LeftHand" and hand.get_bone_idx()==skel.find_bone("LeftHand"),"bow grip attached to left hand")
+	check(prop.has_node("Segment6") and prop.has_node("UpperString") and prop.has_node("LowerString") and prop.has_node("NockedArrow/Shaft"),"sixth bow limb, split string and arrow")
+	check(prop.is_visible_in_tree()==bow and blade.is_visible_in_tree()!=bow,"exclusive equipped visual")
 	check((rig.position.y>.4)==on_horse,"saddle height "+str(i))
 	check(prop.global_position.distance_to(skel.to_global(skel.get_bone_global_pose(hand.get_bone_idx()).origin))<.005,"bow grip tracks actual hand")
 
@@ -214,7 +215,7 @@ func run() -> void:
 	inspect_near(0,true,true)
 	check(leg(0).angle_to(leg(2))>.45,"remount updates immediately")
 	var skel := figure(0).find_children("*","Skeleton3D",true,false)[0] as Skeleton3D
-	var upper := skel.find_bone("LeftArm")
+	var upper := skel.find_bone("RightArm")
 	var at_rest := skel.get_bone_pose_rotation(upper)
 	var starts := []
 	for i in 4:

@@ -300,6 +300,10 @@ func constraints_and_authority() -> void:
 	local.threat_direction="left"
 	local.react_at=11
 	check(actions(brain.decide(job,sense,com.view(A).value,ORDERS,local).value.intents)[0].direction=="left","skilled local reaction")
+	var bow := Combat.new(SCOPE)
+	bow.enlist(A,{"team":0,"role":"archer","ranged":"bow"})
+	var evasion:Dictionary=brain.decide(job,sense,bow.view(A).value,ORDERS,local).value
+	check(evasion.mode=="React" and actions(evasion.intents).is_empty() and evasion.intents.any(func(i):return i.has("desired_direction")),"drawn bow dodges a close threat")
 	local.reaction_skill=0.0
 	check(brain.decide(job,sense,com.view(A).value,ORDERS,local).value.mode!="React","novice reaction waits for observed swing")
 	job=job_for(ai,18,rows)

@@ -109,6 +109,18 @@ func missiles() -> bool:
 
 
 func protection() -> bool:
+	var captain:=Field.new(SCOPE)
+	captain.enlist(A,{"role":"infantry","team":1,"action_profile":"commander"})
+	var trace:=[]
+	var record:=func(lines,_tick):
+		trace.append(lines[0].from[2])
+		return R.ok([])
+	for tick in range(1,14):
+		var intents:=[]
+		if tick in [1,10]:
+			intents.append(attack("start" if tick==1 else "release",0).merged({"direction":"left"},true))
+		captain.step_field(tick,intents,poses(0),record)
+	check.call(trace==[330,110,-110,-330],"commander side swing crosses the four authoritative active samples")
 	var sim := field("bow",1,{},10)
 	var hits := shot(sim,6000,"up")
 	check.call(hits.size() == 1 and hits[0].blocked and hits[0].shield_broken and sim.view(B).value.shield == 0 and sim.view(B).value.hp == 100,"directional shield intercepts and breaks")

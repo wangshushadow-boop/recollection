@@ -30,7 +30,7 @@ func _initialize() -> void:
 			if slot=="ranged": check(item.category==("bow" if role=="mounted_archer" else "crossbow"),"bow or crossbow")
 	var prop := load(FIELD+"/short_bow.tscn") as PackedScene
 	var figure: Node = prop.instantiate()
-	check(figure.find_children("*","MeshInstance3D",true,false).size()==7,"real short bow visual")
+	check(figure.has_node("Segment6") and figure.has_node("UpperString") and figure.has_node("LowerString") and figure.has_node("NockedArrow/Shaft"),"short bow limbs, drawstring and arrow")
 	figure.free()
 	print("Field troop loadouts ", "PASS" if errors==0 else "FAIL", " digest=",compiled.value.hash)
 	quit(1 if errors else 0)

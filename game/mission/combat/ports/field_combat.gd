@@ -58,6 +58,8 @@ func enlist(handle: Dictionary, profile: Dictionary) -> Dictionary:
 			return R.fail("InvalidArgument", field)
 	if typeof(profile.get("commander",false)) != TYPE_BOOL:
 		return R.fail("InvalidArgument", "commander")
+	if profile.get("action_profile","") not in ["","commander"]:
+		return R.fail("InvalidArgument","action_profile")
 	var armor: Variant = profile.get("armor",{})
 	if typeof(armor) != TYPE_DICTIONARY:
 		return R.fail("InvalidArgument", "armor")
@@ -78,6 +80,7 @@ func enlist(handle: Dictionary, profile: Dictionary) -> Dictionary:
 	_actors[handle.index].merge({"team":profile.team, "role":role, "max_hp":_actors[handle.index].hp, "weapons":weapons, "shield":profile.get("shield",0),
 		"ammo":profile.get("ammo",8), "armor":armor.duplicate(), "reload_until":0, "mount_handle":null, "rider_handle":null,
 		"morale":morale, "routing":routing, "commander":profile.get("commander",false), "last_spread":-SPREAD_TICKS})
+	if profile.has("action_profile"): _actors[handle.index]["action_profile"]=profile.action_profile
 	if routing:
 		_pending_spread[handle.index] = {"handle":_actors[handle.index].handle, "initial":true}
 	_vital_changes[handle.index] = true
@@ -250,6 +253,9 @@ func _actor_view(state: Dictionary) -> Dictionary:
 		"phase":state.phase, "since":state.since, "direction":state.direction,
 		"weapon_slot":state.weapon_slot, "mount_handle":state.mount_handle, "hp":state.hp,
 		"routing":state.routing, "morale":state.morale, "ammo":state.ammo, "shield":state.shield}
+	item["weapon_kind"] = _weapon(state)
+	item["commander"] = state.commander
+	item.merge(_timing(state))
 	item.make_read_only()
 	_view_cache[index] = [state, item]
 	return item

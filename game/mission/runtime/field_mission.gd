@@ -121,7 +121,12 @@ func _deploy_placements(placements: Variant, grant: Dictionary, context: Variant
 			for slot in range(source.source_slot_range[0],source.source_slot_range[1]):
 				if site>=remaining: break
 				if _entities.spawned.has(slot) or not is_same(_owners.team_for_slot(slot).value,grant.team_key): continue
-				orders.append({"source_slot":slot,"components":{"spawn_position_mm":available[site]}})
+				var point: Array=available[site]
+				if zone.has("opening_slot"):
+					var offset: int=slot-zone.opening_slot
+					if offset<0 or offset>=zone.quota:continue
+					point=zone.points_mm[offset]
+				orders.append({"source_slot":slot,"components":{"spawn_position_mm":point}})
 				site+=1
 	if orders.is_empty(): return R.fail("Unavailable","field.deployment")
 	var begin: Dictionary=_form.begin_tick()
@@ -220,6 +225,9 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 				var source: Dictionary = _frame.rows.get(_user_handle.index,{})
 				if source.get("handle")==_user_handle:
 					player.merge(_commander_kit(source.components).duplicate(true))
+					if pose.has("shot_origin"):
+						player.shot_origin=pose.shot_origin
+						player.aim_pitch=pose.aim_pitch
 					if _commander_hero!=null and source.components.hero_id==_commander_hero and _local.has("commander_level"):
 						player.level = _local.commander_level
 					var mount: Variant = player.get("mount_handle")

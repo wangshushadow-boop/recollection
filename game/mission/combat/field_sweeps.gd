@@ -122,7 +122,8 @@ static func collect(tick: int, active: Array, states: Dictionary, poses: Diction
 			var end := begin + forward * 1500
 			if swing.direction in ["left","right"]:
 				var side := forward.cross(Vector3.UP).normalized() * (1 if swing.direction == "left" else -1)
-				var arc_offset := 330.0 if tick == swing.released else -330.0
+				var progress := float(tick-swing.released)/maxi(1,swing.active_ticks-1)
+				var arc_offset := lerpf(330.0,-330.0,progress)
 				begin += forward * 280 + side * arc_offset
 				end -= side * arc_offset
 			elif swing.direction == "up":
@@ -135,6 +136,12 @@ static func collect(tick: int, active: Array, states: Dictionary, poses: Diction
 			owners.append({"swing":swing, "projectile":false, "forward":forward,
 				"bonus":mini(5, int(pose.get("speed_mm_tick", 0) / 100.0)) if on_mount else 0})
 		else:
+			if pose.has("shot_aim_ppm"):
+				if not vector(pose.shot_aim_ppm,1000000) or not vector(pose.get("shot_origin_mm"),1000000000):
+					return R.fail("InvalidArgument","shot_pose")
+				forward=v3(pose.shot_aim_ppm).normalized()
+				if forward==Vector3.ZERO:return R.fail("InvalidArgument","shot_pose")
+				origin=pose.shot_origin_mm
 			flights[swing.attack_id] = {"swing":swing.duplicate(true), "start":tick, "position":origin.duplicate(),
 				"velocity":mm(forward * RANGE_PER_TICK[weapon]), "power":POWER[weapon] + swing.charge}
 			events.append({"type":"projectile_launched", "actor_handle":swing.attacker.duplicate(), "attack_id":swing.attack_id})

@@ -248,7 +248,8 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 		var threatened: bool = job.get("urgent",false) and distance <= 3.0 and direction in DIRECTIONS and threat != null and threat == target.get("handle") and tick >= react_at
 		if threatened:
 			mode = "React"
-			if combat.phase in ["Ready","Guard"] or (combat.phase=="Windup" and tick-combat.since<2):
+			var can_guard: bool = weapons[combat.weapon_slot]!="bow" and (combat.phase in ["Ready","Guard"] or (combat.phase=="Windup" and tick-combat.since<2))
+			if can_guard:
 				# An observed swing may be misread. The same local observation must replay identically on retry.
 				var observation: int = (own.handle.index*31 + own.handle.generation*17 + threat.index*13 + react_at) % 100
 				if observation >= roundi(skill*100.0):

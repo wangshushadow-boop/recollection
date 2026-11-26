@@ -7,11 +7,14 @@ const Ground = preload("res://presentation/visuals/field_environment.gd")
 const NEAR_LIMIT := 36
 const CORPSE_LIMIT := 64
 const HIT_LIMIT := 48
+const TIMING_KEYS := ["windup_ticks","active_ticks","recovery_ticks"]
+const WEAPONS := ["melee","bow","crossbow","throw"]
 
 class Proxy:
 	var index: int
 	var generation: int
 	var role: String
+	var model_key: String
 	var team: int
 	var previous: Vector3
 	var position: Vector3
@@ -24,6 +27,11 @@ class Proxy:
 	var old_direction: String
 	var since: int
 	var old_since: int
+	var phase_ticks: float
+	var old_phase_ticks: float
+	var aim_pitch: float
+	var old_aim_pitch: float
+	var shield_intact := true
 	var mount_index := -1
 	var mount_generation := 0
 	var ranged: bool
@@ -84,7 +92,9 @@ func open_field(scope_id: String) -> Dictionary:
 		tint.albedo_color = color
 		tint.roughness = .9
 		_tints.append(tint)
-	for kind: String in Models.FILES:
+	var kinds := Models.FILES.keys()
+	kinds.append("commander")
+	for kind: String in kinds:
 		var model := Models.new()
 		if not model.load_model(kind,_host):
 			release_scope(scope_id)
@@ -148,6 +158,13 @@ func apply_snapshot(s: Dictionary) -> Dictionary:
 			return R.fail("StaleVersion","handle")
 		if not a.get("since",0) is int or not a.get("phase","Ready") is String or not a.get("direction","") is String:
 			return R.fail("InvalidArgument","action")
+		var pitch: Variant = a.get("aim_pitch",0.0)
+		var shield: Variant = a.get("shield",1)
+		if (not pitch is float and not pitch is int) or not is_finite(pitch) or not shield is int or shield<0 or a.get("weapon_kind","melee") not in WEAPONS or not a.get("commander",false) is bool:
+			return R.fail("InvalidArgument","equipment_pose")
+		for key: String in TIMING_KEYS:
+			var ticks: Variant = a.get(key,1)
+			if not ticks is int or ticks<1: return R.fail("InvalidArgument","action_timing")
 		present[a.handle.index] = true
 	var shots := {}
 	for shot: Variant in s.get("projectiles",[]):
@@ -163,7 +180,8 @@ func apply_snapshot(s: Dictionary) -> Dictionary:
 	for a: Dictionary in s.actors:
 		var h: Dictionary = a.handle
 		var p: Proxy = _actors.get(h.index)
-		var arrived: bool = p == null or p.generation != h.generation or p.role != a.role
+		var model: String = "commander" if a.get("commander",false) and a.role!="mount" else a.role
+		var arrived: bool = p == null or p.generation != h.generation or p.role != a.role or p.model_key!=model
 		if arrived:
 			if p != null:
 				_drop(p)
@@ -171,6 +189,7 @@ func apply_snapshot(s: Dictionary) -> Dictionary:
 			p.index = h.index
 			p.generation = h.generation
 			p.role = a.role
+			p.model_key = model
 			p.position = a.position
 			p.yaw = atan2(a.heading.x,a.heading.z)
 			_actors[h.index] = p
@@ -187,15 +206,25 @@ func apply_snapshot(s: Dictionary) -> Dictionary:
 		p.phase = a.get("phase","Ready")
 		p.since = a.get("since",0)
 		p.direction = a.get("direction","")
+		p.old_phase_ticks = p.phase_ticks
+		match p.phase:
+			"Windup": p.phase_ticks = a.get("windup_ticks",3)
+			"Active": p.phase_ticks = a.get("active_ticks",2)
+			"Recovery": p.phase_ticks = a.get("recovery_ticks",3)
+			_: p.phase_ticks = 1.0
+		p.old_aim_pitch = a.get("aim_pitch",0.0) if arrived else p.aim_pitch
+		p.aim_pitch = a.get("aim_pitch",0.0)
 		p.team = a.team
 		p.speed = a.velocity.length()
 		var mount_ref: Variant = a.get("mount_handle")
 		p.mount_index = mount_ref.index if _valid_handle(mount_ref) else -1
 		p.mount_generation = mount_ref.generation if p.mount_index >= 0 else 0
-		var new_ranged: bool = p.role in ["archer","mounted_archer"] and a.get("weapon_slot",1) != 0
-		if p.ranged != new_ranged or p.old_phase != p.phase:
+		var new_ranged: bool = a.weapon_kind!="melee" if a.has("weapon_kind") else (p.role in ["archer","mounted_archer"] and a.get("weapon_slot",1)!=0)
+		var shield_intact: bool = a.get("shield",1)>0
+		if p.ranged != new_ranged or p.old_phase != p.phase or p.shield_intact!=shield_intact:
 			p.last_pose = -1.0
 		p.ranged = new_ranged
+		p.shield_intact = shield_intact
 	_previous_tick = s.tick if _tick < 0 else _tick
 	_tick = s.tick
 	return R.ok()
@@ -231,10 +260,10 @@ func consume_view_events(scope_id: String, tick: int, events: Array) -> Dictiona
 			continue
 		var event_tick: int = clampi(e.get("tick",tick),0,tick) if e.get("tick",tick) is int else tick
 		if e.type == "downed":
-			var role: Variant = p.role if p != null else e.get("role")
-			if role not in Models.FILES: continue
+			var role: Variant = p.model_key if p != null else e.get("role")
+			if not _models.has(role): continue
 			if _corpses.size() == CORPSE_LIMIT: _corpses.pop_front()
-			_corpses.append({"at":at,"role":role,"ranged":p.ranged if p!=null else e.get("weapon_slot",1)!=0,"yaw":p.yaw if p != null else 0.0,
+			_corpses.append({"at":at,"role":role,"ranged":p.ranged if p!=null else e.get("weapon_slot",1)!=0,"shield":p.shield_intact if p!=null else true,"yaw":p.yaw if p != null else 0.0,
 				"team":p.team if p != null else int(e.get("team",0)),"until":event_tick+150})
 		else:
 			if _impacts.size() == HIT_LIMIT: _impacts.pop_front()
@@ -263,11 +292,12 @@ func _select_near(eye: Vector3, radius: float) -> void:
 		var p := possible[j]
 		targets[p.index] = true
 		if p.figure == null:
-			p.figure = _models[p.role].instantiate(_host)
+			p.figure = _models[p.model_key].instantiate(_host)
 			p.figure.root.name = "Agent_%d_%d" % [p.index,p.generation]
 			if p.index==_first_person_actor.get("index",-1): _set_head_visible(_first_person_actor,false)
 			p.last_pose = -1.0
 			if p.figure.tunic: p.figure.tunic.material_override = _tints[posmod(p.team,2)]
+			if p.figure.cape: p.figure.cape.material_override = _tints[posmod(p.team,2)]
 	for index: int in _near.keys():
 		if not targets.has(index) and _actors.has(index):
 			_drop(_actors[index])
@@ -314,8 +344,9 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 			p.figure.root.transform = transform3
 			# Skin playback follows the same authority tick at 30 Hz near camera.
 			if t-p.last_pose >= 1.5 or p.last_pose < 0 or p.last_mounted != mounted or phase in ["Active","Guard","Windup","Recovery"]:
-				_models[p.role].pose(p.figure,t+offset,p.speed,phase,p.old_direction if old else p.direction,
-					(p.old_since if old else p.since)+offset,mounted,p.ranged)
+				_models[p.model_key].pose(p.figure,t+offset,p.speed,phase,p.old_direction if old else p.direction,
+					(p.old_since if old else p.since)+offset,mounted,p.ranged,lerpf(p.old_aim_pitch,p.aim_pitch,alpha),
+					p.old_phase_ticks if old else p.phase_ticks,p.shield_intact)
 				if mounted: Models.turn_in_saddle(p.figure,saddle_turn)
 				p.last_pose = t
 				p.last_mounted = mounted
@@ -325,10 +356,13 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 			if phase == "Guard":
 				frame = 7
 			elif phase in ["Windup","Active","Hold","Recovery"]:
-				frame = 3 + maxi(0,Models.DIRECTIONS.find(p.old_direction if old else p.direction))
+				if p.ranged and p.model_key!="archer":
+					frame = 3 + ["Windup","Hold","Active","Recovery"].find(phase)
+				else:
+					frame = 3 + maxi(0,Models.DIRECTIONS.find(p.old_direction if old else p.direction))
 			elif p.speed > .12:
 				frame = 1 + floori((t+offset)/9.0)%2
-			_batches.push(_batch_pose(p.role,mounted,p.ranged,frame),transform3,Models.COLORS[posmod(p.team,2)])
+			_batches.push(_batch_pose(p.model_key,mounted,p.ranged,frame,p.shield_intact),transform3,Models.COLORS[posmod(p.team,2)])
 			_far += 1
 	for s: Dictionary in _shots.values():
 		var dir: Vector3 = s.direction
@@ -342,7 +376,7 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 			_corpses.remove_at(i)
 		else:
 			var fallen := Basis(Vector3.UP,c.yaw)*Basis(Vector3.BACK,PI*.5)
-			_batches.push(_batch_pose(c.role,false,c.ranged,0),Transform3D(fallen,c.at+Vector3.UP*.20),Models.COLORS[posmod(c.team,2)])
+			_batches.push(_batch_pose(c.role,false,c.ranged,0,c.shield),Transform3D(fallen,c.at+Vector3.UP*.20),Models.COLORS[posmod(c.team,2)])
 	for i in range(_impacts.size()-1,-1,-1):
 		var e := _impacts[i]
 		if e.until < _tick:
@@ -351,8 +385,11 @@ func render_interpolated(alpha: float, eye: Vector3, near_radius: float = 22.0) 
 			_batches.push("impact",Transform3D(Basis.IDENTITY,e.at),Color.WHITE)
 	_batches.flush()
 
-func _batch_pose(role: String, mounted: bool, ranged: bool, frame: int) -> String:
+func _batch_pose(role: String, mounted: bool, ranged: bool, frame: int, shield_intact := true) -> String:
 	if role=="mounted_archer" and not ranged: role = "cavalry"
+	if role in ["infantry","commander"]:
+		if ranged: frame += Models.POSES_PER_SET
+		elif not shield_intact: frame += 2*Models.POSES_PER_SET
 	if (role in ["cavalry","mounted_archer"] and not mounted) or (role=="archer" and not ranged):
 		frame += Models.POSES_PER_SET
 	return role+str(frame)

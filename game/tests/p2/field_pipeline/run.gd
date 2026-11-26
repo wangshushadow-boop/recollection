@@ -176,6 +176,67 @@ func real_hits()->void:
 	if ok(receipt,"actual damage through RESULTS"):check(receipt.value.slot_outcomes[0].xp>=1 and receipt.value.slot_outcomes[1].wounded,"hit provenance and XP")
 	mission.dispose()
 
+func commander_bow()->void:
+	var saved_positions:=site_positions
+	var saved_brains:=brain_script
+	site_positions=[[[-5000,0,0]],[[5000,0,0]]]
+	brain_script=null # Keep the two physical targets fixed while testing the player's sight.
+	var data:=battle(["infantry"],[1],1)
+	site_positions=saved_positions
+	var source:Dictionary=data.spec.reserved_sources[0]
+	source.hero_id="hero/"+UUID
+	source.troop_def_id=null
+	source.loadout_snapshot_id="field:equipment/commander"
+	data.spec.sides[0].commander_hero_id=source.hero_id
+	var opened:=await open(data)
+	brain_script=saved_brains
+	if not opened:return
+	ok(mission.step_fixed(1,[]),"commander equipment opening")
+	var player:Dictionary=hud().player
+	var h:Dictionary=player.handle
+	check(player.role=="infantry" and player.weapons==["melee","bow"] and player.shield==32 and player.windup_ticks==9,"captain keeps infantry formation and real melee, shield and bow")
+	var aimed:= {"actor_handle":h,"yaw":roundi(-PI*.5*1000000),"pitch":roundi(PI/6*1000000)}
+	var level:=aimed.merged({"pitch":0},true)
+	var start:={"actor_handle":h,"input_phase":"start","direction":"left","weapon_slot":1,"target_hint":null}
+	var release:=start.merged({"input_phase":"release"},true)
+	var block:={"actor_handle":h,"held":true,"direction":"up"}
+	var landed:=false
+	for t in range(2,91):
+		var intents:=[]
+		match t:
+			2:intents=[start.merged({"weapon_slot":0},true)]
+			11:intents=[block]
+			12:intents=[block.merged({"held":false},true),{"actor_handle":h,"slot":1,"item_ref":"bow"}]
+			13,32:intents=[start,aimed]
+			14,51:intents=[block]
+			31:intents=[start.merged({"input_phase":"cancel"},true)]
+			50,80:intents=[release]
+			55:intents=[start.merged({"input_phase":"cancel"},true)]
+			62:intents=[start,level]
+		if not intents.is_empty():ok(input(t,intents),"authorized bow input "+str(t))
+		var step:Dictionary=mission.step_fixed(t,[])
+		if not ok(step,"captain bow timeline"):break
+		var visual:Dictionary=mission.gateway("field.view",{"projection":"visual"},token).value
+		match t:
+			11:check(hud().player.phase=="Guard" and hud().player.direction=="up","held melee feint enters directional defense")
+			12:check(hud().player.weapon_kind=="bow" and hud().player.windup_ticks==18,"real bow slot changes action timing")
+			14:check(hud().player.phase=="Windup","cannot raise a stowed shield with the bow equipped")
+			30:check(hud().player.phase=="Windup","short bow still drawing one step before full draw")
+			31:check(hud().player.phase=="Ready" and hud().player.ammo==8 and visual.projectiles.is_empty(),"let down full draw without a projectile or debit")
+			50:
+				var actor:Dictionary=visual.actors.filter(func(a):return a.handle==h)[0]
+				check(actor.phase=="Active" and actor.weapon_kind=="bow" and is_equal_approx(actor.aim_pitch,PI/6),"shoot pose uses committed weapon and pitch")
+				check(visual.projectiles.size()==1 and visual.projectiles[0].direction.y>.48 and is_equal_approx(visual.projectiles[0].position.y-hud().player.shot_origin.y,.85),"rendered flight rises from the HUD-authority muzzle")
+				check(hud().player.ammo==7 and absf(actor.heading.y)<.001,"only the projectile tilts and launch consumes one arrow")
+			51:check(hud().player.phase=="Active" and hud().player.ammo==7,"guard cannot undo a released arrow")
+			55:check(hud().player.phase=="Recovery","cannot cancel recovery")
+		for report in step.value.system_reports:
+			if report.id=="field.combat" and report.value.hits.any(func(hit):return hit.attacker==h and hit.damage>0):
+				landed=true
+				check(t>80,"elevated shot misses, next horizontal arrow physically hits")
+	check(landed and hud().player.ammo==6,"level arrow produces confirmed damage and one more debit")
+	mission.dispose()
+
 func nonmovement_revocation()->void:
 	if not await open(battle(["infantry"],[1],1)):return
 	var fault:=[false]
@@ -383,15 +444,24 @@ func real_jump()->void:
 	check(landed,"same Mission Jolt ground catches the descent")
 	mission.dispose()
 
-func casualty_wave(reserve:bool)->void:
+func casualty_wave(reserve:bool, enemy_general:=false)->void:
 	var data:=battle(["infantry"],[1],1)
 	if reserve:
 		data.spec.reserved_sources[1].count=2
 		data.spec.reserved_sources[1].source_slot_range=[1,3]
 		data.spec.sides[1].roster_allocations=[{"source_slot_range":[1,3]}]
 		data.scene.field_zones[1].points_mm.append([12000,0,0])
+		if enemy_general:
+			var starting:Dictionary=data.spec.reserved_sources[1]
+			data.spec.reserved_sources.append(starting.merged({"source_slot_range":[2,3],"count":1},true))
+			starting.merge({"source_slot_range":[1,2],"count":1,"troop_def_id":null,
+				"hero_id":"hero/"+UUID,"loadout_snapshot_id":"field:equipment/commander"},true)
+			data.spec.sides[1].commander_hero_id=starting.hero_id
 	if not await open(data):return
 	ok(mission.step_fixed(1,[]),"actual casualty baseline")
+	if enemy_general:
+		var first:Dictionary=mission.gateway("field.view",{"projection":"visual"},token).value
+		check(first.actors.filter(func(a):return a.team==1 and a.commander).size()==1,"true enemy general starts on the front line")
 	var actor:Dictionary=hud().player_handle
 	var charged:=0
 	var saw_loss:=false
@@ -417,6 +487,10 @@ func casualty_wave(reserve:bool)->void:
 	check(saw_loss or (not reserve and saw_rout),"repeated real contacts cause COM incapacity or decisive rout")
 	if reserve:
 		check(mission.view().spawned_slots==[0,1,2] and mission.view().entities.any(func(row):return row.source_slot==2 and row.handle.generation==2),"vacancy filled by a new generation from the actual reserve")
+		if enemy_general:
+			ok(mission.step_fixed(mission.view().tick+1,[]),"reserved soldier actually enlists")
+			var reinforced:Dictionary=mission.gateway("field.view",{"projection":"visual"},token).value
+			check(reinforced.actors.any(func(a):return a.team==1 and not a.commander and a.handle.generation==2) and not reinforced.actors.any(func(a):return a.commander),"retired enemy general cannot be replaced by a duplicate commander")
 		ok(mission.gateway("field.withdraw",{},token),"withdraw following reinforcement")
 		ok(mission.step_fixed(mission.view().tick+1,[]),"new wave participates in ending")
 	else:
@@ -482,6 +556,7 @@ func run()->void:
 				return
 	await field_test()
 	await real_hits()
+	await commander_bow()
 	await nonmovement_revocation()
 	await input_on_incapacitation()
 	await replace_expired_batch()
@@ -489,6 +564,7 @@ func run()->void:
 	if "--casualties" in OS.get_cmdline_user_args():
 		await casualty_wave(false)
 		await casualty_wave(true)
+		await casualty_wave(true,true)
 	if "--mount" in OS.get_cmdline_user_args():
 		await hero_and_mount()
 		await real_jump()

@@ -190,8 +190,16 @@ func captured_field() -> void:
 	check(mini.is_visible_in_tree() and mini._allies==sample.allies and mini._enemies==sample.enemies and mini._origin==Vector2(16,5) and mini._heading==Vector2.UP,"local map displays authorised XZ sample and north-facing player")
 	check(mini._rallies==sample.rallies and mini._objectives==sample.objectives,"map receives actual rally and objective locations")
 	check(not mini.get_global_rect().intersects(control("Equipment").get_global_rect()) and root.get_visible_rect().encloses(mini.get_global_rect()),"tactical map stays clear of player attributes")
-	check(control("PlayerMorale").text.contains("92") and control("PlayerMount").text=="步战" and control("PlayerWeapon").text.contains("近战"),"visible personal morale, mount state and equipped weapon")
+	check(control("PlayerMorale").text.contains("92") and control("PlayerMount").text=="步战" and control("PlayerWeapon").text.contains("河原长矛"),"visible personal morale, mount state and equipped weapon")
 	check(not control("PlayerWeapon").text.contains("弹药"),"melee loadout hides unused ammunition")
+	field_overlay.player = {"weapon_slot":1,"weapon_kind":"bow","weapons":["melee","bow"],"ammo":5,"phase":"Hold",
+		"equipped_items":[{"slot":"melee","name":"长枪"},{"slot":"ranged","name":"短弓"}]}
+	hud.refresh()
+	await frames()
+	check(control("PlayerWeapon").text.contains("短弓") and control("PlayerWeapon").text.contains("5") and hint.text.contains("切换长枪") and hint.text.contains("收弓"),"bow readout identifies active and alternative weapon and bindings")
+	check(not mini.get_global_rect().intersects(hint.get_global_rect()),"wrapped bow bindings clear the minimap")
+	field_overlay.erase("player")
+	hud.refresh()
 	var count := sent.size()
 	for pos in [logical*.5,Vector2(45,65)]:
 		for button in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
