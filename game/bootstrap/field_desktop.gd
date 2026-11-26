@@ -34,7 +34,15 @@ var _deployment_attempt := 0
 var _deployment_request := {}
 var _last_audio_end := false
 var _exiting := false
+var _previous_physics_step_limit: int
 signal leave_requested
+
+func _enter_tree() -> void:
+	_previous_physics_step_limit = Engine.max_physics_steps_per_frame
+	Engine.max_physics_steps_per_frame = 2
+
+func _exit_tree() -> void:
+	Engine.max_physics_steps_per_frame = _previous_physics_step_limit
 
 func mount(app: RefCounted, id: String) -> Dictionary:
 	application = app
