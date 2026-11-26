@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-031",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "阵型走廊下发和战斗位姿的增量装配",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-029"
+  ],
+  "requirements": [
+    "BAT-01",
+    "MIS-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-01",
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_pipeline.gd",
+    "development/reports/tests/P2/field-motion-v2/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "d073df60e249790e3afe0e130fc376fd04ff5cad",
+  "worktree": "D:/work/game/recollection",
+  "scope": "阵型走廊下发和战斗位姿的增量装配",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "河原 500+100 命令及站立各一批桌面对照，测步与帧延迟和真实模拟步速。",
+    "保持 60 Hz 及交互行为，1260 步按步等价，第 986 步失败重试，局部功能用例通过。"
+  ],
+  "status": "DONE",
+  "owner": "pose2 / 主 Agent"
+}

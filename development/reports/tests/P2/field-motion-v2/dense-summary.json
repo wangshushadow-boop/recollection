@@ -1,0 +1,136 @@
+{
+  "base": {
+    "distinct_attackers": 8,
+    "distinct_victims": 5,
+    "first_melee_hit": 20,
+    "projectiles": 0,
+    "trace_sha256": "033e2610b52799fd7fa06a82fc73638f1c555a6b08213ae772b90a60fd805670",
+    "ticks": 180,
+    "soldiers": 32,
+    "melee_positive_hits": 23,
+    "melee_damage": 322,
+    "opposing_pairs_within_2m": {
+      "mean": 67.433,
+      "p50": 68,
+      "p95": 80
+    },
+    "unique_infantry_with_enemy_within_2m": {
+      "mean": 26.917,
+      "p50": 27,
+      "p95": 31
+    },
+    "max_soldiers_that_moved_10cm": 32,
+    "field_step_ms": {
+      "mean": 2.732,
+      "p50": 2.615,
+      "p95": 3.64
+    },
+    "_think_ms": {
+      "mean": 0.938,
+      "p50": 0.917,
+      "p95": 1.329
+    },
+    "_walk_ms": {
+      "mean": 0.779,
+      "p50": 0.764,
+      "p95": 1.009
+    },
+    "prepare_ms": {
+      "mean": 0.253,
+      "p50": 0.238,
+      "p95": 0.368
+    },
+    "advance_ms": {
+      "mean": 0.246,
+      "p50": 0.239,
+      "p95": 0.296
+    },
+    "physics_stage_ms": {
+      "mean": 0.109,
+      "p50": 0.1,
+      "p95": 0.182
+    },
+    "neighbor_checks": {
+      "mean": 150.717,
+      "p50": 150,
+      "p95": 185
+    },
+    "yielding": {
+      "mean": 13.611,
+      "p50": 14,
+      "p95": 20
+    },
+    "physics_writebacks": {
+      "mean": 9.1,
+      "p50": 8,
+      "p95": 32
+    }
+  },
+  "final": {
+    "distinct_attackers": 8,
+    "distinct_victims": 5,
+    "first_melee_hit": 20,
+    "projectiles": 0,
+    "trace_sha256": "033e2610b52799fd7fa06a82fc73638f1c555a6b08213ae772b90a60fd805670",
+    "ticks": 180,
+    "soldiers": 32,
+    "melee_positive_hits": 23,
+    "melee_damage": 322,
+    "opposing_pairs_within_2m": {
+      "mean": 67.433,
+      "p50": 68,
+      "p95": 80
+    },
+    "unique_infantry_with_enemy_within_2m": {
+      "mean": 26.917,
+      "p50": 27,
+      "p95": 31
+    },
+    "max_soldiers_that_moved_10cm": 32,
+    "field_step_ms": {
+      "mean": 2.545,
+      "p50": 2.409,
+      "p95": 3.324
+    },
+    "_think_ms": {
+      "mean": 0.907,
+      "p50": 0.903,
+      "p95": 1.498
+    },
+    "_walk_ms": {
+      "mean": 0.677,
+      "p50": 0.663,
+      "p95": 0.992
+    },
+    "prepare_ms": {
+      "mean": 0.25,
+      "p50": 0.232,
+      "p95": 0.383
+    },
+    "advance_ms": {
+      "mean": 0.225,
+      "p50": 0.22,
+      "p95": 0.278
+    },
+    "physics_stage_ms": {
+      "mean": 0.077,
+      "p50": 0.072,
+      "p95": 0.194
+    },
+    "neighbor_checks": {
+      "mean": 103.306,
+      "p50": 95,
+      "p95": 169
+    },
+    "yielding": {
+      "mean": 13.611,
+      "p50": 14,
+      "p95": 20
+    },
+    "physics_writebacks": {
+      "mean": 9.1,
+      "p50": 8,
+      "p95": 32
+    }
+  }
+}
