@@ -348,6 +348,10 @@ func _formation(job: Dictionary, nav: int, tasks: Dictionary, metrics: Dictionar
 		metrics.orders += 1
 	return brain.commit(d.token,batch)
 
+static func _holds_position(behavior: String, active: Variant) -> bool:
+	if active==null: return behavior=="Hold"
+	return active.order_type=="hold" and behavior in ["Hold","Regroup"]
+
 func _prepare_member(job: Dictionary, nav: int, combat: RefCounted, cache: Dictionary) -> Dictionary:
 	var row: Dictionary = _units[job.subject.index]
 	var group: int = row.formation_id
@@ -376,6 +380,8 @@ func _prepare_member(job: Dictionary, nav: int, combat: RefCounted, cache: Dicti
 		slot = _field.targets.get(job.subject.index,_field.positions[row.offset])
 		heading = _field.look.get(job.subject.index,_field.headings[row.offset])
 	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":slot,"heading":heading,"exit_position":_teams[row.team_key].exit_position}
+	var active_order: Variant = _groups[group].order_state[0]
+	work.local["holding_ground"] = _holds_position(state.value.behavior,active_order)
 	for key in ["threat_handle","threat_direction","react_at","reaction_skill"]:
 		if row.has(key): work.local[key] = row[key]
 	return R.ok(work)

@@ -81,6 +81,7 @@ func _fresh(job: Dictionary) -> bool:
 static func _target(perception: Dictionary, rules: Dictionary, local: Dictionary, memory: Dictionary, tick: int) -> Dictionary:
 	var best := {}
 	var best_score := INF
+	var best_in_reach := false
 	var own: Dictionary = perception.self
 	for enemy: Dictionary in perception.visible_enemies:
 		if is_same(own.team_key,enemy.team_key) or enemy.role == "mount" or enemy.handle in local.get("incapacitated",[]):
@@ -88,6 +89,8 @@ static func _target(perception: Dictionary, rules: Dictionary, local: Dictionary
 		if not _can_go(local,own.position,enemy.position):
 			continue
 		var score: float = own.position.distance_to(enemy.position)
+		var in_reach: bool = local.get("holding_ground",false) and score <= MELEE_REACH
+		if best_in_reach and not in_reach: continue
 		score += maxf(0.0,local.slot_position.distance_to(enemy.position)-rules.movement_limit)
 		for ally: Dictionary in perception.nearby_allies:
 			if ally.position.distance_squared_to(enemy.position) < 2.25:
@@ -98,9 +101,10 @@ static func _target(perception: Dictionary, rules: Dictionary, local: Dictionary
 			score -= 6.0
 		if enemy.handle == rules.focus_target:
 			score -= 100.0
-		if score < best_score or (score == best_score and enemy.handle.index < best.handle.index):
+		if (in_reach and not best_in_reach) or score < best_score or (score == best_score and enemy.handle.index < best.handle.index):
 			best = enemy
 			best_score = score
+			best_in_reach = in_reach
 	return best
 
 
@@ -158,7 +162,7 @@ static func _attack(own: Dictionary, combat: Dictionary, target: Dictionary, tic
 		"Windup": phase = "hold"
 		"Hold": phase = "release"
 		_: return {}
-	return {"actor_handle":own.handle,"input_phase":phase,"direction":direction,"weapon_slot":combat.weapon_slot,"target_hint":target.handle}
+	return {"actor_handle":own.handle,"input_phase":phase,"direction":direction,"weapon_slot":combat.weapon_slot,"target_hint":target.get("handle")}
 
 
 # local holds only this member's slot/exit, equipment and navigation reachability for this revision.
@@ -222,6 +226,9 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 					target = seen
 					break
 		var distance: float = INF if target.is_empty() else own.position.distance_to(target.position)
+		# A holding formation can strike from its place without gaining permission to pursue.
+		var defend_here: bool = local.get("holding_ground",false) and distance <= MELEE_REACH
+		if defend_here and combat.weapon_slot==0: current_attack_allowed = true
 		var forward := Vector3.ZERO if target.is_empty() else _ground(target.position-own.position).normalized()
 		var side := forward.cross(Vector3.UP) * (1.0 if own.handle.index%2==0 else -1.0)
 		var direction: String = local.get("threat_direction","up")
@@ -241,11 +248,11 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 				move = _move(own,own.position+side*2.0,local,rules,1.0,mounted)
 		elif combat.phase == "Stagger":
 			mode = "Recover"
-		elif (not rules.engage_allowed or distance == INF) and own.position.distance_to(local.slot_position) > rules.slot_tolerance:
+		elif not defend_here and (not rules.engage_allowed or distance == INF) and own.position.distance_to(local.slot_position) > rules.slot_tolerance:
 			mode = "MoveToSlot"
 			move = _move(own,local.slot_position,local,rules,1.0,mounted)
-		elif not target.is_empty() and (rules.engage_allowed or (ranged and rules.fire_allowed)):
-			var use_ranged: bool = ranged and rules.fire_allowed and (distance > 2.7 or not rules.engage_allowed)
+		elif not target.is_empty() and (defend_here or rules.engage_allowed or (ranged and rules.fire_allowed)):
+			var use_ranged: bool = not defend_here and ranged and rules.fire_allowed and (distance > 2.7 or not rules.engage_allowed)
 			var slot := 1 if use_ranged else 0
 			if combat.weapon_slot != slot and combat.phase in ["Ready","Guard"]:
 				mode = "Equip"
@@ -257,7 +264,7 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 					action = _cancel(own,combat)
 				elif current_attack_allowed:
 					action = _attack(own,combat,target,tick)
-			elif mounted and tick<break_until and not use_ranged:
+			elif not defend_here and mounted and tick<break_until and not use_ranged:
 				mode = "Disengage"
 				move = _move(own,own.position+side*3.0-forward,local,rules,1.0,mounted)
 			elif use_ranged:
@@ -282,6 +289,9 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 			action = {"actor_handle":own.handle,"direction":combat.direction,"held":false}
 		elif action.is_empty() and combat.phase=="Windup" and tick-combat.since<2 and (target.is_empty() or not current_attack_allowed):
 			action = _cancel(own,combat)
+		elif action.is_empty() and combat.phase=="Hold" and combat.weapon_slot==0 and not defend_here and local.get("holding_ground",false):
+			# The intruder left during windup. Finish the existing swing without a target hint.
+			action = _attack(own,combat,{},tick)
 	if not action.is_empty() and old.get("rejected") == action and tick<old.get("retry_tick",-1):
 		action = {}
 		break_until = old.get("break_until",-1)

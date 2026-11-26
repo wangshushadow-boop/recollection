@@ -74,7 +74,7 @@ func query() -> Dictionary:
 	var groups := [form.view(0).value,form.view(1).value]
 	var v := {"scope_id":scope_read,"revision":revision,"phase":phase,"formations":groups,
 		"targets":[2],"team_key":0,"rules":rules.view(),"selection":input.view().selection,
-		"player":{"hp":commander_hp,"ammo":4,"morale":92,"direction":"up"},"delegate_candidate":"captain",
+		"player":{"hp":commander_hp,"ammo":4,"morale":92,"direction":"up","weapon_slot":0,"weapons":["melee"]},"delegate_candidate":"captain",
 		"deployment_zones":[{"id":"north","position_mm":[1000,0,300]}],"target_position":point,
 		"can_withdraw":true,"allow_rebind":true,"bindable_actions":input.profile_view().bindings.keys(),"command_feedback":input.view().feedback,"subtitle":"Cavalry!"}
 	if phase=="ended":
@@ -168,7 +168,9 @@ func captured_field() -> void:
 	check(not control("Settings").is_visible_in_tree() and root.gui_get_focus_owner()==null,"captured field releases GUI focus and hides buttons")
 	var hint := control("FieldHints") as Label
 	check(hint.is_visible_in_tree() and hint.text.contains("攻击") and hint.text.contains("格挡"),"field controls show active keyboard/mouse bindings")
-	check(root.get_visible_rect().encloses(hint.get_global_rect()) and root.get_visible_rect().encloses(control("FieldInfo").get_global_rect()),"captured readouts fit inside the viewport")
+	check(root.get_visible_rect().encloses(hint.get_global_rect()) and root.get_visible_rect().encloses(control("Equipment").get_global_rect()),"captured readouts fit inside the viewport")
+	check(control("Balance").get_global_rect().get_center().y<root.size.y*.15 and control("Equipment").get_global_rect().get_center().x>root.size.x*.65,"top strength and bottom right equipment")
+	check(control("HealthBar").is_visible_in_tree() and control("HealthBar").value==commander_hp and control("HealthBar").max_value==100,"health bar follows real field health")
 	var count := sent.size()
 	for pos in [Vector2(root.size)*0.5,Vector2(45,65)]:
 		for button in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
@@ -182,10 +184,12 @@ func captured_field() -> void:
 	check(field.buttons==[MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT,MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT] and sent.size()==count,"both combat buttons pass through reticle and former command panel")
 	field_overlay = {"orders_open":true,"command_page":"movement","command_choices":[{"key":"K","id":"charge"}]}
 	hud.refresh()
-	check(control("FieldInfo").text.contains("K 冲锋"),"orders display current binding and selection")
+	var card := control("OrderCards").get_child(0) as Label
+	check(card.is_visible_in_tree() and card.text.contains("K") and card.text.contains("冲锋") and control("FormationCards").get_child_count()==2,"orders display current binding and formation cards")
 	field_overlay.scoreboard_held = true
 	hud.refresh()
-	check(control("FieldInfo").text.contains("本方") and control("FieldInfo").text.contains("对方"),"held battle status uses projected teams")
+	var cells := control("ScoreTable").get_children().map(func(n): return n.text)
+	check(control("FieldInfo").is_visible_in_tree() and not card.is_visible_in_tree() and "本方" in cells and "对方" in cells and "在场" in cells,"held battle status uses projected teams and labelled columns")
 	field_overlay.clear()
 	hud.set_field_capture(false)
 	hud.refresh()
@@ -306,10 +310,14 @@ func three_side_result(first_leaves: bool, draw := false) -> void:
 		hud.mount(SCOPE,func():return R.ok(v),submit,prefs)
 		var expected: Array = ["Withdrawn","Draw","Draw"] if draw else (["Withdrawn","Defeat","Victory"] if first_leaves else ["Defeat","Withdrawn","Victory"])
 		check(control("Result").text.get_slice(" · ",0)==expected[i],"personal result "+str(i)+" "+expected[i])
+		check(control("Strength").text.contains("Opposing 1") and control("Strength").text.contains("Opposing 2"),"three sides remain distinguishable without raw team keys")
 
 func run() -> void:
 	create_timer(20.0).timeout.connect(func():printerr("FAIL HUD timeout");quit(1))
-	if DisplayServer.get_name()=="headless" and root.size==Vector2i(64,64): root.size = Vector2i(960,600)
+	if DisplayServer.get_name()=="headless":
+		root.size = Vector2i(960,600)
+		if "--small" in OS.get_cmdline_user_args(): root.size = Vector2i(640,360)
+		if "--fullhd" in OS.get_cmdline_user_args(): root.size = Vector2i(1920,1080)
 	setup()
 	root.add_child(hud)
 	check(hud.mount(SCOPE,query,submit,prefs).ok,"mount")
@@ -327,12 +335,15 @@ func run() -> void:
 	await click("Mark")
 	await click("Deploy")
 	check(last_action.get("data",{}).get("placements",[]).size()==2 and phase=="battle","deployment request")
+	check(control("CommandBook").is_visible_in_tree() and not control("Group0").is_visible_in_tree() and not control("Hold").is_visible_in_tree(),"battle menu initially offers concise navigation")
+	await click("CommandBook")
 	check(control("Charge").disabled,"no implicit target")
 	await click("Hold")
 	check(form.view(0).value.active==null,"no premature authority update")
 	advance()
 	check(form.view(0).value.active.order_type=="hold" and form.view(1).value.active.order_type=="hold","multi formation hold")
 	await captured_field()
+	await click("CommandBook")
 	await click("ApplyLayout")
 	advance()
 	check(form.view(0).value.layout=="square" and form.view(1).value.layout=="square","layout")
@@ -353,12 +364,13 @@ func run() -> void:
 	await click("Group1")
 	await click("Delegate")
 	advance()
-	check(form.view(0).value.delegate=="captain" and control("Group0").text.contains("captain"),"delegation")
+	check(form.view(0).value.delegate=="captain" and control("Group0").text.contains("已委派军官") and not control("Group0").text.contains("captain"),"delegation renders localized status")
 	auth = false
 	await click("Hold")
 	advance()
 	check(control("Receipt").text.contains("无指挥权限"),"authority refused after stale intent")
 	auth = true
+	await click("BackMenu")
 	await click("Withdraw")
 	check(not control("Hold").is_visible_in_tree(),"confirmation blocks orders")
 	press_key(KEY_ESCAPE)
@@ -374,11 +386,18 @@ func run() -> void:
 	pad(JOY_BUTTON_A)
 	await frames()
 	check(control("Language").is_visible_in_tree(),"gamepad activates settings")
+	check(root.gui_get_focus_owner()==control("BackMenu"),"gamepad focus handed into settings")
+	pad(JOY_BUTTON_DPAD_DOWN)
+	check(root.gui_get_focus_owner()==control("Language"),"gamepad can enter settings list immediately")
+	pad(JOY_BUTTON_B)
+	check(root.gui_get_focus_owner()==control("Settings") and not control("Language").is_visible_in_tree(),"gamepad returns to settings entry")
+	pad(JOY_BUTTON_A)
+	await frames()
 	await click("Language")
 	await click("Large")
 	await click("Contrast")
 	await click("Subtitles")
-	check(control("Title").text=="Field command" and not control("Captions").visible,"locale captions")
+	check(control("Title").text=="Display settings" and not control("Captions").visible,"locale captions")
 	remap_actions()
 	var old := hud
 	hud = HUD.new()
@@ -387,13 +406,14 @@ func run() -> void:
 	old.free()
 	hud.mount(SCOPE,query,submit,prefs)
 	await frames()
-	check(control("Title").text=="Field command" and control("Large").button_pressed and control("Contrast").button_pressed and not control("Subtitles").button_pressed and not control("Captions").visible,"settings survive fresh HUD")
+	check(control("Title").text=="Battle menu" and control("Large").button_pressed and control("Contrast").button_pressed and not control("Subtitles").button_pressed and not control("Captions").visible,"settings survive fresh HUD")
 	press_key(KEY_F6)
 	check(root.gui_get_focus_owner()==control("Resume"),"F6 acquires focus")
 	press_key(KEY_F6)
 	check(root.gui_get_focus_owner()==null,"F6 releases focus")
 	var panel := hud.find_children("*","PanelContainer",true,false)[0] as PanelContainer
 	check(root.get_visible_rect().encloses(panel.get_global_rect()) and panel.size.x<root.size.x*0.6,"panel fits "+str(root.size))
+	check(panel.get_global_rect().get_center().distance_to(root.get_visible_rect().get_center())<2,"battle menu is centred")
 	var scroll := hud.find_children("*","ScrollContainer",true,false)[0] as ScrollContainer
 	for item in hud.find_children("*","Control",true,false):
 		if item.is_visible_in_tree() and (item is Button or item is Label):
@@ -420,7 +440,7 @@ func run() -> void:
 	await click("Confirm")
 	check(rules.view().outcome==null,"withdraw waits for authoritative tick")
 	advance()
-	check(phase=="ended" and control("Leave").visible and control("Result").text.contains("Winners 1") and control("Result").text.contains("Wounded ×1"),"RULES result and supplied slot outcomes")
+	check(phase=="ended" and control("Leave").visible and control("Result").text.contains("Winners Opposing") and control("Result").text.contains("Wounded ×1"),"RULES result and supplied slot outcomes")
 	await click("Leave")
 	check(last_action.action=="leave","exit route")
 	three_side_result(true)

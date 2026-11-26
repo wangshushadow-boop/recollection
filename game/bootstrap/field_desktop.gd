@@ -15,7 +15,6 @@ var _visuals := Visuals.new()
 var _camera := Camera.new()
 var _audio := Audio.new()
 var _hud := HUD.new()
-var _launch := Button.new()
 var _hud_state := {}
 var _player := {}
 var _visual_state := {}
@@ -50,15 +49,6 @@ func mount(app: RefCounted, id: String) -> Dictionary:
 	var overlay := CanvasLayer.new()
 	add_child(overlay)
 	overlay.add_child(_hud)
-	overlay.add_child(_launch)
-	_launch.text = "开始野战"
-	_launch.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_launch.offset_left = -148
-	_launch.offset_right = -20
-	_launch.offset_top = 18
-	_launch.offset_bottom = 58
-	_launch.custom_minimum_size = Vector2(128,40)
-	_launch.pressed.connect(begin)
 	var opened := _visuals.open_field(id)
 	if not opened.ok: return opened
 	opened = _audio.open_scope(id)
@@ -89,7 +79,6 @@ func begin() -> void:
 	if view.ok: _deployment_sequence = view.value.get("last_order_sequence",0)
 	running = true
 	_hud.set_process(false)
-	_launch.hide()
 	_audio.transition_music("battle")
 	_prior_mouse_mode = Input.mouse_mode
 	_input_port.set_process_input(true)
@@ -180,6 +169,10 @@ func _hud_action(action: String,data: Dictionary) -> Dictionary:
 			body.erase("scope_id")
 			body.erase("revision")
 			if action=="deploy":
+				if running or _hud_state.phase!="deployment": return R.fail("InvalidState","field.deployment")
+				if body.get("placements") is Array and body.placements.is_empty():
+					begin()
+					return R.ok()
 				_deployment_attempt += 1
 				_deployment_request = {"body":body,"revision":data.revision,"id":"deployment/%d"%_deployment_attempt,"tries":0}
 				return _deliver_deployment()

@@ -162,6 +162,7 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 	var all_groups := _base_groups.duplicate()
 	for id in _frame.get("groups",{}): all_groups[id]=_frame.groups[id].team_key
 	var groups := []
+	var roles: Dictionary = _frame.get("roles",{}) if projection=="hud" else {}
 	var targets: Array = _brains.visible_formations(grant.team_key) if _brains.has_method("visible_formations") else []
 	for id in all_groups:
 		var reading: Dictionary=_form.view(id)
@@ -169,8 +170,15 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 		var g: Dictionary=reading.value
 		if is_same(g.team_key,grant.team_key):
 			var count:=0
+			var troop_role := ""
 			for h in g.members:
-				if resolve_entity(_mission,h).ok:count+=1
+				if not resolve_entity(_mission,h).ok: continue
+				count+=1
+				if not roles.is_empty() and troop_role!="mixed":
+					var role: String = roles.get(h.index,"")
+					if not role.is_empty():
+						troop_role = role if troop_role.is_empty() or troop_role==role else "mixed"
+			if not troop_role.is_empty(): g["troop_role"]=troop_role
 			g["count"]=count
 			g["controllable"]=grant.issuer_id in [g.owner,g.delegate] and decision.outcome==null
 			groups.append(g)

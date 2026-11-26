@@ -16,6 +16,14 @@ func caption(value: String) -> Button:
 		if node.text==value and node.is_visible_in_tree(): return node
 	return null
 
+func tap(keycode: Key) -> void:
+	for pressed in [true,false]:
+		var event := InputEventKey.new()
+		event.keycode = keycode
+		event.physical_keycode = keycode
+		event.pressed = pressed
+		root.push_input(event,true)
+
 func run() -> void:
 	if DisplayServer.get_name()=="headless":
 		fail("desktop requires a window")
@@ -58,8 +66,9 @@ func run() -> void:
 	if h.value.last_order_sequence!=2:
 		fail("chosen formation was not deployed")
 		return
-	if not button("Group1").button_pressed: button("Group1").pressed.emit()
-	button("Hold").pressed.emit()
+	tap(KEY_1)
+	tap(KEY_F1)
+	tap(KEY_F6)
 	var held:=false
 	for i in 60:
 		await process_frame
@@ -79,16 +88,18 @@ func run() -> void:
 		print("FIELD_FAST_CLOSE voices=",playing.size())
 		main.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
 		return
-	var withdraw:=button("Withdraw")
-	if withdraw==null or not withdraw.is_visible_in_tree():
-		fail("withdraw control missing")
-		return
 	var destination:=OS.get_environment("RECOLLECTION_FIELD_SCREENSHOT")
 	if not destination.is_empty():
 		await RenderingServer.frame_post_draw
 		if root.get_texture().get_image().save_png(destination)!=OK:
 			fail("screenshot")
 			return
+	tap(KEY_ESCAPE)
+	await process_frame
+	var withdraw:=button("Withdraw")
+	if withdraw==null or not withdraw.is_visible_in_tree():
+		fail("withdraw control missing from Esc menu")
+		return
 	withdraw.pressed.emit()
 	var confirm:=button("Confirm")
 	if not confirm.is_visible_in_tree():
@@ -97,7 +108,7 @@ func run() -> void:
 	confirm.pressed.emit()
 	for i in 60:
 		await process_frame
-		if main._root.session().query().value.state=="Results": break
+		if main._root.session().query().value.state=="Results" and button("Leave").is_visible_in_tree(): break
 	var result: Dictionary=main._root.field_view("hud")
 	if not result.ok or result.value.get("phase")!="ended" or result.value.result.slot_outcomes.is_empty():
 		fail("missing confirmed result")

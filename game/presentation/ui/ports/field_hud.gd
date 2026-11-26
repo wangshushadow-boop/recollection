@@ -3,6 +3,7 @@ extends Control
 const R = preload("res://contracts/result.gd")
 const Words = preload("res://presentation/ui/field_hud_text.gd")
 const InputPort = preload("res://presentation/input/ports/field_input.gd")
+const BattleOverlay = preload("res://presentation/ui/field_battle_overlay.gd")
 signal resume_requested
 
 var _scope := ""
@@ -20,6 +21,7 @@ var _captions := true
 var _capture := ""
 var _confirm := false
 var _field_capture := false
+var _page := "menu"
 var _draft := {}
 var _receipt := ""
 var _panel := PanelContainer.new()
@@ -28,8 +30,8 @@ var _body := VBoxContainer.new()
 var _groups := VBoxContainer.new()
 var _commands := GridContainer.new()
 var _prefs := VBoxContainer.new()
-var _field_info := Label.new()
-var _field_hints := Label.new()
+var _overlay := BattleOverlay.new()
+var _shade := ColorRect.new()
 var _nodes := {}
 var _labels := {}
 var _pickers := {}
@@ -38,19 +40,23 @@ var _choice_cache := {}
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shade.color = Color("#17140f66")
+	_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_shade)
+	_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
-	_panel.offset_left = 8
-	_panel.offset_top = 8
-	_panel.anchor_bottom = 1
-	_panel.offset_bottom = -8
 	_panel.add_child(_scroll)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.follow_focus = true
 	_scroll.add_child(_body)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.minimum_size_changed.connect(_resize,CONNECT_DEFERRED)
 	_label("Title")
+	_button("Deploy","deploy",func(): _send("deploy",{"placements":_draft.values()}))
 	_button("Resume","controller",_resume)
-	_button("Settings","settings",func(): _prefs.visible = not _prefs.visible)
+	_button("Settings","settings",_open_page.bind("settings"))
+	_button("CommandBook","command_book",_open_page.bind("command"))
+	_button("BackMenu","back_menu",_open_page.bind("menu"))
 	_body.add_child(_prefs)
 	_prefs.hide()
 	_label("Downed")
@@ -70,7 +76,6 @@ func _ready() -> void:
 	_body.add_child(_commands)
 	_button("Mark","mark",_mark,_commands)
 	_button("Reset","reset",func(): _draft.clear(); _render(),_commands)
-	_button("Deploy","deploy",func(): _send("deploy",{"placements":_draft.values()}),_commands)
 	for pair in [["Hold","hold"],["Charge","charge"],["Move","move"],["ApplyLayout","set_layout"],["Delegate","delegate"]]:
 		_button(pair[0],pair[1],_order.bind(pair[1]),_commands)
 	_button("Withdraw","withdraw",_ask_withdraw)
@@ -87,22 +92,8 @@ func _ready() -> void:
 	_button("Subtitles","captions",_setting.bind("captions"),_prefs,true)
 	_picker("Binding","binding",_prefs)
 	_button("Rebind","rebind",func(): _capture = _chosen("Binding"); _render(),_prefs)
-	_field_info.name = "FieldInfo"
-	_field_hints.name = "FieldHints"
-	for label in [_field_info,_field_hints]:
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.add_theme_color_override("font_outline_color",Color.BLACK)
-		label.add_theme_constant_override("outline_size",4)
-		add_child(label)
-		label.anchor_right = 1
-		label.offset_left = 14
-		label.offset_right = -14
-	_field_info.offset_top = 12
-	_field_hints.anchor_top = 1
-	_field_hints.anchor_bottom = 1
-	_field_hints.offset_bottom = -12
-	_field_hints.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_overlay.name = "BattleOverlay"
+	add_child(_overlay)
 	resized.connect(_resize)
 	_appearance()
 	_resize()
@@ -146,8 +137,36 @@ func _picker(id: String, caption: String, parent: Container = null) -> void:
 	_nodes[id+"Row"] = row
 
 func _resize() -> void:
-	_panel.offset_right = _panel.offset_left + clampf(size.x*0.34, minf(size.x-16,256), 385)
+	var deploy: bool = _view.get("phase")=="deployment" and _page!="settings"
+	var height := minf(maxf(100,_body.get_combined_minimum_size().y+26),maxf(100,size.y-24))
+	if deploy:
+		_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		_panel.offset_left = 12
+		_panel.offset_right = minf(size.x-12,clampf(size.x*.34,270,385))
+		_panel.offset_top = 12
+		_panel.offset_bottom = height+12
+	else:
+		_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		var half_width := minf(size.x*.46,230 if _page=="command" else 178)
+		var half_height := height*.5
+		_panel.offset_left = -half_width
+		_panel.offset_right = half_width
+		_panel.offset_top = -half_height
+		_panel.offset_bottom = half_height
 	queue_redraw()
+
+func _open_page(page: String) -> void:
+	var focus := get_viewport().gui_get_focus_owner()
+	var navigating := focus!=null and is_ancestor_of(focus)
+	var previous := _page
+	_page = page
+	_confirm = false
+	_capture = ""
+	_scroll.scroll_vertical = 0
+	_render()
+	if navigating:
+		var next: Control = _nodes.BackMenu if page!="menu" else _nodes["CommandBook" if previous=="command" else "Settings"]
+		if next.is_visible_in_tree(): next.grab_focus()
 
 func _resume() -> void:
 	get_viewport().gui_release_focus()
@@ -157,6 +176,7 @@ func _resume() -> void:
 func set_field_capture(captured: bool) -> void:
 	if _field_capture == captured: return
 	_field_capture = captured
+	_page = "menu"
 	if captured:
 		_confirm = false
 		_capture = ""
@@ -241,6 +261,8 @@ func refresh() -> Dictionary:
 		_confirm = false
 		_capture = ""
 		_draft.clear()
+		_receipt = ""
+		_page = "menu"
 	_view = v.duplicate(true)
 	_revision = v.revision
 	if is_node_ready():
@@ -261,7 +283,10 @@ func _send(action: String, fields: Dictionary) -> Dictionary:
 
 func _error_text(r: Dictionary) -> String:
 	var e: Dictionary = r.get("error",{})
-	return "%s · %s" % [_w(e.get("code","Unavailable")),str(e.get("field",""))]
+	var field: String = str(e.get("field",""))
+	if field=="target": return _w("choose_target")
+	if field.begins_with("binding."): return _w("binding_taken")+" · "+Words.action_name(field.trim_prefix("binding."),_language)
+	return _w(e.get("code","Unavailable"))
 
 func _selection() -> Array:
 	return _view.get("selection",[])
@@ -314,19 +339,30 @@ func _point(mm: Array) -> String:
 func _strength(rules: Dictionary) -> String:
 	var teams := []
 	for row in rules.get("teams",[]):
-		var who := _w("own" if is_same(row.team_key,_view.get("team_key")) else "other")
+		var who := _side_name(row.team_key,rules)
 		var parts := []
 		for stat in ["ready","reserve","routed","casualties"]:
 			if row.has(stat): parts.append("%s %s" % [_w(stat),row[stat]])
 		if row.get("withdrawn",false): parts.append(_w("withdrawn"))
-		teams.append("%s %s   %s" % [who,row.team_key," · ".join(parts)])
+		teams.append("%s   %s" % [who," · ".join(parts)])
 	return "\n".join(teams)
+
+func _side_name(id: Variant, rules: Dictionary) -> String:
+	var own: Variant = _view.get("team_key")
+	if is_same(id,own): return _w("own")
+	var opponents := 0
+	var number := 0
+	for row in rules.get("teams",[]):
+		if not is_same(row.team_key,own):
+			opponents += 1
+			if is_same(row.team_key,id): number = opponents
+	return "%s %d"%[_w("other"),number] if opponents>1 and number>0 else _w("other")
 
 func _vitals() -> String:
 	var player: Dictionary = _view.get("player",{})
 	var stats := []
 	for stat in ["hp","ammo","morale","direction"]:
-		if player.get(stat) != null: stats.append("%s %s" % [_w(stat),_w(player[stat])])
+		if player.get(stat) != null and not str(player[stat]).is_empty(): stats.append("%s %s" % [_w(stat),_w(player[stat])])
 	return " · ".join(stats)
 
 func _desktop_key(action: String) -> String:
@@ -335,62 +371,109 @@ func _desktop_key(action: String) -> String:
 	return InputPort.Profile.desktop_key_name(token) if not token.is_empty() else ""
 
 func _render_field() -> void:
-	var lines := PackedStringArray()
 	var rules: Dictionary = _view.get("rules",{})
-	if _view.get("scoreboard_held",false):
-		lines.append(_strength(rules))
-	elif _view.get("orders_open",false):
-		var selected := PackedStringArray()
-		for id in _selection(): selected.append(str(id))
-		var title := _w(_view.get("command_page","")) if not str(_view.get("command_page","")).is_empty() else _w("orders")
-		if not selected.is_empty(): title += " · #"+", #".join(selected)
-		lines.append(title)
-		var choices := PackedStringArray()
+	var own := -1
+	var other := 0
+	for team in rules.get("teams",[]):
+		if is_same(team.team_key,_view.get("team_key")): own = team.get("ready",0)
+		else: other += int(team.get("ready",0))
+	_overlay.set_strength(own,other,_w("own"),_w("other"))
+	var player: Dictionary = _view.get("player",{})
+	var weapons: Array = player.get("weapons",[])
+	var slot: int = player.get("weapon_slot",-1)
+	var kit := PackedStringArray()
+	if slot>=0 and slot<weapons.size(): kit.append(_w(weapons[slot]))
+	if player.has("ammo"): kit.append("%s  %s"%[_w("ammo"),player.ammo])
+	_overlay.weapon.text = "   ·   ".join(kit)
+	_overlay.health.text = "%s   %s"%[_w("hp"),player.hp] if player.has("hp") else ""
+	# River field actors enlist with COM's default initial health of 100.
+	_overlay.health_bar.max_value = player.get("max_hp",100)
+	_overlay.health_bar.value = player.get("hp",0)
+	_overlay.health_bar.visible = player.has("hp") and player.hp<=_overlay.health_bar.max_value
+	_overlay.equipment.get_parent().visible = not player.is_empty()
+	_overlay.board.visible = _view.get("scoreboard_held",false)
+	if _overlay.board.visible:
+		_overlay.board_title.text = _w("scoreboard")
+		var teams: Array = rules.get("teams",[])
+		var stats := ["ready","reserve","routed"]
+		if teams.any(func(t):return t.has("casualties")): stats.append("casualties")
+		var table := [[_w("side")]+stats.map(_w)]
+		for team in teams:
+			var label := _side_name(team.team_key,rules)
+			if team.get("withdrawn",false): label += " · "+_w("withdrawn")
+			var row := [label]
+			for stat in stats: row.append(team.get(stat,"—"))
+			table.append(row)
+		_overlay.set_score(table)
+		_overlay.board_body.text = _vitals()
+	_overlay.order_box.visible = _view.get("orders_open",false) and not _overlay.board.visible
+	if _overlay.order_box.visible:
+		var groups := []
+		var ids := []
+		for g in _view.get("formations",[]):
+			if g.get("controllable",true): ids.append(g.id)
+		ids.sort()
+		for g in _view.get("formations",[]):
+			var index: int = ids.find(g.id)
+			if index<0: continue
+			var key := _desktop_key("select_"+str(index+1))
+			var title := _w(g.get("troop_role",g.get("layout","line")))
+			groups.append(["%s  %s · %d"%[key,title,g.get("count",g.get("members",[]).size())],g.id in _selection()])
+		_overlay.set_cards(_overlay.formations,groups)
+		var choices := []
 		for choice in _view.get("command_choices",[]):
-			choices.append("%s %s" % [choice.key,_w(choice.id)])
-		if not choices.is_empty(): lines.append("    ".join(choices))
-	else:
-		lines.append(_vitals())
+			choices.append(["%s  %s" % [choice.key,_w(choice.id)],false])
+		_overlay.set_cards(_overlay.orders,choices)
+	var lines := PackedStringArray()
 	var feedback: Dictionary = _view.get("command_feedback",{})
 	if feedback.get("ok")==false: lines.append(_error_text(feedback))
 	if _captions and not str(_view.get("subtitle","")).is_empty(): lines.append(str(_view.subtitle))
-	_field_info.text = "\n".join(lines)
+	_overlay.notice.text = "\n".join(lines)
 	var hints := PackedStringArray()
 	var actions := ["attack","block","select_all","scoreboard","menu"]
 	if _view.get("orders_open",false): actions = ["select_all","scoreboard","menu"]
 	for action in actions:
 		var key := _desktop_key(action)
 		if not key.is_empty(): hints.append(key+" "+_w(action))
-	_field_hints.text = "    ".join(hints)
+	_overlay.hints.text = "    ".join(hints)
 
 func _render() -> void:
 	if _nodes.is_empty(): return
+	_overlay.visible = _field_capture and not _view.is_empty()
 	_panel.visible = not _field_capture
-	_field_info.visible = _field_capture
-	_field_hints.visible = _field_capture
+	_shade.visible = not _field_capture and _view.get("phase","") in ["battle","ended"]
 	if _field_capture:
 		_render_field()
 		return
 	for id in _labels: _nodes[id].text = _w(_labels[id])
 	var phase: String = _view.get("phase","")
-	var deploy := phase == "deployment"
+	var deploy := phase == "deployment" and _page!="settings"
 	var battle := phase == "battle"
 	var finished := phase == "ended"
 	var rules: Dictionary = _view.get("rules",{})
 	var modes: Array = rules.get("commander_options",[])
 	var left_field: bool = rules.get("teams",[]).any(func(t):return is_same(t.team_key,_view.get("team_key")) and t.get("withdrawn",false))
-	var command: bool = battle and not rules.get("commander_downed",false) and not left_field
+	var direct: bool = battle and not rules.get("commander_downed",false) and not left_field
+	var command: bool = direct and _page=="command"
 	var can_withdraw: bool = battle and _view.get("can_withdraw",false) and not left_field
-	_nodes.Resume.visible = command and not _confirm and _view.get("control_mode","direct")=="direct"
 	if not can_withdraw: _confirm = false
-	_nodes.Title.text = _w(phase if not phase.is_empty() else "Unavailable")
+	var menu: bool = _page=="menu" and not _confirm
+	_nodes.Resume.visible = direct and menu and _view.get("control_mode","direct")=="direct"
+	_nodes.CommandBook.visible = direct and menu
+	_nodes.Settings.visible = menu and not finished
+	_nodes.BackMenu.visible = _page!="menu" and not _confirm
+	_prefs.visible = _page=="settings" and not _confirm
+	var title := "battle_menu" if battle else phase
+	if _page=="command": title = "command_book"
+	if _page=="settings": title = "settings"
+	if _confirm: title = "withdraw"
+	_nodes.Title.text = _w(title if not title.is_empty() else "Unavailable")
 	_nodes.Title.add_theme_font_size_override("font_size",22 if not _large else 26)
-	_text("Strength",_strength(rules))
-	_text("Vitals",_vitals())
-	_text("Objective",str(_view.get("objective","")))
-	_text("Captions",str(_view.get("subtitle","")) if _captions else "")
-	_nodes.Formations.visible = deploy or battle
-	_groups.visible = (deploy or battle) and not _confirm
+	_text("Strength",_strength(rules) if deploy or command or finished else "")
+	_text("Vitals",_vitals() if command else "")
+	_text("Objective",str(_view.get("objective","")) if deploy or command else "")
+	_text("Captions",str(_view.get("subtitle","")) if _captions and (deploy or command) else "")
+	_groups.visible = (deploy or command) and not _confirm
 	_nodes.Formations.visible = _groups.visible
 	_render_groups()
 	_nodes.LayoutRow.visible = deploy or (command and not _confirm)
@@ -417,7 +500,7 @@ func _render() -> void:
 		lines.append("#%s → %s · %s" % [id,_draft[id].zone_id,_w(_draft[id].layout)])
 	_text("Draft",(_w("preview")+"\n"+"\n".join(lines)) if deploy and not lines.is_empty() else "")
 	var selected := not _selection().is_empty()
-	_commands.visible = not _confirm
+	_commands.visible = (deploy or command) and not _confirm
 	_show_action("Mark",deploy,selected and _chosen("Zone") != null)
 	_show_action("Reset",deploy,not _draft.is_empty())
 	_show_action("Deploy",deploy,true)
@@ -429,7 +512,7 @@ func _render() -> void:
 	_text("Downed",_w("downed")+" · "+_w(rules.get("control_mode","")) if battle and rules.get("commander_downed",false) else "")
 	_nodes.DownSpectate.visible = battle and modes.has("spectate") and not _confirm
 	_nodes.DownDelegate.visible = battle and modes.has("delegate") and not _confirm
-	_nodes.Withdraw.visible = can_withdraw and not _confirm
+	_nodes.Withdraw.visible = can_withdraw and menu
 	for id in ["Question","Confirm","Cancel"]: _nodes[id].visible = _confirm
 	_nodes.Leave.visible = finished
 	_text("Result",_result(rules) if finished else "")
@@ -451,6 +534,7 @@ func _render() -> void:
 	_nodes.Large.set_pressed_no_signal(_large)
 	_nodes.Contrast.set_pressed_no_signal(_contrast)
 	_nodes.Subtitles.set_pressed_no_signal(_captions)
+	_resize()
 
 func _render_groups() -> void:
 	var seen := {}
@@ -469,15 +553,20 @@ func _render_groups() -> void:
 			_groups.add_child(b)
 		b.disabled = not g.get("controllable",true)
 		b.set_pressed_no_signal(_selection().has(id))
-		var parts := ["#%d ×%d" % [id,g.get("count",g.get("members",[]).size())],_w(g.get("layout","")),_w("readonly" if b.disabled else "authority")]
+		var count: int = g.get("count",g.get("members",[]).size())
+		var parts := ["#%d"%id]
+		if g.has("troop_role"): parts.append(_w(g.troop_role))
+		parts.append(_w("await_deploy") if count==0 and _view.get("phase")=="deployment" else "×%d"%count)
+		parts.append(_w(g.get("layout","")))
+		if b.disabled: parts.append(_w("readonly"))
 		if g.get("active") is Dictionary: parts.append(_w(g.active.get("order_type","")))
-		if not str(g.get("delegate","")).is_empty(): parts.append(_w("delegate")+" "+str(g.delegate))
+		if not str(g.get("delegate","")).is_empty(): parts.append(_w("delegated"))
 		var fb: Dictionary = g.get("feedback",{})
 		for key in ["state","reason"]:
 			if not str(fb.get(key,"")).is_empty(): parts.append(_w(fb[key]))
 		var terrain: Dictionary = g.get("terrain_feedback",{})
 		if not str(terrain.get("reason","")).is_empty(): parts.append(_w(terrain.reason))
-		b.text = ("[+]  " if b.button_pressed else "[  ]  ") + " · ".join(parts)
+		b.text = ("◆   " if b.button_pressed else "◇   ") + " · ".join(parts)
 	for b in _groups.get_children():
 		var id := str(b.name).trim_prefix("Group").to_int()
 		if not seen.has(id):
@@ -498,7 +587,7 @@ func _result(rules: Dictionary) -> String:
 	elif winners.any(func(team):return is_same(team,own)): outcome = "victory"
 	elif res.get("outcome")=="draw": outcome = "draw"
 	var parts := [_w(outcome)]
-	if not winners.is_empty(): parts.append(_w("winners")+" "+" / ".join(winners.map(func(t):return str(t))))
+	if not winners.is_empty(): parts.append(_w("winners")+" "+" / ".join(winners.map(func(t):return _side_name(t,rules))))
 	var counts := {}
 	for row in res.get("slot_outcomes",[]):
 		var status: String = row.get("end_status","") if row is Dictionary else ""
@@ -532,12 +621,16 @@ func _appearance() -> void:
 	var sheet := Theme.new()
 	sheet.default_font_size = 19 if _large else 15
 	theme = sheet
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("#0a1016") if _contrast else Color("#17242af5")
-	box.border_color = Color("#e8bb70")
-	box.border_width_left = 2
-	for side in [SIDE_LEFT,SIDE_RIGHT,SIDE_TOP,SIDE_BOTTOM]: box.set_content_margin(side,9)
+	var box := BattleOverlay.frame(Color("#12110f") if _contrast else Color("#28251ff5"),BattleOverlay.Brass,12)
+	box.border_width_top = 3
+	box.border_width_bottom = 2
 	_panel.add_theme_stylebox_override("panel",box)
+	sheet.set_stylebox("normal","Button",BattleOverlay.frame(Color("#342f27"),Color("#6c5e45"),6))
+	sheet.set_stylebox("hover","Button",BattleOverlay.frame(Color("#504431"),Color("#e3c184"),6))
+	sheet.set_stylebox("pressed","Button",BattleOverlay.frame(Color("#5b4931"),Color("#e3c184"),6))
+	_nodes.Deploy.add_theme_stylebox_override("normal",BattleOverlay.frame(Color("#6e512c"),Color("#dda95e"),7))
+	_nodes.Resume.add_theme_stylebox_override("normal",BattleOverlay.frame(Color("#6e512c"),Color("#dda95e"),7))
+	_nodes.Title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_nodes.Title.add_theme_color_override("font_color",Color("#ffe0a1"))
 
 func _input(event: InputEvent) -> void:
@@ -551,11 +644,19 @@ func _input(event: InputEvent) -> void:
 			_nodes.Withdraw.grab_focus()
 			get_viewport().set_input_as_handled()
 			return
+		if _page!="menu" and event is InputEventKey and event.keycode==KEY_ESCAPE and event.pressed:
+			_open_page("menu")
+			get_viewport().set_input_as_handled()
+			return
 		var keyboard: bool = event is InputEventKey and event.keycode == KEY_F6
 		var pad: bool = event is InputEventJoypadButton and event.button_index == JOY_BUTTON_DPAD_UP and focus == null
 		if (keyboard or pad) and event.is_pressed():
 			if focus != null and is_ancestor_of(focus): get_viewport().gui_release_focus()
-			else: _nodes.Resume.grab_focus()
+			else:
+				for id in ["Resume","BackMenu","Deploy","DownSpectate","Leave","Settings"]:
+					if _nodes[id].is_visible_in_tree():
+						_nodes[id].grab_focus()
+						break
 			get_viewport().set_input_as_handled()
 		elif event is InputEventJoypadButton and focus != null and is_ancestor_of(focus):
 			_pad_navigation(event,focus)
@@ -576,7 +677,10 @@ func _pad_navigation(event: InputEventJoypadButton, focus: Control) -> void:
 	if code == JOY_BUTTON_B:
 		if event.pressed:
 			if _confirm: _confirm = false; _render(); _nodes.Withdraw.grab_focus()
-			elif _prefs.visible: _prefs.hide(); _nodes.Settings.grab_focus()
+			elif _page!="menu":
+				var previous := _page
+				_open_page("menu")
+				_nodes["Settings" if previous=="settings" else "CommandBook"].grab_focus()
 			else: get_viewport().gui_release_focus()
 	elif focus is OptionButton and code in [JOY_BUTTON_A,JOY_BUTTON_DPAD_LEFT,JOY_BUTTON_DPAD_RIGHT]:
 		if event.pressed and focus.item_count:
