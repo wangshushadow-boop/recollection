@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "P2-VIS-BATTLE-008",
+  "kind": "EXECUTION",
+  "parent": "P2-VIS-BATTLE",
+  "stage": "P2",
+  "module_id": "VIS",
+  "title": "四向枪盾动作和分阶段弓姿",
+  "spec": "docs/systems/game/presentation/visuals/README.md",
+  "depends_on": [
+    "P2-VIS-BATTLE-007"
+  ],
+  "requirements": [
+    "BAI-06",
+    "COM-05",
+    "VIS-01"
+  ],
+  "acceptance_test_ids": [
+    "T-VIS-01",
+    "T-VIS-02",
+    "T-VIS-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/visuals/",
+    "game/tests/p2/visuals/",
+    "game/tests/p2/mounted_visual/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "四向枪盾动作和分阶段弓姿",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "读权威阶段和装备，出手方向与举盾姿势可区分，拉弓、松弦与收势可辨。"
+  ],
+  "status": "DONE",
+  "owner": "poses"
+}

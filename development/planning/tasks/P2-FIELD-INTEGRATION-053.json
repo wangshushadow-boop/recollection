@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-053",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "双方将领身份、前列部署与战场快照",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-047"
+  ],
+  "requirements": [
+    "BAT-01",
+    "BAT-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/",
+    "game/tests/p2/field_pipeline/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "双方将领身份、前列部署与战场快照",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "将领按实际身份选取双方前列居中的位置，同阵营其他士兵不能占据首位；保持原战斗规模和权限。"
+  ],
+  "status": "DONE",
+  "owner": "archery"
+}

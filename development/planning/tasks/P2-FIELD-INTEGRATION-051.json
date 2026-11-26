@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-051",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "河原主将操练双入口体验验收",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-048",
+    "P2-BAI-I-006",
+    "P2-COM-006",
+    "P2-INPUT-005",
+    "P2-VIS-BATTLE-008",
+    "P2-UI-BATTLE-006",
+    "P2-FIELD-INTEGRATION-050",
+    "P2-FIELD-INTEGRATION-052",
+    "P2-VIS-BATTLE-009",
+    "P2-FIELD-INTEGRATION-053",
+    "P2-FIELD-INTEGRATION-054"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/field_desktop.gd",
+    "development/reports/tests/P2/field-actions/",
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原主将操练双入口体验验收",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "桌面从默认菜单实测四向近战、防御、切弓和发箭，普通和常驻入口均验。"
+  ],
+  "status": "DONE",
+  "owner": "root / combat_qa / combat_review"
+}

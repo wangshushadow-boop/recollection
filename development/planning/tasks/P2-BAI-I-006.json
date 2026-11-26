@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-BAI-I-006",
+  "kind": "EXECUTION",
+  "parent": "P2-BAI-I",
+  "stage": "P2",
+  "module_id": "BAI-I",
+  "title": "持弓士兵受威胁时使用已有侧移",
+  "spec": "docs/systems/game/mission/ai/individual/README.md",
+  "depends_on": [
+    "P2-BAI-I-005"
+  ],
+  "requirements": [
+    "BAI-03",
+    "BAI-05",
+    "BAI-06",
+    "COM-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-I-01",
+    "T-BAI-I-02",
+    "T-BAI-I-03",
+    "T-BAI-I-04"
+  ],
+  "allowed_paths": [
+    "game/mission/ai/individual/ports/field_individual.gd",
+    "game/tests/p2/individual/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "持弓士兵受威胁时使用已有侧移",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "持弓时不再请求非法举盾，持近战武器时仍能防御。"
+  ],
+  "status": "DONE",
+  "owner": "archery"
+}

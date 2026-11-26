@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-INPUT-005",
+  "kind": "EXECUTION",
+  "parent": "P2-INPUT",
+  "stage": "P2",
+  "module_id": "INPUT",
+  "title": "按住格挡打断准备动作及右键收弓",
+  "spec": "docs/systems/game/presentation/input/README.md",
+  "depends_on": [
+    "P2-INPUT-004"
+  ],
+  "requirements": [
+    "ACC-01",
+    "BAI-01",
+    "COM-05",
+    "NET-04",
+    "UX-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-01",
+    "T-INPUT-02",
+    "T-INPUT-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/input/",
+    "game/tests/p2/input/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "按住格挡打断准备动作及右键收弓",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "右键打断待放近战或收弓，松开左键没有多余攻击。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}

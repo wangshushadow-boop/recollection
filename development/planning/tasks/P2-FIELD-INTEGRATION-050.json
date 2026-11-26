@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-050",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "枪盾与弓箭的战场装备投影",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-047"
+  ],
+  "requirements": [
+    "BAT-01",
+    "BAT-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/",
+    "game/tests/p2/field_pipeline/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "枪盾与弓箭的战场装备投影",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "主将行装、视觉和真实射线来自其实际配备。"
+  ],
+  "status": "DONE",
+  "owner": "archery"
+}

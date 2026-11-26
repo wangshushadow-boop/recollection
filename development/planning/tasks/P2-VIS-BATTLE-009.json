@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-VIS-BATTLE-009",
+  "kind": "EXECUTION",
+  "parent": "P2-VIS-BATTLE",
+  "stage": "P2",
+  "module_id": "VIS",
+  "title": "双方步战将领与头颈、胸甲在步态中的对齐",
+  "spec": "docs/systems/game/presentation/visuals/README.md",
+  "depends_on": [
+    "P2-VIS-BATTLE-007"
+  ],
+  "requirements": [
+    "BAI-06",
+    "COM-05",
+    "VIS-01"
+  ],
+  "acceptance_test_ids": [
+    "T-VIS-01",
+    "T-VIS-02",
+    "T-VIS-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/visuals/",
+    "game/tests/p2/visuals/",
+    "game/tests/p2/mounted_visual/",
+    "docs/systems/game/presentation/visuals/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "双方步战将领与头颈、胸甲在步态中的对齐",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "双将使用将军形象，手中装备正确，持弓奔跑、蓄势、松弦、回到步态时的颈胸位置连续。"
+  ],
+  "status": "DONE",
+  "owner": "poses"
+}

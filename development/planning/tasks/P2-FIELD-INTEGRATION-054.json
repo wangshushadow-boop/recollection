@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-054",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "河原对方首领与双方部署初始化",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-048"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/field_setup.gd",
+    "game/tests/p2/field_boot/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原对方首领与双方部署初始化",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "敌我各有一位真实将领，开局本人持有枪盾和短弓且双方出现在各自队伍最前。"
+  ],
+  "status": "DONE",
+  "owner": "archery"
+}

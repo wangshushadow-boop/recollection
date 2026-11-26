@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "P2-COM-006",
+  "kind": "EXECUTION",
+  "parent": "P2-COM",
+  "stage": "P2",
+  "module_id": "COM",
+  "title": "主将近战、盾防、短弓动作与发射俯仰",
+  "spec": "docs/systems/game/mission/combat/README.md",
+  "depends_on": [
+    "P2-COM-005"
+  ],
+  "requirements": [
+    "BAI-05",
+    "COM-01",
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "COM-05",
+    "COM-06"
+  ],
+  "acceptance_test_ids": [
+    "T-COM-01",
+    "T-COM-02",
+    "T-COM-03"
+  ],
+  "allowed_paths": [
+    "game/mission/combat/",
+    "game/tests/p2/combat/",
+    "docs/systems/game/mission/combat/README.md"
+  ],
+  "excluded_paths": [
+    "game/contracts/",
+    "game/bootstrap/",
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "主将近战、盾防、短弓动作与发射俯仰",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "四向动作和取消窗口合法；箭耗、命中、盾防真实结算。"
+  ],
+  "status": "DONE",
+  "owner": "archery"
+}

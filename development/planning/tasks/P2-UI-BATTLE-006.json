@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-UI-BATTLE-006",
+  "kind": "EXECUTION",
+  "parent": "P2-UI-BATTLE",
+  "stage": "P2",
+  "module_id": "UI",
+  "title": "攻防方向提示与弓准星",
+  "spec": "docs/systems/game/presentation/ui/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-005"
+  ],
+  "requirements": [
+    "ACC-01",
+    "UX-01",
+    "UX-02",
+    "UX-03"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-UI-02",
+    "T-UI-03",
+    "T-UI-04"
+  ],
+  "allowed_paths": [
+    "game/presentation/ui/",
+    "game/tests/p2/ui/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "攻防方向提示与弓准星",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "准星提示当前方向和弓准备状态，使用当前绑定提示。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}

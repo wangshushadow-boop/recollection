@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-052",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BASE",
+  "title": "河原主将个人配装与短弓资源",
+  "spec": "docs/systems/game/content/base/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-011"
+  ],
+  "requirements": [
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-BASE-01"
+  ],
+  "allowed_paths": [
+    "game/content/base/field/field.json",
+    "game/content/base/field/short_bow.tscn",
+    "game/content/base/field/CREDITS.md",
+    "game/tests/p2/field_loadouts/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "1bb4185d88435b9459aedc5fbea1c13fe67bad56",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原主将个人配装与短弓资源",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "主将枪盾短弓配装有效，其他兵种沿用原配备。"
+  ],
+  "status": "DONE",
+  "owner": "root / poses"
+}
