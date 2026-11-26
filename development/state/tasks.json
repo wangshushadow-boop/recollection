@@ -559,7 +559,8 @@
       "child_ids": [
         "P2-BAI-I-001",
         "P2-BAI-I-002",
-        "P2-BAI-I-003"
+        "P2-BAI-I-003",
+        "P2-BAI-I-004"
       ]
     },
     "P2-RULES-FIELD": {
@@ -687,7 +688,8 @@
       ],
       "child_ids": [
         "P2-UI-BATTLE-001",
-        "P2-UI-BATTLE-002"
+        "P2-UI-BATTLE-002",
+        "P2-UI-BATTLE-003"
       ]
     },
     "P2-FIELD-INTEGRATION": {
@@ -742,7 +744,9 @@
         "P2-FIELD-INTEGRATION-033",
         "P2-FIELD-INTEGRATION-034",
         "P2-FIELD-INTEGRATION-035",
-        "P2-FIELD-INTEGRATION-036"
+        "P2-FIELD-INTEGRATION-036",
+        "P2-FIELD-INTEGRATION-037",
+        "P2-FIELD-INTEGRATION-038"
       ]
     },
     "GATE-P2": {
@@ -2973,6 +2977,50 @@
       "integrated_commit": "5df3b64390b152305252f6c4f8f244c41a7660f7",
       "evidence": [
         "development/reports/tests/P2/field-controls/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-UI-BATTLE-003": {
+      "status": "DONE",
+      "owner": "hud_layout",
+      "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+      "candidate_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "integrated_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "evidence": [
+        "development/reports/tests/P2/field-hud-contact/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-037": {
+      "status": "DONE",
+      "owner": "enemy_trace / root",
+      "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+      "candidate_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "integrated_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "evidence": [
+        "development/reports/tests/P2/field-hud-contact/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-038": {
+      "status": "DONE",
+      "owner": "root",
+      "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+      "candidate_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "integrated_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "evidence": [
+        "development/reports/tests/P2/field-hud-contact/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-BAI-I-004": {
+      "status": "DONE",
+      "owner": "enemy_trace",
+      "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+      "candidate_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "integrated_commit": "bdd47ccfefb8547bb7afd7259b88cd6d95517186",
+      "evidence": [
+        "development/reports/tests/P2/field-hud-contact/README.md"
       ],
       "child_ids": []
     }

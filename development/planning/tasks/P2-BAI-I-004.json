@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-BAI-I-004",
+  "kind": "EXECUTION",
+  "parent": "P2-BAI-I",
+  "stage": "P2",
+  "module_id": "BAI-I",
+  "title": "坚守时的原地自卫与近战收招",
+  "spec": "docs/systems/game/mission/ai/individual/README.md",
+  "depends_on": [
+    "P2-BAI-I-003"
+  ],
+  "requirements": [
+    "BAI-03",
+    "BAI-05",
+    "BAI-06",
+    "COM-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-I-01",
+    "T-BAI-I-02",
+    "T-BAI-I-03",
+    "T-BAI-I-04"
+  ],
+  "allowed_paths": [
+    "game/mission/ai/individual/ports/field_individual.gd",
+    "game/tests/p2/field_player_contact/defense.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+  "worktree": "D:/work/game/recollection",
+  "scope": "坚守时的原地自卫与近战收招",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "守兵可以原地攻击合法近敌，目标后退可收招，停射令下弓兵可以近战自卫。"
+  ],
+  "status": "DONE",
+  "owner": "enemy_trace"
+}

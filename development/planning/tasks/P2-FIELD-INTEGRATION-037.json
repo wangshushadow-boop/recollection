@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-037",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "河原敌阵接触玩家的感知、个体决策与命中",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-BAI-I-003",
+    "P2-FIELD-INTEGRATION-036",
+    "P2-BAI-I-004"
+  ],
+  "requirements": [
+    "BAI-03",
+    "BAI-05",
+    "BAI-06",
+    "COM-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-I-01",
+    "T-BAI-I-02",
+    "T-BAI-I-03",
+    "T-BAI-I-04"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_brains.gd",
+    "game/mission/runtime/field_mission.gd",
+    "game/tests/p2/field_player_contact/run.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原敌阵接触玩家的感知、个体决策与命中",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "记录玩家接近敌兵时，守军未出手或未命中的实际原因。",
+    "复测敌我关系、守阵与有效命中，保持玩家控制权与战斗规则。",
+    "友方编队兵种按当前有效成员聚合，用于编队卡。"
+  ],
+  "status": "DONE",
+  "owner": "enemy_trace / root"
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-UI-BATTLE-003",
+  "kind": "EXECUTION",
+  "parent": "P2-UI-BATTLE",
+  "stage": "P2",
+  "module_id": "UI",
+  "title": "河原战斗 HUD、编队菜单与战况面板",
+  "spec": "docs/systems/game/presentation/ui/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-002"
+  ],
+  "requirements": [
+    "ACC-01",
+    "UX-01",
+    "UX-02",
+    "UX-03"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-UI-02",
+    "T-UI-03",
+    "T-UI-04"
+  ],
+  "allowed_paths": [
+    "game/presentation/ui/",
+    "game/tests/p2/ui/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原战斗 HUD、编队菜单与战况面板",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "真实场景分开展示个人状态、双方兵力、编队命令、战况以及鼠标菜单，核对截图。",
+    "960×600 下部署、发令、设置、撤退仍可完成。"
+  ],
+  "status": "DONE",
+  "owner": "hud_layout"
+}

@@ -2,8 +2,8 @@
 setlocal
 chcp 65001 >nul
 for %%I in ("%~dp0..\..\..\..\..") do set "repo=%%~fI"
-set "base=5df3b64390b152305252f6c4f8f244c41a7660f7"
-set "trial=%repo%\out\resident\play-5df3b64"
+set "base=bdd47ccfefb8547bb7afd7259b88cd6d95517186"
+set "trial=%repo%\out\resident\play-bdd47cc"
 set "engine=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64.exe"
 set "console=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64_console.exe"
 set "RECOLLECTION_MOVE_WORKERS=1"

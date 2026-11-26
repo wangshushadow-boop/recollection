@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-038",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "统一部署开战路径及普通与原生版验收",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-003",
+    "P2-FIELD-INTEGRATION-037"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-INPUT-03",
+    "T-CAM-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/field_desktop.gd",
+    "game/tests/p2/field_boot/desktop.gd",
+    "development/reports/tests/P2/field-hud-contact/",
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "9c5d7f120e3e15c5ee9cee48115e31efb868955d",
+  "worktree": "D:/work/game/recollection",
+  "scope": "统一部署开战路径及普通与原生版验收",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "无自定部署可直接开战且没有部署错误，指定部署仍然生效。",
+    "核对普通与移动优化版本的真实输入、截图和退出战场。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}
