@@ -38,6 +38,7 @@ var _orbit := Vector2.ZERO
 var _queued_release := {}
 var _mode := "battle"
 var _before_menu := "battle"
+var _before_inventory := "battle"
 var _held := {}
 var _strength := {}
 var _blocked := {}
@@ -52,6 +53,8 @@ var _sent_guard := ""
 var _direction := "up"
 var _mouse := Vector2.ZERO
 var _yaw := 0
+var _body_yaw := 0
+var _sent_body_heading := false
 var _pitch := 0
 var _weapon_slot := 0
 var _interaction_target := ""
@@ -124,6 +127,7 @@ func set_control(actor_handle: Dictionary, control_revision: int) -> Dictionary:
 		_actor = actor_handle.duplicate()
 		_revision = control_revision
 		_weapon_slot = 0
+		_sent_body_heading = false
 	return R.ok()
 
 ## Seed the next input sample from the controlled actor's horizontal facing.
@@ -133,6 +137,8 @@ func align_look(heading: Vector3) -> Dictionary:
 	if not heading.is_finite() or Vector2(heading.x,heading.z).length_squared() <= 0.000001:
 		return R.fail("InvalidArgument","heading")
 	_yaw = V.yaw_microradians(atan2(-heading.x,-heading.z)).value
+	_body_yaw = _yaw
+	_sent_body_heading = false
 	return R.ok(Vector2(_yaw,_pitch)*0.000001)
 
 ## Let a quick tap wait for COM's legal release phase. Timing and equipment
@@ -273,13 +279,20 @@ func profile_view() -> Dictionary:
 	return {"bindings":_profile.bindings.duplicate(true),"options":_profile.options.duplicate()}
 
 func set_context(mode: String) -> Dictionary:
-	if mode not in ["battle","command","map","ui"] or _stepping: return R.fail("InvalidArgument","context")
+	if mode not in ["battle","command","map","ui","inventory"] or _stepping: return R.fail("InvalidArgument","context")
+	if mode=="inventory" and _actor.is_empty(): return R.fail("InvalidState","control")
 	if mode != _mode:
-		if mode == "ui": _before_menu = _mode
+		if mode=="inventory": _before_inventory = _mode
+		if mode=="ui" and _mode!="inventory": _before_menu = _mode
 		_flush()
 		_mode = mode
 		context_changed.emit(mode)
 	return R.ok()
+
+func close_inventory() -> void:
+	if _mode!="inventory": return
+	if is_inside_tree(): get_viewport().gui_release_focus()
+	set_context(_before_inventory)
 
 func _flush() -> void:
 	for source in _held: _blocked[source] = true
@@ -382,7 +395,7 @@ func handle_event(event: InputEvent) -> bool:
 	return _button(source,token,1.0 if event.pressed else 0.0,event is InputEventWithModifiers and event.shift_pressed)
 
 func _button(source: String, token: String, strength: float, additive: bool) -> bool:
-	if strength > 0 and is_inside_tree() and get_viewport().gui_get_focus_owner() != null and _profile.bindings.menu.get(Profile.family(token)) != _fallback_token(token):
+	if strength > 0 and is_inside_tree() and get_viewport().gui_get_focus_owner() != null and _profile.bindings.menu.get(Profile.family(token)) != _fallback_token(token) and not (_mode=="inventory" and _profile.action_for(token,_mode)=="inventory"):
 		_blocked[source] = true
 		return false
 	if _blocked.has(source):
@@ -441,6 +454,12 @@ func _block_intent(held: bool, direction: String) -> Dictionary:
 	return {"actor_handle":_actor,"held":held,"direction":direction}
 
 func _action(action: String, pressed: bool, additive: bool, source: String) -> void:
+	if _mode=="inventory":
+		if pressed and action in ["menu","inventory"]: close_inventory()
+		return
+	if action=="inventory" and pressed and _mode in ["battle","command"]:
+		set_context("inventory")
+		return
 	if action == "menu" and pressed:
 		if _mode=="battle" and _orders_open:
 			_page = ""
@@ -650,7 +669,7 @@ func _deliver() -> void:
 		var row: Dictionary = frame.orders[i]
 		if not _retryable(row.receipt): continue
 		row.receipt = _call(_send_order,[row.order,_last_order_revisions[i]]).duplicate(true)
-		_feedback(row.receipt)
+		_feedback(row.receipt.merged({"order_type":row.order.order_type,"formation_ids":row.order.formation_ids,"order_id":row.order.order_id}))
 		if _retryable(row.receipt): break
 	_stepping = false
 
@@ -667,6 +686,7 @@ func step(tick: int) -> Dictionary:
 			_queued_release = {}
 		elif phase != null and phase != "Windup" and not inputs.any(func(i): return i.get("input_phase") == "start"):
 			_queued_release = {}
+	var move := Vector2(_axis("move_right")-_axis("move_left"),_axis("move_back")-_axis("move_forward")).limit_length(1.0)
 	if _mode in ["battle","command"] and not _actor.is_empty():
 		var stick := _look_stick().limit_length(1.0)
 		if _axis("free_look")>0:
@@ -676,11 +696,21 @@ func step(tick: int) -> Dictionary:
 		var aim := _look_after(delta)
 		_yaw = aim.x
 		_pitch = aim.y
-		if delta != Vector2.ZERO: inputs.append({"actor_handle":_actor,"yaw":_yaw,"pitch":_pitch})
+		# Idle third-person look orbits the actor. Travel turns the body at 300°/s;
+		# combat and first person use the sight line on the very tick of the action.
+		var prior_body := _body_yaw
+		var engaging := not _attack.is_empty() or not _guard.is_empty() or inputs.any(func(i): return i.has("input_phase") or i.has("held"))
+		var aim_body: bool = _first_person or engaging or _combat_view().get("phase","Ready") in ["Windup","Hold","Active","Guard"]
+		if aim_body:
+			_body_yaw = _yaw
+		elif move!=Vector2.ZERO:
+			_body_yaw = V.yaw_microradians(rotate_toward(_body_yaw*.000001,_yaw*.000001,deg_to_rad(5))).value
+		if prior_body!=_body_yaw or delta.y!=0 or (not _sent_body_heading and (aim_body or move!=Vector2.ZERO)):
+			inputs.append({"actor_handle":_actor,"yaw":_body_yaw,"pitch":_pitch})
+			_sent_body_heading = true
 		if not _attack.is_empty() and not inputs.any(func(i): return i.has("input_phase")):
 			inputs.append(_attack_intent("hold",_attack))
 	if not _actor.is_empty():
-		var move := Vector2(_axis("move_right")-_axis("move_left"),_axis("move_back")-_axis("move_forward")).limit_length(1.0)
 		var world := Vector3(move.x,0,move.y).normalized().rotated(Vector3.UP,_yaw*0.000001)
 		var keyboard_move := false
 		for source: String in _held:

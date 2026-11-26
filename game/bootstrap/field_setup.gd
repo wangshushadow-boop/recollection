@@ -3,6 +3,7 @@ extends RefCounted
 const R = preload("res://contracts/result.gd")
 const C = preload("res://contracts/canonical.gd")
 const V = preload("res://contracts/values.gd")
+const Characters = preload("res://campaign/character/ports/characters.gd")
 const ROOT := "res://content/base/field/"
 const MIX := ["infantry","archer","cavalry","mounted_archer"]
 
@@ -51,6 +52,16 @@ static func build(content: Dictionary, mode: String, limit: int, total: int, see
 	scene.field_zones = []
 	scene.field_exit_zones = []
 	scene.field_player = {"issuer_id":"player","team_key":0}
+	var commander: Dictionary = {}
+	if mode=="custom":
+		# Only copy the drill commander's identity and level into the mission. The campaign save is never opened.
+		var world := "world/river-practice-%016x"%seed_value
+		var created := Characters.plan({},null,"create",{"name":"河原主将"},world,0,"drill/commander")
+		if not created.ok: return created
+		var read := Characters.view(created.value.repo,created.value.inventory,world,0)
+		if not read.ok: return read
+		commander = read.value.hero
+		scene.field_player.commander_level = commander.level
 	rules.battle_mode = rules.mode
 	rules.merge(rules.parameters,true)
 	var spec := {"schema_version":1,"encounter_id":"encounter/00000000-0000-4000-8000-000000000002",
@@ -73,7 +84,8 @@ static func build(content: Dictionary, mode: String, limit: int, total: int, see
 		scene.field_zones.append({"id":spawn.id,"team_key":team,"quota":quota,"rally_mm":center,"points_mm":points})
 		scene.field_exit_zones.append({"id":exit_marker.id,"team_key":team,
 			"min_mm":[edge[0]-4500,-2000,edge[2]-18000],"max_mm":[edge[0]+4500,5000,edge[2]+18000]})
-		var side := {"team_key":team,"faction_id":["river-west","river-east"][team],"commander_hero_id":null,
+		var commander_id: Variant = commander.get("id") if team==0 else null
+		var side := {"team_key":team,"faction_id":["river-west","river-east"][team],"commander_hero_id":commander_id,
 			"roster_allocations":[{"source_slot_range":[slot,slot+count]}]}
 		spec.sides.append(side)
 		for wave_count in [quota,count-quota]:
@@ -83,8 +95,14 @@ static func build(content: Dictionary, mode: String, limit: int, total: int, see
 				if amount==0: continue
 				var troop: Dictionary = content.registry.get_definition("field:troop/"+MIX[k],"troop")
 				if not troop.ok: return troop
-				spec.reserved_sources.append({"source_party_id":"party/00000000-0000-4000-8000-%012d"%(team+1),
+				var source := {"source_party_id":"party/00000000-0000-4000-8000-%012d"%(team+1),
 					"troop_def_id":troop.value.id,"hero_id":null,"count":amount,"source_slot_range":[slot,slot+amount],
-					"loadout_snapshot_id":troop.value.equipment_set_ids[0]})
+					"loadout_snapshot_id":troop.value.equipment_set_ids[0]}
+				if slot==0 and commander_id!=null:
+					var captain := source.merged({"troop_def_id":null,"hero_id":commander_id,"count":1,"source_slot_range":[slot,slot+1]},true)
+					spec.reserved_sources.append(captain)
+					source.source_slot_range[0] += 1
+					source.count -= 1
+				if source.count>0: spec.reserved_sources.append(source)
 				slot += amount
 	return R.ok({"spec":spec,"scene":scene,"rules":rules})

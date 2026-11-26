@@ -7,6 +7,7 @@ const Tactics = preload("res://mission/ai/tactical/ports/field_tactics.gd")
 const Squads = preload("res://mission/ai/formation/ports/field_formation_ai.gd")
 const Individual = preload("res://mission/ai/individual/ports/field_individual.gd")
 const AI_BATCHES := 4
+const CHARGE_LOOKAHEAD := 12.0
 
 class MemberWork:
 	var job: Dictionary
@@ -70,6 +71,15 @@ func _init(scope: String, engine: RefCounted, form: RefCounted, teams: Array) ->
 		contexts[t.context] = true
 		_teams[t.team_key] = t.duplicate(true)
 		_teams[t.team_key].context = t.context
+		# A general charge can search across the field before a scout sees anyone.
+		# Its direction comes from friendly terrain, never the opposing roster.
+		for site in t.sites:
+			if site is Dictionary and site.get("objective")==true and site.get("position") is Vector3:
+				var front: Vector3 = site.position-t.exit_position
+				front.y = 0.0
+				if not front.is_finite() or front.is_zero_approx(): continue
+				_teams[t.team_key]["assault_axis"] = front.normalized()
+				break
 		_l1[t.team_key] = Tactics.new(scope,t.team_key,_granted.bind(t.team_key),_probe,_team_intel,_ai.collect.bind([]))
 		_l2[t.team_key] = Squads.new(scope,t.issuer,_ai.formation_view,_form.view,t.team_key,_ai.collect)
 		_domains.append(_l1[t.team_key])
@@ -379,9 +389,16 @@ func _prepare_member(job: Dictionary, nav: int, combat: RefCounted, cache: Dicti
 	else:
 		slot = _field.targets.get(job.subject.index,_field.positions[row.offset])
 		heading = _field.look.get(job.subject.index,_field.headings[row.offset])
-	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":slot,"heading":heading,"exit_position":_teams[row.team_key].exit_position}
 	var active_order: Variant = _groups[group].order_state[0]
+	if state.value.behavior=="Charge" and active_order!=null and active_order.order_type=="free_attack":
+		if state.value.member_constraint.focus_target!=null:
+			slot = state.value.local_goal
+		else:
+			var axis: Vector3 = _teams[row.team_key].get("assault_axis",heading)
+			slot = observed.value.self.position + axis*CHARGE_LOOKAHEAD
+	work.local = {"nav_revision":nav,"can_travel":_path,"slot_position":slot,"heading":heading,"exit_position":_teams[row.team_key].exit_position}
 	work.local["holding_ground"] = _holds_position(state.value.behavior,active_order)
+	work.local["officer_guard"] = work.local.holding_ground and active_order!=null and active_order.issuer_id==_teams[row.team_key].issuer
 	for key in ["threat_handle","threat_direction","react_at","reaction_skill"]:
 		if row.has(key): work.local[key] = row[key]
 	return R.ok(work)

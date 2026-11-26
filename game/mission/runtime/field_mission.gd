@@ -1,6 +1,9 @@
 extends "res://mission/runtime/field_pipeline.gd"
 ## Authenticated local commands and committed field projections for GameSession.
 
+var _player_kit_key := ""
+var _player_kit_view := {}
+
 func gateway(operation: String, payload: Dictionary, context: Variant) -> Dictionary:
 	if _busy or _accessing or _phase not in ["Deployment","Running","Ending","Finalizing"]:
 		return R.fail("InvalidState","field.gateway")
@@ -213,6 +216,12 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 				if out.mounted:out.collision_handles.append("field/%d/%d"%[read.value.mount_handle.index,read.value.mount_handle.generation])
 			return R.ok(out)
 		"hud":
+			if grant.issuer_id==_local.issuer_id and not player.is_empty():
+				var source: Dictionary = _frame.rows.get(_user_handle.index,{})
+				if source.get("handle")==_user_handle:
+					player.merge(_commander_kit(source.components).duplicate(true))
+					if _commander_hero!=null and source.components.hero_id==_commander_hero and _local.has("commander_level"):
+						player.level = _local.commander_level
 			out["delegate_candidate"]=_teams[grant.team_key].issuer
 			out["confirmed_events"]=_confirmed_events(grant.team_key)
 			out["interaction_target"]=_nearby_mount(player,grant.team_key)
@@ -226,6 +235,24 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 			out["result"]=_result if not _result.is_empty() else null
 			return R.ok(out)
 	return R.fail("InvalidArgument","field.projection")
+
+func _commander_kit(source: Dictionary) -> Dictionary:
+	var key := _kit_key(source)
+	if key==_player_kit_key: return _player_kit_view
+	var equipment_id: String = source.loadout_snapshot_id
+	var items := []
+	var details := {"equipped_items":items,"stamina_enabled":false}
+	if source.troop_def_id!=null:
+		var troop: Dictionary = _registry.get_definition(source.troop_def_id,"troop").value
+		equipment_id = troop.equipment_set_ids[0]
+		details.troop_tier = troop.tier
+	var equipment: Dictionary = _registry.get_definition(equipment_id,"equipment").value
+	for slot in equipment.slots:
+		var item: Dictionary = _registry.get_definition(equipment.slots[slot],"item").value
+		items.append({"slot":slot,"id":item.id,"name":item.name})
+	_player_kit_view = details
+	_player_kit_key = key
+	return _player_kit_view
 
 func _nearby_mount(player: Dictionary, team: Variant) -> String:
 	if _user_handle==null or player.get("mount_handle")!=null or player.get("role")!="cavalry":return ""

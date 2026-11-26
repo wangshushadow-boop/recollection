@@ -14,6 +14,7 @@ var meter := ProgressBar.new()
 var equipment := VBoxContainer.new()
 var weapon := Label.new()
 var identity := Label.new()
+var stamina := Label.new()
 var morale := Label.new()
 var mount_state := Label.new()
 var tactical := TacticalMap.new()
@@ -66,6 +67,7 @@ func _ready() -> void:
 	heading.add_child(identity)
 	heading.add_child(mount_state)
 	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity.name = "PlayerIdentity"
 	identity.modulate = Color("#f5d593")
 	mount_state.name = "PlayerMount"
 	mount_state.modulate = Color("#d1c6af")
@@ -83,10 +85,18 @@ func _ready() -> void:
 	health_bar.add_theme_stylebox_override("fill",frame(Color("#bf5943"),Color("#d28c65"),0))
 	weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	health.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	health.name = "PlayerHealth"
 	health.modulate = Color("#ffd7a4")
 	morale.name = "PlayerMorale"
 	morale.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	equipment.add_child(morale)
+	var condition := HBoxContainer.new()
+	equipment.add_child(condition)
+	condition.add_theme_constant_override("separation",14)
+	stamina.name = "PlayerStamina"
+	stamina.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stamina.modulate = Color("#d9d6a5")
+	condition.add_child(stamina)
+	condition.add_child(morale)
 	weapon.name = "PlayerWeapon"
 	equipment.add_child(weapon)
 	tactical.name = "TacticalMap"

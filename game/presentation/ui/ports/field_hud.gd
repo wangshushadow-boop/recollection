@@ -25,6 +25,8 @@ var _field_capture := false
 var _page := "menu"
 var _draft := {}
 var _receipt := ""
+var _order_notice_key := ""
+var _order_notice_until := 0
 var _panel := PanelContainer.new()
 var _scroll := ScrollContainer.new()
 var _body := VBoxContainer.new()
@@ -36,6 +38,7 @@ var _deploy_rule := HSeparator.new()
 var _in_deployment := false
 var _commands := GridContainer.new()
 var _prefs := VBoxContainer.new()
+var _kit_rows := GridContainer.new()
 var _overlay := BattleOverlay.new()
 var _shade := ColorRect.new()
 var _nodes := {}
@@ -66,6 +69,13 @@ func _ready() -> void:
 	_button("Resume","controller",_resume)
 	_button("Settings","settings",_open_page.bind("settings"))
 	_button("CommandBook","command_book",_open_page.bind("command"))
+	_button("Inventory","inventory",func(): _send("inventory",{}))
+	_label("KitCaption")
+	_kit_rows.name = "KitRows"
+	_kit_rows.columns = 2
+	_kit_rows.add_theme_constant_override("h_separation",18)
+	_body.add_child(_kit_rows)
+	_button("CloseInventory","back_menu",_resume)
 	_button("BackMenu","back_menu",_open_page.bind("menu"))
 	_body.add_child(_prefs)
 	_prefs.hide()
@@ -163,7 +173,8 @@ func _resize() -> void:
 		_panel.offset_top = -height-16
 	else:
 		_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-		var half_width := minf(size.x*.46,230 if _page=="command" else 178)
+		var wide: bool = _page=="command" or _view.get("input_mode")=="inventory"
+		var half_width := minf(size.x*.46,230 if wide else 178)
 		var half_height := height*.5
 		_panel.offset_left = -half_width
 		_panel.offset_right = half_width
@@ -278,6 +289,8 @@ func _invalidate() -> void:
 	_confirm = false
 	_capture = ""
 	_receipt = ""
+	_order_notice_key = ""
+	_order_notice_until = 0
 	queue_redraw()
 	if is_node_ready(): _render()
 
@@ -320,7 +333,7 @@ func _send(action: String, fields: Dictionary) -> Dictionary:
 	var r: Variant = _submit.call(action,data)
 	if generation != _generation: return R.fail("StaleVersion","hud_scope")
 	if typeof(r) != TYPE_DICTIONARY or not r.has("ok"): r = R.fail("Unavailable","receipt")
-	_receipt = ("" if action=="select" else _w("accepted")) if r.ok else _error_text(r)
+	_receipt = ("" if action in ["select","inventory"] else _w("accepted")) if r.ok else _error_text(r)
 	refresh()
 	return r
 
@@ -328,6 +341,7 @@ func _error_text(r: Dictionary) -> String:
 	var e: Dictionary = r.get("error",{})
 	var field: String = str(e.get("field",""))
 	if field=="target": return _w("choose_target")
+	if field=="selection_or_context" and _selection().is_empty(): return _w("choose_formation")
 	if field.begins_with("binding."): return _w("binding_taken")+" · "+Words.action_name(field.trim_prefix("binding."),_language)
 	return _w(e.get("code","Unavailable"))
 
@@ -364,7 +378,9 @@ func _mark() -> void:
 
 func _order(kind: String) -> void:
 	var params := {}
-	if kind == "set_layout":
+	if kind=="charge" and _chosen("Target")==null:
+		kind = "free_attack"
+	elif kind == "set_layout":
 		kind = "layout"
 		params = {"layout":_chosen("Layout")}
 	elif kind == "delegate":
@@ -403,10 +419,58 @@ func _side_name(id: Variant, rules: Dictionary) -> String:
 
 func _vitals() -> String:
 	var player: Dictionary = _view.get("player",{})
-	var stats := []
-	for stat in ["hp","ammo","morale","direction"]:
+	var stats := PackedStringArray()
+	for line in [_rank(player),_stat(player,"hp","max_hp"),_stamina(player)]:
+		if not line.is_empty(): stats.append(line)
+	if _has_ammunition(player): stats.append("%s %d"%[_w("ammo"),player.ammo])
+	for stat in ["morale","direction"]:
 		if player.get(stat) != null and not str(player[stat]).is_empty(): stats.append("%s %s" % [_w(stat),_w(player[stat])])
 	return " · ".join(stats)
+
+func _stat(player: Dictionary, key: String, maximum: String) -> String:
+	if not player.has(key): return ""
+	var value := str(player[key])
+	if player.has(maximum): value += "/"+str(player[maximum])
+	return _w(key)+"  "+value
+
+func _rank(player: Dictionary) -> String:
+	for key in ["level","troop_tier"]:
+		if player.has(key): return "%s %d"%[_w(key),player[key]]
+	return ""
+
+func _stamina(player: Dictionary) -> String:
+	if player.get("stamina_enabled")==false: return _w("stamina")+"  "+_w("unlimited")
+	return _stat(player,"stamina","max_stamina")
+
+func _has_ammunition(player: Dictionary) -> bool:
+	return player.has("ammo") and player.get("weapons",[]).any(func(w):return w in ["bow","crossbow","throw"])
+
+func _render_kit(player: Dictionary) -> void:
+	var rows := []
+	var weapons: Array = player.get("weapons",[])
+	var index: int = player.get("weapon_slot",-1)
+	var current := ""
+	if index>=0 and index<weapons.size(): current = "melee" if weapons[index]=="melee" else "ranged"
+	for item: Dictionary in player.get("equipped_items",[]):
+		var slot: String = item.slot
+		var label: String = item.name
+		if slot==current: label += "  ·  "+_w("equipped_now")
+		rows.append([_w(slot+"_slot"),label])
+	if _has_ammunition(player): rows.append([_w("ammo"),str(player.ammo)])
+	_text("KitCaption",_w("battle_loadout")+"  ·  "+_w("readonly") if not rows.is_empty() else _w("no_kit"))
+	for i in range(rows.size()*2):
+		var cell: Label
+		if i<_kit_rows.get_child_count(): cell = _kit_rows.get_child(i)
+		else:
+			cell = Label.new()
+			if i%2==0: cell.modulate = Color("#ddc38f")
+			else:
+				cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				cell.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			_kit_rows.add_child(cell)
+		cell.text = rows[i / _kit_rows.columns][i % _kit_rows.columns]
+		cell.show()
+	for i in range(rows.size()*2,_kit_rows.get_child_count()): _kit_rows.get_child(i).hide()
 
 func _desktop_key(action: String) -> String:
 	var binding: Dictionary = _view.get("bindings",{}).get(action,{})
@@ -424,6 +488,10 @@ func _render_field() -> void:
 	var player: Dictionary = _view.get("player",{})
 	var weapons: Array = player.get("weapons",[])
 	_overlay.identity.text = _w("commander")
+	var rank := _rank(player)
+	if not rank.is_empty(): _overlay.identity.text += "  ·  "+rank
+	_overlay.stamina.text = _stamina(player)
+	_overlay.stamina.visible = not _overlay.stamina.text.is_empty()
 	_overlay.mount_state.visible = player.has("mount_handle")
 	_overlay.mount_state.text = _w("on_horse" if player.get("mount_handle")!=null else "on_foot")
 	_overlay.morale.visible = player.has("morale")
@@ -432,13 +500,12 @@ func _render_field() -> void:
 	var slot: int = player.get("weapon_slot",-1)
 	var kit := PackedStringArray()
 	if slot>=0 and slot<weapons.size(): kit.append(_w(weapons[slot]))
-	if player.has("ammo"): kit.append("%s  %s"%[_w("ammo"),player.ammo])
+	if _has_ammunition(player): kit.append("%s  %s"%[_w("ammo"),player.ammo])
 	_overlay.weapon.text = "   ·   ".join(kit)
-	_overlay.health.text = "%s   %s"%[_w("hp"),player.hp] if player.has("hp") else ""
-	# River field actors enlist with COM's default initial health of 100.
-	_overlay.health_bar.max_value = player.get("max_hp",100)
+	_overlay.health.text = _stat(player,"hp","max_hp")
+	_overlay.health_bar.max_value = maxi(1,player.get("max_hp",0))
 	_overlay.health_bar.value = player.get("hp",0)
-	_overlay.health_bar.visible = player.has("hp") and player.hp<=_overlay.health_bar.max_value
+	_overlay.health_bar.visible = player.has("hp") and player.has("max_hp")
 	_overlay.equipment.get_parent().visible = not player.is_empty()
 	_overlay.board.visible = _view.get("scoreboard_held",false)
 	if _overlay.board.visible:
@@ -467,7 +534,8 @@ func _render_field() -> void:
 			if index<0: continue
 			var key := _desktop_key("select_"+str(index+1))
 			var title := _w(g.get("troop_role",g.get("layout","line")))
-			groups.append(["%s  %s · %d"%[key,title,g.get("count",g.get("members",[]).size())],g.id in _selection()])
+			var selected: bool = g.id in _selection()
+			groups.append([("◆ " if selected else "")+"%s  %s · %d"%[key,title,g.get("count",g.get("members",[]).size())],selected])
 		_overlay.set_cards(_overlay.formations,groups)
 		var choices := []
 		for choice in _view.get("command_choices",[]):
@@ -476,10 +544,17 @@ func _render_field() -> void:
 	var lines := PackedStringArray()
 	var feedback: Dictionary = _view.get("command_feedback",{})
 	if feedback.get("ok")==false: lines.append(_error_text(feedback))
+	elif feedback.has("order_type") and feedback.has("order_id") and not feedback.get("formation_ids",[]).is_empty():
+		var key: String = feedback.order_id
+		if key!=_order_notice_key:
+			_order_notice_key = key
+			_order_notice_until = Time.get_ticks_msec()+3200
+		if Time.get_ticks_msec()<_order_notice_until:
+			lines.append("%s · %s · %d %s"%[_w("order_for"),_w(feedback.order_type),feedback.formation_ids.size(),_w("formations_count")])
 	if _captions and not str(_view.get("subtitle","")).is_empty(): lines.append(str(_view.subtitle))
 	_overlay.notice.text = "\n".join(lines)
 	var hints := PackedStringArray()
-	var actions := ["attack","block","select_all","scoreboard","menu"]
+	var actions := ["attack","block","select_all","inventory","scoreboard","menu"]
 	if _view.get("orders_open",false): actions = ["select_all","scoreboard","menu"]
 	for action in actions:
 		var key := _desktop_key(action)
@@ -488,7 +563,8 @@ func _render_field() -> void:
 
 func _render() -> void:
 	if _nodes.is_empty(): return
-	var show_field: bool = _field_capture and _view.get("phase")=="battle"
+	var inventory: bool = _view.get("input_mode")=="inventory" and _view.get("phase")=="battle"
+	var show_field: bool = _field_capture and not inventory and _view.get("phase")=="battle"
 	_overlay.visible = show_field
 	_panel.visible = not show_field
 	_shade.visible = not show_field and _view.get("phase","") in ["battle","ended"]
@@ -506,18 +582,26 @@ func _render() -> void:
 	var modes: Array = rules.get("commander_options",[])
 	var left_field: bool = rules.get("teams",[]).any(func(t):return is_same(t.team_key,_view.get("team_key")) and t.get("withdrawn",false))
 	var direct: bool = battle and not rules.get("commander_downed",false) and not left_field
-	var command: bool = direct and _page=="command"
+	var command: bool = direct and _page=="command" and not inventory
 	var can_withdraw: bool = battle and _view.get("can_withdraw",false) and not left_field
 	if not can_withdraw: _confirm = false
-	var menu: bool = _page=="menu" and not _confirm
+	var can_inspect: bool = direct and _view.get("control_mode","direct")=="direct" and not _view.get("player",{}).is_empty()
+	inventory = inventory and can_inspect
+	var menu: bool = _page=="menu" and not _confirm and not inventory
 	_nodes.Resume.visible = direct and menu and _view.get("control_mode","direct")=="direct"
 	_nodes.CommandBook.visible = direct and menu
+	_nodes.Inventory.visible = menu and can_inspect
+	_nodes.CloseInventory.visible = inventory
+	_kit_rows.visible = inventory
+	if inventory: _render_kit(_view.player)
+	else: _nodes.KitCaption.hide()
 	_nodes.Settings.visible = menu and not finished
-	_nodes.BackMenu.visible = _page!="menu" and not _confirm
-	_prefs.visible = _page=="settings" and not _confirm
+	_nodes.BackMenu.visible = _page!="menu" and not _confirm and not inventory
+	_prefs.visible = _page=="settings" and not _confirm and not inventory
 	var title := "battle_menu" if battle else phase
 	if _page=="command": title = "command_book"
 	if _page=="settings": title = "settings"
+	if inventory: title = "field_kit"
 	if _confirm: title = "withdraw"
 	_nodes.Title.text = _w(title if not title.is_empty() else "Unavailable")
 	_nodes.Title.add_theme_font_size_override("font_size",22 if not _large else 26)
@@ -558,7 +642,7 @@ func _render() -> void:
 	_show_action("Deploy",deploy,true)
 	_show_action("Hold",command,selected)
 	_show_action("ApplyLayout",command,selected)
-	_show_action("Charge",command,selected and _chosen("Target") != null)
+	_show_action("Charge",command,selected)
 	_show_action("Move",command,selected and has_point)
 	_show_action("Delegate",command,_selection().size()==1 and not str(_view.get("delegate_candidate","")).is_empty())
 	_text("Downed",_w("downed")+" · "+_w(rules.get("control_mode","")) if battle and rules.get("commander_downed",false) else "")
@@ -582,7 +666,7 @@ func _render() -> void:
 	_nodes.BindingRow.visible = can_bind
 	_nodes.Rebind.visible = can_bind
 	if not _capture.is_empty(): _nodes.Rebind.text = _w("key")
-	_text("Receipt",_w("key")+" · "+Words.action_name(_capture,_language) if not _capture.is_empty() else msg)
+	_text("Receipt","" if inventory else (_w("key")+" · "+Words.action_name(_capture,_language) if not _capture.is_empty() else msg))
 	_nodes.Large.set_pressed_no_signal(_large)
 	_nodes.Contrast.set_pressed_no_signal(_contrast)
 	_nodes.Subtitles.set_pressed_no_signal(_captions)
@@ -716,6 +800,11 @@ func _appearance() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or _field_capture: return
 	if event is InputEventKey and event.echo: return
+	if _view.get("input_mode")=="inventory":
+		if event is InputEventJoypadButton and event.pressed and event.button_index==JOY_BUTTON_B:
+			_resume()
+			get_viewport().set_input_as_handled()
+		return
 	if _capture.is_empty():
 		var focus := get_viewport().gui_get_focus_owner()
 		if _confirm and event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed:

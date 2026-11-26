@@ -58,6 +58,28 @@ func sentry(role: String) -> void:
 	check(started>0 and released and com.view(A).value.phase=="Ready","defender can lower the weapon after the target steps back")
 	if role=="archer":check(com.view(A).value.ammo==4,"defending archer never fires under hold fire")
 
+func guard_leash() -> void:
+	var ai := AI.new(SCOPE,clear_ray)
+	var brain := Brain.new(SCOPE,ai.get_instance_id())
+	var com := Combat.new(SCOPE)
+	com.enlist(A,{"team":0,"role":"infantry"})
+	var home := Vector3(-4,0,8)
+	var rules := ORDERS.duplicate()
+	rules.merge({"engage_allowed":false,"fire_allowed":false,"movement_limit":0.0},true)
+	var local := context(home)
+	local.holding_ground = true
+	local.officer_guard = true
+	for tick in range(1,5):
+		var pos := home + Vector3.RIGHT * (3.0 if tick in [2,3] else 0.0)
+		var foe := home + Vector3.RIGHT * (5.0 if tick==1 else 8.0)
+		var job := job_for(ai,tick,[unit(A,pos,0,"infantry"),unit(B,foe,1,"infantry")])
+		var plan: Dictionary = brain.decide(job,ai.sense(A).value,com.view(A).value,rules,local).value
+		var expected: String = ["Intercept","ReturnToPost","ReturnToPost","Hold"][tick-1]
+		check(plan.mode==expected,"obey officer guard leash "+expected)
+		if tick<=3:
+			check(plan.intents[0].desired_direction[0]==(1000000 if tick==1 else -1000000),"guard moves toward intruder then back to original post")
+		check(ai.collect(job,plan.intents).ok and brain.accept(ai.drain().value[0],plan,{"ok":true}).ok,"commit guard-post memory")
+
 func run() -> void:
 	for behavior in ["Hold","Regroup","Retreat","Move","Follow"]:
 		for order: Variant in [null,{"order_type":"hold"},{"order_type":"retreat"},{"order_type":"move"}]:
@@ -75,6 +97,7 @@ func run() -> void:
 	sentry("infantry")
 	sentry("archer")
 	moving_orders()
+	guard_leash()
 	engine.release_scope(SCOPE)
 	print("POSITION_DEFENCE checks=",checks," failures=",errors)
 	quit(0 if errors==0 else 1)

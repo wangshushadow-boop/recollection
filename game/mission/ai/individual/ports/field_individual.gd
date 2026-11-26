@@ -3,6 +3,7 @@ extends RefCounted
 const R = preload("res://contracts/result.gd")
 const V = preload("res://contracts/values.gd")
 const MELEE_REACH := 1.45
+const GUARD_RADIUS := 6.0
 const TARGET_LOCK := 18
 const RETRY_TICKS := 12
 const DIRECTIONS := ["up", "left", "right", "thrust"]
@@ -108,9 +109,9 @@ static func _target(perception: Dictionary, rules: Dictionary, local: Dictionary
 	return best
 
 
-static func _move(own: Dictionary, destination: Vector3, local: Dictionary, rules: Dictionary, speed: float, mounted: bool, routing := false) -> Dictionary:
+static func _move(own: Dictionary, destination: Vector3, local: Dictionary, rules: Dictionary, speed: float, mounted: bool, use_formation_limit := true) -> Dictionary:
 	var goal := destination
-	if not routing:
+	if use_formation_limit:
 		goal = local.slot_position + _ground(goal-local.slot_position).limit_length(rules.movement_limit)
 	var d := _ground(goal-own.position)
 	if d.length_squared() < 0.04 or not _can_go(local,own.position,goal):
@@ -212,12 +213,14 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 	var ranged: bool = weapons.size()>1 and combat.ammo>0
 	var current_attack_allowed: bool = rules.engage_allowed if combat.weapon_slot==0 else rules.fire_allowed
 	var break_until: int = old.get("break_until",-1)
+	var sentry: bool = local.get("officer_guard",false) and not combat.routing and not (ranged and rules.fire_allowed)
+	var post: Variant = old.get("guard_post") if sentry else null
 	if combat.hp==0 or combat.phase=="Downed" or combat.role=="mount":
 		mode = "Incapacitated"
 	elif combat.routing:
 		mode = "Routing"
 		if local.get("exit_position") != null:
-			move = _move(own,local.exit_position,local,rules,1.0,mounted,true)
+			move = _move(own,local.exit_position,local,rules,1.0,mounted,false)
 	else:
 		target = _target(perception,rules,local,old,tick)
 		if job.get("urgent",false) and local.get("threat_handle") != null:
@@ -226,6 +229,13 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 					target = seen
 					break
 		var distance: float = INF if target.is_empty() else own.position.distance_to(target.position)
+		# Officer-led sentries may intercept a nearby visible intruder. Keep the original
+		# post until they return so a moving target cannot lead the unit across the field.
+		if sentry and post==null and distance<=GUARD_RADIUS:
+			post = own.position
+		var guarding: bool = post!=null and not target.is_empty() and post.distance_squared_to(target.position)<=GUARD_RADIUS*GUARD_RADIUS
+		if not guarding and post!=null and own.position.distance_squared_to(post)<0.25:
+			post=null
 		# A holding formation can strike from its place without gaining permission to pursue.
 		var defend_here: bool = local.get("holding_ground",false) and distance <= MELEE_REACH
 		if defend_here and combat.weapon_slot==0: current_attack_allowed = true
@@ -248,6 +258,9 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 				move = _move(own,own.position+side*2.0,local,rules,1.0,mounted)
 		elif combat.phase == "Stagger":
 			mode = "Recover"
+		elif not defend_here and post!=null:
+			mode = "Intercept" if guarding else "ReturnToPost"
+			move = _move(own,target.position if guarding else post,local,rules,1.0,mounted,false)
 		elif not defend_here and (not rules.engage_allowed or distance == INF) and own.position.distance_to(local.slot_position) > rules.slot_tolerance:
 			mode = "MoveToSlot"
 			move = _move(own,local.slot_position,local,rules,1.0,mounted)
@@ -310,6 +323,7 @@ func decide(job: Dictionary, perception: Dictionary, combat: Dictionary, rules: 
 	var lock_until: int = old.get("lock_until",-1) if chosen == old.get("target") else tick+TARGET_LOCK
 	var state := {"handle":own.handle,"tick":tick,"order_revision":job.stamp.order_revision,"control_revision":job.stamp.control_revision,
 		"target":chosen,"lock_until":lock_until,"break_until":break_until,"moving":moving,"rejected":old.get("rejected"),"retry_tick":old.get("retry_tick",-1)}
+	if post!=null: state["guard_post"]=post
 	state.make_read_only()
 	var proposal := {"branch":get_instance_id(),"job":job,"mode":mode,"target":chosen,"intents":intents,"state":state,"has_action":not action.is_empty()}
 	proposal.make_read_only()

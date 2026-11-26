@@ -47,6 +47,7 @@ static func _defaults(legacy := false) -> Dictionary:
 		all.equip_melee = [KEY_KP_1,"j/13"]
 		all.equip_ranged = [KEY_KP_2,"j/14"]
 		for action in FIELD_KEYS: all[action] = [FIELD_KEYS[action]]
+		all["inventory"] = [KEY_I]
 		for i in range(1,10): all["order_key_"+str(i)] = [KEY_F1+i-1]
 	var result := {}
 	for action in all:
@@ -62,7 +63,7 @@ static func family(token: String) -> String:
 
 static func scope(action: String) -> String:
 	if GLOBAL.has(action): return "global"
-	if action.begins_with("order_key_") or action=="scoreboard": return "field"
+	if action.begins_with("order_key_") or action in ["scoreboard","inventory"]: return "field"
 	if FIELD_KEYS.has(action): return "battle"
 	return "battle" if BATTLE.has(action) else "command"
 
@@ -89,6 +90,7 @@ static func token_for(event: InputEvent) -> String:
 	return ""
 
 func action_for(token: String, mode: String) -> String:
+	if mode=="inventory" and bindings.inventory.get(family(token))==token: return "inventory"
 	for action in bindings:
 		if scope(action) not in [mode,"global"] and not (scope(action)=="field" and mode in ["battle","command"]):
 			continue
@@ -199,6 +201,8 @@ func load_saved() -> Dictionary:
 		return R.fail("InvalidArgument","input_profile")
 	var legacy: bool = not data.bindings.has("view_toggle")
 	var defaults := _defaults(legacy)
+	var prior_field_layout: bool = not legacy and not data.bindings.has("inventory")
+	if prior_field_layout: defaults.erase("inventory")
 	if data.bindings.size()!=defaults.size(): return R.fail("InvalidArgument","input_profile")
 	var table := defaults.duplicate(true)
 	if typeof(data.bindings.get("menu")) != TYPE_DICTIONARY or data.bindings.menu != table.menu: return R.fail("InvalidArgument","reserved_menu")
@@ -228,6 +232,10 @@ func load_saved() -> Dictionary:
 			for slot in modern[action]:
 				if not migrated[action].has(slot): _set_binding(migrated,action,modern[action][slot])
 		table = migrated
+	elif prior_field_layout:
+		# An existing custom binding keeps I. The pack is also reachable from the menu.
+		table["inventory"] = {}
+		_set_binding(table,"inventory","k/%d/0"%KEY_I)
 	bindings = table
 	options = data.options.duplicate()
 	return R.ok()

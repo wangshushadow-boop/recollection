@@ -75,7 +75,7 @@ func enlist(handle: Dictionary, profile: Dictionary) -> Dictionary:
 		return result
 	var morale: int = profile.get("morale",70)
 	var routing: bool = role != "mount" and morale <= ROUTE_AT
-	_actors[handle.index].merge({"team":profile.team, "role":role, "weapons":weapons, "shield":profile.get("shield",0),
+	_actors[handle.index].merge({"team":profile.team, "role":role, "max_hp":_actors[handle.index].hp, "weapons":weapons, "shield":profile.get("shield",0),
 		"ammo":profile.get("ammo",8), "armor":armor.duplicate(), "reload_until":0, "mount_handle":null, "rider_handle":null,
 		"morale":morale, "routing":routing, "commander":profile.get("commander",false), "last_spread":-SPREAD_TICKS})
 	if routing:

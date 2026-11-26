@@ -77,7 +77,9 @@ func query() -> Dictionary:
 		groups[0].planned_count = 17
 	var v := {"scope_id":scope_read,"revision":revision,"phase":phase,"formations":groups,
 		"targets":[2],"team_key":0,"rules":rules.view(),"selection":input.view().selection,
-		"player":{"hp":commander_hp,"ammo":4,"morale":92,"direction":"up","weapon_slot":0,"weapons":["melee"],"mount_handle":null},"delegate_candidate":"captain",
+		"player":{"hp":commander_hp,"max_hp":110,"level":3,"stamina_enabled":false,"ammo":4,"morale":92,"direction":"up",
+			"weapon_slot":0,"weapons":["melee"],"mount_handle":null,
+			"equipped_items":[{"slot":"melee","id":"river:item/spear","name":"河原长矛"}]},"delegate_candidate":"captain",
 		"deployment_zones":[{"id":"north","position_mm":[1000,0,300]}],"target_position":point,
 		"can_withdraw":true,"allow_rebind":true,"bindable_actions":input.profile_view().bindings.keys(),"command_feedback":input.view().feedback,"subtitle":"Cavalry!"}
 	if phase=="ended":
@@ -92,6 +94,9 @@ func submit(action: String, data: Dictionary) -> Dictionary:
 	sent.append(action)
 	check(not data.has("team_key") and not data.has("owner") and data.scope_id==SCOPE and data.revision==revision,"scope-only intent")
 	match action:
+		"inventory":
+			field_overlay.input_mode = "inventory"
+			return R.ok()
 		"select": return input.select_formations(data.ids)
 		"deploy":
 			phase = "battle"
@@ -179,12 +184,14 @@ func captured_field() -> void:
 	check(root.get_visible_rect().encloses(hint.get_global_rect()) and root.get_visible_rect().encloses(control("Equipment").get_global_rect()),"captured readouts fit inside the viewport")
 	var logical := root.get_visible_rect().size
 	check(control("Balance").get_global_rect().get_center().y<logical.y*.15 and control("Equipment").get_global_rect().get_center().x>logical.x*.65,"top strength and bottom right equipment")
-	check(control("HealthBar").is_visible_in_tree() and control("HealthBar").value==commander_hp and control("HealthBar").max_value==100,"health bar follows real field health")
+	check(control("HealthBar").is_visible_in_tree() and control("HealthBar").value==commander_hp and control("HealthBar").max_value==110 and control("PlayerHealth").text.contains("90/110"),"health bar uses actual initial maximum and remaining health")
+	check(control("PlayerStamina").text.contains("不限") and control("PlayerIdentity").text.contains("等级 3"),"commander rank and local endurance rule are visible")
 	var mini = control("TacticalMap")
 	check(mini.is_visible_in_tree() and mini._allies==sample.allies and mini._enemies==sample.enemies and mini._origin==Vector2(16,5) and mini._heading==Vector2.UP,"local map displays authorised XZ sample and north-facing player")
 	check(mini._rallies==sample.rallies and mini._objectives==sample.objectives,"map receives actual rally and objective locations")
 	check(not mini.get_global_rect().intersects(control("Equipment").get_global_rect()) and root.get_visible_rect().encloses(mini.get_global_rect()),"tactical map stays clear of player attributes")
 	check(control("PlayerMorale").text.contains("92") and control("PlayerMount").text=="步战" and control("PlayerWeapon").text.contains("近战"),"visible personal morale, mount state and equipped weapon")
+	check(not control("PlayerWeapon").text.contains("弹药"),"melee loadout hides unused ammunition")
 	var count := sent.size()
 	for pos in [logical*.5,Vector2(45,65)]:
 		for button in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
@@ -200,6 +207,10 @@ func captured_field() -> void:
 	hud.refresh()
 	var card := control("OrderCards").get_child(0) as Label
 	check(card.is_visible_in_tree() and card.text.contains("K") and card.text.contains("冲锋") and control("FormationCards").get_child_count()==2,"orders display current binding and formation cards")
+	check(control("FormationCards").get_child(0).text.contains("◆"),"selected formation is also marked with a symbol")
+	field_overlay.command_feedback = {"ok":true,"order_type":"free_attack","formation_ids":[0,1],"order_id":"player/test"}
+	hud.refresh()
+	check(control("FieldNotice").text.contains("已下令 · 冲锋 · 2 支编队"),"successful charge reports its actual formation count")
 	field_overlay.scoreboard_held = true
 	hud.refresh()
 	var cells := control("ScoreTable").get_children().map(func(n): return n.text)
@@ -209,6 +220,14 @@ func captured_field() -> void:
 	hud.refresh()
 	check(not mini.is_visible_in_tree() and mini._allies.is_empty() and mini._enemies.is_empty() and sample.allies.size()==1 and sample.enemies.size()==1,"leaving field controls clears markers without writing to source")
 	check(control("Settings").is_visible_in_tree() and not hint.is_visible_in_tree(),"released cursor restores command controls")
+	await click("Inventory")
+	check(control("CloseInventory").is_visible_in_tree() and not control("Withdraw").is_visible_in_tree() and not control("FieldHints").is_visible_in_tree(),"inventory is an exclusive read-only page")
+	var contents := control("KitRows").get_children().map(func(c):return c.text)
+	check("近战" in contents and "河原长矛  ·  使用中" in contents and not "弹药" in contents and control("KitCaption").text.contains("仅查看"),"inventory shows real equipped item and active slot")
+	var count_before := sent.size()
+	hud.resume_requested.connect(func():field_overlay.erase("input_mode");hud.refresh(),CONNECT_ONE_SHOT)
+	await click("CloseInventory")
+	check(not control("CloseInventory").is_visible_in_tree() and control("Resume").is_visible_in_tree() and sent.size()==count_before,"closing inventory resumes previous mode without gameplay commands")
 	field.free()
 
 func select_option(id: String, index: int) -> void:
@@ -250,7 +269,7 @@ func remap_actions() -> void:
 	start_binding("attack")
 	press_key(KEY_K)
 	start_binding("move_forward")
-	press_key(KEY_I)
+	press_key(KEY_U)
 	start_binding("order_hold")
 	press_key(KEY_J)
 	start_binding("order_hold")
@@ -258,12 +277,12 @@ func remap_actions() -> void:
 	start_binding("move_forward")
 	press_key(KEY_ESCAPE)
 	var bindings: Dictionary = input.profile_view().bindings
-	check(bindings.attack.desktop=="k/%d/0"%KEY_K and bindings.move_forward.desktop=="k/%d/0"%KEY_I,"attack/move remaps and cancellation")
+	check(bindings.attack.desktop=="k/%d/0"%KEY_K and bindings.move_forward.desktop=="k/%d/0"%KEY_U,"attack/move remaps and cancellation")
 	check(bindings.order_hold.desktop=="k/%d/0"%KEY_J and bindings.order_hold.pad=="j/%d"%JOY_BUTTON_PADDLE1,"command keyboard and gamepad remaps")
 	var restored := FieldInput.new(profile)
 	check(restored.configure(SCOPE,"player",rows[0].handle,0,func(_b):return R.ok(),func(_o,_r):return R.ok()).ok and restored.profile_view().bindings==bindings,"all bindings restored from disk")
 	check(not restored.rebind("menu",key_down(KEY_P)).ok,"menu protected by INPUT")
-	restored.handle_event(key_down(KEY_I))
+	restored.handle_event(key_down(KEY_U))
 	restored.handle_event(key_down(KEY_K))
 	var intents: Array = restored.step(1).value.batch.inputs
 	check(intents.any(func(i):return i.get("input_phase")=="start") and intents.any(func(i):return i.get("desired_direction")==[0,0,-1000000] and i.speed_fraction==1.0),"restored combat and movement produce real intents")
@@ -363,9 +382,12 @@ func run() -> void:
 	check(last_action.get("data",{}).get("placements",[]).size()==2 and phase=="battle","deployment request")
 	check(control("CommandBook").is_visible_in_tree() and not control("Group0").is_visible_in_tree() and not control("Hold").is_visible_in_tree(),"battle menu initially offers concise navigation")
 	await click("CommandBook")
-	check(control("Charge").disabled,"no implicit target")
+	check(not control("Charge").disabled,"selected formations can charge without picking an enemy")
+	await click("Charge")
+	advance()
+	check(form.view(0).value.active.order_type=="free_attack" and form.view(1).value.active.order_type=="free_attack","untargeted charge reaches both formations")
 	await click("Hold")
-	check(form.view(0).value.active==null,"no premature authority update")
+	check(form.view(0).value.active.order_type=="free_attack","pending hold does not prematurely replace the attack")
 	advance()
 	check(form.view(0).value.active.order_type=="hold" and form.view(1).value.active.order_type=="hold","multi formation hold")
 	await captured_field()
@@ -376,7 +398,7 @@ func run() -> void:
 	select_option("Target",1)
 	control("Target").grab_focus()
 	pad(JOY_BUTTON_DPAD_LEFT)
-	check(control("Charge").disabled,"D-pad clears target")
+	check(control("Target").selected==0 and not control("Charge").disabled,"D-pad clears target and allows general charge")
 	pad(JOY_BUTTON_DPAD_RIGHT)
 	check(not control("Charge").disabled,"D-pad picks target")
 	await click("Charge")

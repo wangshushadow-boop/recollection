@@ -18,6 +18,9 @@ func run() -> void:
 	app=Composition.new(root)
 	var boot: Dictionary=app.boot(config.value)
 	if not check(boot.ok,"normal boot "+str(boot)): quit(1); return
+	var custom: bool = config.value.profile=="client" or "--practice" in OS.get_cmdline_user_args()
+	if custom and config.value.profile=="headless":
+		if not check(app.session().start_session("custom",{}).ok,"single player practice session"): quit(1);return
 	var opened: Dictionary=app.start_field(20,40)
 	if not check(opened.ok,"normal field start "+str(opened)): quit(1); return
 	var hud: Dictionary=app.field_view("hud")
@@ -37,6 +40,17 @@ func run() -> void:
 	check(humans.size()==20 and first.value.tick==1,"20 real humans deployed")
 	var input: Dictionary=app.field_view("input")
 	if not check(input.ok and input.value.actor_handle is Dictionary,"real player possession"):quit(1);return
+	var captain: Dictionary = app.field_view("hud").value.player
+	check(captain.hp==captain.max_hp and captain.max_hp==100,"commander real health capacity")
+	if custom:
+		var captain_rows: Array = humans.filter(func(row):return row.handle==input.value.actor_handle and row.components.hero_id!=null)
+		check(captain_rows.size()==1 and captain.commander and captain.level==1 and not captain.has("troop_tier"),"possessed commander is a starting training hero in both battle rules and combat")
+	else:
+		check(captain.troop_tier==1 and not captain.has("level"),"anonymous troop has tier and no hero level")
+	check(not captain.stamina_enabled,"training stamina is unrestricted")
+	check(captain.equipped_items==[{"slot":"melee","id":"field:item/spear","name":"长枪"}],"possessed unit's actual river loadout")
+	captain.equipped_items.clear()
+	check(app.field_view("hud").value.player.equipped_items.size()==1,"HUD inventory snapshot is isolated")
 	var handle: Dictionary=input.value.actor_handle
 	var batch := {"mission_id":opened.value,"source_tick":2,"control_revision":input.value.control_revision,
 		"inputs":[{"actor_handle":handle,"desired_direction":[1000000,0,0],"speed_fraction":1.0,"stance":"walk"}]}
@@ -53,7 +67,7 @@ func run() -> void:
 	check(hud.ok and hud.value.phase=="ended" and hud.value.result.slot_outcomes.size()==40,"complete results in same view")
 	var session: Dictionary=app.session().query()
 	check(session.value.state=="Results","final session phase")
-	if config.value.profile=="headless": check(app.report().last_match.winner_team_keys==[1],"headless results sink")
+	if not custom: check(app.report().last_match.winner_team_keys==[1],"headless results sink")
 	check(app.leave_field().ok and not app.has_field(),"dispose grants")
 	check(app.shutdown().ok,"release all modules")
 	print("FIELD_BOOT errors=",errors," people=",humans.size()," slots=40")

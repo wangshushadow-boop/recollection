@@ -4,6 +4,12 @@ extends RefCounted
 const WORDS := {
 	"deployment":["野战布阵","Order of battle"], "battle":["野战 · 指挥","Field command"],
 	"commander":["主将","Commander"],"on_foot":["步战","On foot"],"on_horse":["骑乘","Mounted"],
+	"inventory":["背包","Inventory"],"field_kit":["随身行装","Field equipment"],"battle_loadout":["本场配装","Battle loadout"],
+	"equipped_now":["使用中","In use"],"unlimited":["不限","Unlimited"],"stamina":["体力","Stamina"],
+	"level":["等级","Level"],"troop_tier":["兵阶","Troop tier"],"no_kit":["未携带装备","No equipment carried"],
+	"melee_slot":["近战","Melee"],"ranged_slot":["远程","Ranged"],"mount_slot":["坐骑","Mount"],
+	"order_for":["已下令","Order issued"],"formations_count":["支编队","formations"],
+	"choose_formation":["请先选择要指挥的编队","Select a formation first"],
 	"map_range":["战图  ·  半径 70 米","Battle map  ·  70 m radius"],"north":["北","N"],
 	"formation_card":["编队","Formation"],
 	"ended":["战果","Battle result"], "select":["选择编队","Formations"],

@@ -18,6 +18,7 @@ func run() -> void:
 func exercise() -> bool:
 	var config := Config.resolve([],DisplayServer.get_name(),{})
 	if not app.boot(config.value).ok: return false
+	if not app.session().start_session("custom",{}).ok: return false
 	var opened: Dictionary = app.start_field(500,500,241124)
 	if not opened.ok: return false
 	var initial: Dictionary
@@ -38,6 +39,8 @@ func exercise() -> bool:
 	var first_contact := 0
 	var on_flank := false
 	var across_field := false
+	var stand_back := "--stand-off" in OS.get_cmdline_user_args()
+	var halted := 0
 	for i in 3800:
 		var tick: int = mission._tick
 		var pose: Dictionary = mission._frame.pose
@@ -60,6 +63,12 @@ func exercise() -> bool:
 		elif not across_field: dest = Vector3(34,0,-25)
 		var direction := own.direction_to(dest)
 		var speed := 0.0 if distance<=1.15 else 1.0
+		if stand_back:
+			if halted==0 and distance<=5.0:
+				halted=tick
+				stats["halted_at"]=[tick,distance]
+			if halted>0: speed=0.0
+			if halted>0 and tick-halted>420: break
 		if distance<=1.45:
 			stats.contact_ticks+=1
 			if first_contact==0:

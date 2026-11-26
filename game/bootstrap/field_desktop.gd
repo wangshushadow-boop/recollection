@@ -90,16 +90,20 @@ func begin() -> void:
 
 func _input_context_changed(mode: String) -> void:
 	var capture: bool = running and not _exiting and not _last_audio_end and mode in ["battle","command"] and not _own_actor().is_empty() and _player.get("control_mode","direct")=="direct"
-	if capture==_field_capture: return
-	_field_capture = capture
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if capture else Input.MOUSE_MODE_VISIBLE
-	_hud.set_field_capture(capture)
+	if capture!=_field_capture:
+		_field_capture = capture
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if capture else Input.MOUSE_MODE_VISIBLE
+		_hud.set_field_capture(capture)
+	if running: _hud.refresh()
 
 func _lost_focus() -> void:
 	if _field_capture: _input_port.set_context("ui")
 
 func _resume_controls() -> void:
 	if running and not _exiting and not _last_audio_end:
+		if _input_port.view().mode=="inventory":
+			_input_port.close_inventory()
+			return
 		get_viewport().gui_release_focus()
 		_input_port.set_context("battle")
 
@@ -154,6 +158,8 @@ func _hud_view() -> Dictionary:
 
 func _hud_action(action: String,data: Dictionary) -> Dictionary:
 	if data.scope_id!=scope: return R.fail("StaleVersion","hud")
+	if action=="inventory" and running and _hud_state.phase=="battle" and _player.get("control_mode","direct")=="direct":
+		return _input_port.set_context("inventory")
 	if action=="withdraw":
 		# Confirmation concerns the local side; a render/physics tick boundary
 		# may advance the revision while that same confirmation is on screen.
@@ -254,7 +260,7 @@ func after_step() -> Dictionary:
 	if _hud_state.phase=="ended" and not _last_audio_end:
 		_last_audio_end = true
 		_audio.transition_music("victory" if _hud_state.rules.outcome.winner_team_keys.has(_hud_state.team_key) else "defeat")
-	if _field_capture and (_last_audio_end or _own_actor().is_empty() or _player.get("control_mode","direct")!="direct"):
+	if (_field_capture or _input_port.view().mode=="inventory") and (_last_audio_end or _own_actor().is_empty() or _player.get("control_mode","direct")!="direct"):
 		_input_port.set_context("ui")
 	return R.ok()
 

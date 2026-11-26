@@ -318,7 +318,8 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 			continue
 		var kit: Dictionary = _kit(body)
 		var combat_role: String = "cavalry" if kit.mounted else kit.role
-		var profile := {"team":ordinal,"role":combat_role}
+		var is_commander: bool = body.hero_id!=null and body.hero_id==_spec.sides[ordinal].get("commander_hero_id")
+		var profile := {"team":ordinal,"role":combat_role,"commander":is_commander}
 		if not kit.ranged.is_empty(): profile["ranged"]=kit.ranged
 		var enlist: Dictionary = _draft.com.enlist(row.handle,profile)
 		if not enlist.ok: return enlist
