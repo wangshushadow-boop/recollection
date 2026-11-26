@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-026",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "个体 AI 决策分批执行并按序接纳",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-024"
+  ],
+  "requirements": [
+    "BAT-01",
+    "MIS-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-01",
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_brains.gd",
+    "game/tests/p2/field_brains/quiet_blocked.gd",
+    "game/tests/p2/field_brains/quiet_blocked.gd.uid",
+    "development/reports/tests/P2/field-job-batches/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "c3ec6f41c212b8eeaed62850d5321964875fd116",
+  "worktree": "D:/work/game/recollection",
+  "scope": "个体 AI 决策分批执行并按序接纳",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "同场景一批桌面对照，保留 60 Hz 规则、规模与画质。",
+    "有指令接战逐步比对与失败重试。"
+  ],
+  "status": "DONE"
+}

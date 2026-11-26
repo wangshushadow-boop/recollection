@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-027",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BAI",
+  "title": "个体感知候选分批计算与顺序视线检查",
+  "spec": "docs/systems/game/mission/ai/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-024"
+  ],
+  "requirements": [
+    "BAI-01",
+    "BAI-05",
+    "BAI-06",
+    "BAT-05"
+  ],
+  "acceptance_test_ids": [
+    "T-BAI-01",
+    "T-BAI-02",
+    "T-BAI-03",
+    "T-BAI-04"
+  ],
+  "allowed_paths": [
+    "game/mission/ai/perception/field_perception.gd",
+    "game/mission/ai/ports/field_ai.gd",
+    "development/reports/tests/P2/field-job-batches/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/mission/ai/formation/",
+    "game/mission/ai/formation/behaviors/",
+    "game/mission/ai/formation/controller/",
+    "game/mission/ai/formation/evaluation/",
+    "game/mission/ai/individual/",
+    "game/mission/ai/individual/behaviors/",
+    "game/mission/ai/individual/controller/",
+    "game/mission/ai/individual/decision/",
+    "game/mission/ai/individual/roles/",
+    "game/mission/ai/individual/targeting/",
+    "game/mission/ai/tactical/",
+    "game/mission/ai/tactical/commander/",
+    "game/mission/ai/tactical/evaluation/",
+    "game/mission/ai/tactical/planning/",
+    "game/mission/ai/tactical/strategies/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "c3ec6f41c212b8eeaed62850d5321964875fd116",
+  "worktree": "D:/work/game/recollection",
+  "scope": "个体感知候选分批计算与顺序视线检查",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "同场景一批桌面对照，保留 60 Hz 规则、规模与画质。",
+    "有指令接战逐步比对与失败重试。"
+  ],
+  "status": "DONE"
+}
