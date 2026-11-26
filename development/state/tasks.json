@@ -723,7 +723,8 @@
         "P2-FIELD-INTEGRATION-019",
         "P2-FIELD-INTEGRATION-020",
         "P2-FIELD-INTEGRATION-021",
-        "P2-FIELD-INTEGRATION-022"
+        "P2-FIELD-INTEGRATION-022",
+        "P2-FIELD-INTEGRATION-023"
       ]
     },
     "GATE-P2": {
@@ -2745,6 +2746,17 @@
       "integrated_commit": "92a6aaabedc78c59b32cbb41fa7c43fc8c10edf4",
       "evidence": [
         "development/reports/tests/P2/field-flat-runtime/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-023": {
+      "status": "DONE",
+      "owner": "roster_dev",
+      "base_commit": "079c24e95dd2b2bfd2555214c8d8a4c8b4b60f4a",
+      "candidate_commit": "f1bdb4e5901e88b973e7a56cced18f19198b02aa",
+      "integrated_commit": "f1bdb4e5901e88b973e7a56cced18f19198b02aa",
+      "evidence": [
+        "development/reports/tests/P2/field-ai-index/README.md"
       ],
       "child_ids": []
     }

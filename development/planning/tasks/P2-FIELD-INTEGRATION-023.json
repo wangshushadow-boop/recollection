@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-023",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "河原野战 AI 编队成员索引复用",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-013",
+    "P2-FIELD-INTEGRATION-022"
+  ],
+  "requirements": [
+    "BAT-01",
+    "MIS-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-01",
+    "T-MIS-RT-02",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_brains.gd",
+    "game/tests/p2/field_brains/",
+    "development/reports/tests/P2/field-ai-index/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "079c24e95dd2b2bfd2555214c8d8a4c8b4b60f4a",
+  "worktree": "D:/work/game/recollection",
+  "scope": "减少 _think 的稳定名册准备开销，保留单位顺序、动态输入、实时授权与事务回滚。",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "500 人、100 匹马的同场景两步上限配对采样，比较成员查询、索引和完整战斗步耗时、帧时间、FPS 与实际步速。",
+    "验证成员变更、旧代际、重复句柄、撤权与失败重试，以及有指令接战逐步回归。"
+  ],
+  "status": "DONE"
+}

@@ -1,0 +1,616 @@
+{
+  "base": {
+    "files": [
+      "IdxA2.json",
+      "IdxA3.json",
+      "IdxA4.json"
+    ],
+    "step_samples": 960,
+    "frame_samples": 477,
+    "frame_step_histogram": {
+      "2": 477
+    },
+    "step_ms": [
+      31.045,
+      30.672,
+      34.916
+    ],
+    "frame_ms": [
+      81.257,
+      80.339,
+      89.302
+    ],
+    "fps": 12.306601245428045,
+    "sps": 24.61320249085609,
+    "field_step_per_frame_ms": 62.08354507337526,
+    "outside_field_step_ms": 19.173658280922425,
+    "gpu_viewport_ms": [
+      4.609,
+      5.424,
+      8.026
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {}
+  },
+  "candidate": {
+    "files": [
+      "IdxB2.json",
+      "IdxB3.json",
+      "IdxB4.json"
+    ],
+    "step_samples": 960,
+    "frame_samples": 477,
+    "frame_step_histogram": {
+      "2": 477
+    },
+    "step_ms": [
+      30.229,
+      29.919,
+      33.742
+    ],
+    "frame_ms": [
+      79.579,
+      78.928,
+      85.661
+    ],
+    "fps": 12.56618387757028,
+    "sps": 25.13236775514056,
+    "field_step_per_frame_ms": 60.45127672955975,
+    "outside_field_step_ms": 19.127377358490563,
+    "gpu_viewport_ms": [
+      4.291,
+      4.827,
+      7.877
+    ],
+    "phases_ms": {},
+    "frame_spans_mean_ms": {}
+  },
+  "base_probe": {
+    "files": [
+      "IdxAd1.json",
+      "IdxAd2.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      31.502,
+      31.103,
+      35.534
+    ],
+    "frame_ms": [
+      82.363,
+      81.242,
+      91.243
+    ],
+    "fps": 12.141371379351423,
+    "sps": 24.282742758702845,
+    "field_step_per_frame_ms": 62.99321698113208,
+    "outside_field_step_ms": 19.369801886792445,
+    "gpu_viewport_ms": [
+      5.213,
+      5.67,
+      8.221
+    ],
+    "phases_ms": {
+      "_think": [
+        11.66,
+        11.493,
+        13.2
+      ],
+      "_walk": [
+        10.994,
+        10.899,
+        12.3
+      ],
+      "index": [
+        2.588,
+        2.557,
+        2.922
+      ]
+    },
+    "frame_spans_mean_ms": {},
+    "units_per_step": 500,
+    "index_form_lookups_per_step": 500
+  },
+  "candidate_probe": {
+    "files": [
+      "IdxBd1.json",
+      "IdxBd2.json"
+    ],
+    "step_samples": 640,
+    "frame_samples": 318,
+    "frame_step_histogram": {
+      "2": 318
+    },
+    "step_ms": [
+      30.056,
+      29.79,
+      33.596
+    ],
+    "frame_ms": [
+      79.071,
+      78.652,
+      84.475
+    ],
+    "fps": 12.646847598248309,
+    "sps": 25.293695196496618,
+    "field_step_per_frame_ms": 60.0982106918239,
+    "outside_field_step_ms": 18.97287735849057,
+    "gpu_viewport_ms": [
+      4.6,
+      5.242,
+      7.907
+    ],
+    "phases_ms": {
+      "_think": [
+        10.903,
+        10.751,
+        12.399
+      ],
+      "_walk": [
+        10.714,
+        10.556,
+        12.211
+      ],
+      "index": [
+        1.986,
+        1.956,
+        2.227
+      ]
+    },
+    "frame_spans_mean_ms": {},
+    "units_per_step": 500,
+    "index_form_lookups_per_step": 0
+  },
+  "runs": {
+    "IdxA2": {
+      "files": [
+        "IdxA2.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        31.48,
+        31.037,
+        35.352
+      ],
+      "frame_ms": [
+        82.226,
+        80.979,
+        90.645
+      ],
+      "fps": 12.161608036880114,
+      "sps": 24.32321607376023,
+      "field_step_per_frame_ms": 62.97081132075472,
+      "outside_field_step_ms": 19.255157232704406,
+      "gpu_viewport_ms": [
+        4.336,
+        5.283,
+        7.403
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxA3": {
+      "files": [
+        "IdxA3.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.865,
+        30.476,
+        34.615
+      ],
+      "frame_ms": [
+        80.949,
+        80.081,
+        89.378
+      ],
+      "fps": 12.353511823709326,
+      "sps": 24.70702364741865,
+      "field_step_per_frame_ms": 61.711327044025154,
+      "outside_field_step_ms": 19.2373144654088,
+      "gpu_viewport_ms": [
+        5.553,
+        5.775,
+        8.171
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxA4": {
+      "files": [
+        "IdxA4.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.789,
+        30.506,
+        34.516
+      ],
+      "frame_ms": [
+        80.597,
+        79.976,
+        88.303
+      ],
+      "fps": 12.407409705075871,
+      "sps": 24.814819410151742,
+      "field_step_per_frame_ms": 61.56849685534591,
+      "outside_field_step_ms": 19.02850314465408,
+      "gpu_viewport_ms": [
+        3.938,
+        3.806,
+        8.108
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxB2": {
+      "files": [
+        "IdxB2.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.858,
+        30.366,
+        35.055
+      ],
+      "frame_ms": [
+        81.011,
+        80.128,
+        90.545
+      ],
+      "fps": 12.34403333292704,
+      "sps": 24.68806666585408,
+      "field_step_per_frame_ms": 61.72886163522013,
+      "outside_field_step_ms": 19.281937106918235,
+      "gpu_viewport_ms": [
+        4.606,
+        5.605,
+        7.921
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxB3": {
+      "files": [
+        "IdxB3.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        29.786,
+        29.595,
+        32.405
+      ],
+      "frame_ms": [
+        78.467,
+        78.161,
+        82.44
+      ],
+      "fps": 12.744188469715521,
+      "sps": 25.488376939431042,
+      "field_step_per_frame_ms": 59.55611320754717,
+      "outside_field_step_ms": 18.9110251572327,
+      "gpu_viewport_ms": [
+        4.437,
+        5.17,
+        8.094
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxB4": {
+      "files": [
+        "IdxB4.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.044,
+        29.898,
+        32.552
+      ],
+      "frame_ms": [
+        79.258,
+        78.815,
+        83.631
+      ],
+      "fps": 12.617018882519366,
+      "sps": 25.23403776503873,
+      "field_step_per_frame_ms": 60.06885534591195,
+      "outside_field_step_ms": 19.18916981132076,
+      "gpu_viewport_ms": [
+        3.831,
+        3.774,
+        6.44
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxAd1": {
+      "files": [
+        "IdxAd1.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        32.284,
+        31.712,
+        36.937
+      ],
+      "frame_ms": [
+        84.086,
+        82.708,
+        93.727
+      ],
+      "fps": 11.892517669177234,
+      "sps": 23.78503533835447,
+      "field_step_per_frame_ms": 64.56502515723271,
+      "outside_field_step_ms": 19.521459119496853,
+      "gpu_viewport_ms": [
+        5.558,
+        5.789,
+        8.23
+      ],
+      "phases_ms": {
+        "_think": [
+          11.867,
+          11.707,
+          13.473
+        ],
+        "_walk": [
+          11.203,
+          11.177,
+          12.379
+        ],
+        "index": [
+          2.644,
+          2.607,
+          2.989
+        ]
+      },
+      "frame_spans_mean_ms": {},
+      "units_per_step": 500,
+      "index_form_lookups_per_step": 500
+    },
+    "IdxAd2": {
+      "files": [
+        "IdxAd2.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.72,
+        30.57,
+        33.235
+      ],
+      "frame_ms": [
+        80.64,
+        80.481,
+        84.372
+      ],
+      "fps": 12.40086232008903,
+      "sps": 24.80172464017806,
+      "field_step_per_frame_ms": 61.42140880503145,
+      "outside_field_step_ms": 19.21814465408805,
+      "gpu_viewport_ms": [
+        4.869,
+        5.596,
+        8.221
+      ],
+      "phases_ms": {
+        "_think": [
+          11.452,
+          11.288,
+          12.867
+        ],
+        "_walk": [
+          10.784,
+          10.682,
+          12.07
+        ],
+        "index": [
+          2.532,
+          2.508,
+          2.787
+        ]
+      },
+      "frame_spans_mean_ms": {},
+      "units_per_step": 500,
+      "index_form_lookups_per_step": 500
+    },
+    "IdxBd1": {
+      "files": [
+        "IdxBd1.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        30.513,
+        30.255,
+        34.492
+      ],
+      "frame_ms": [
+        80.141,
+        79.446,
+        88.516
+      ],
+      "fps": 12.4779311307666,
+      "sps": 24.9558622615332,
+      "field_step_per_frame_ms": 61.00593710691824,
+      "outside_field_step_ms": 19.135553459119492,
+      "gpu_viewport_ms": [
+        4.659,
+        5.533,
+        8.093
+      ],
+      "phases_ms": {
+        "_think": [
+          11.04,
+          10.868,
+          12.599
+        ],
+        "_walk": [
+          10.862,
+          10.662,
+          12.462
+        ],
+        "index": [
+          2.001,
+          1.971,
+          2.235
+        ]
+      },
+      "frame_spans_mean_ms": {},
+      "units_per_step": 500,
+      "index_form_lookups_per_step": 0
+    },
+    "IdxBd2": {
+      "files": [
+        "IdxBd2.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        29.598,
+        29.453,
+        32.21
+      ],
+      "frame_ms": [
+        78.001,
+        77.758,
+        82.302
+      ],
+      "fps": 12.820400143233703,
+      "sps": 25.640800286467407,
+      "field_step_per_frame_ms": 59.19048427672956,
+      "outside_field_step_ms": 18.810201257861635,
+      "gpu_viewport_ms": [
+        4.54,
+        5.023,
+        7.887
+      ],
+      "phases_ms": {
+        "_think": [
+          10.766,
+          10.616,
+          12.107
+        ],
+        "_walk": [
+          10.566,
+          10.402,
+          11.771
+        ],
+        "index": [
+          1.971,
+          1.939,
+          2.203
+        ]
+      },
+      "frame_spans_mean_ms": {},
+      "units_per_step": 500,
+      "index_form_lookups_per_step": 0
+    }
+  },
+  "initial_runs": {
+    "IdxA1": {
+      "files": [
+        "IdxA1.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        33.771,
+        33.57,
+        38.012
+      ],
+      "frame_ms": [
+        87.57,
+        86.612,
+        97.796
+      ],
+      "fps": 11.419453923149804,
+      "sps": 22.83890784629961,
+      "field_step_per_frame_ms": 67.56622641509433,
+      "outside_field_step_ms": 20.003635220125787,
+      "gpu_viewport_ms": [
+        5.193,
+        5.768,
+        8.461
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    },
+    "IdxB1": {
+      "files": [
+        "IdxB1.json"
+      ],
+      "step_samples": 320,
+      "frame_samples": 159,
+      "frame_step_histogram": {
+        "2": 159
+      },
+      "step_ms": [
+        31.971,
+        31.903,
+        36.019
+      ],
+      "frame_ms": [
+        83.581,
+        83.644,
+        91.363
+      ],
+      "fps": 11.964410168875768,
+      "sps": 23.928820337751535,
+      "field_step_per_frame_ms": 63.93561635220126,
+      "outside_field_step_ms": 19.645603773584902,
+      "gpu_viewport_ms": [
+        4.728,
+        5.351,
+        8.73
+      ],
+      "phases_ms": {},
+      "frame_spans_mean_ms": {}
+    }
+  }
+}
