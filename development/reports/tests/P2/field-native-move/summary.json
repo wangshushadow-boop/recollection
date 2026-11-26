@@ -1,0 +1,810 @@
+{
+  "base": {
+    "idle": {
+      "first_hit": 0,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 55.931,
+        "p50": 53.523,
+        "p95": 67.137
+      },
+      "gpu_ms": {
+        "mean": 6.791,
+        "p50": 6.8,
+        "p95": 8.818
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 16.826,
+        "p50": 16.775,
+        "p95": 18.165
+      },
+      "fps": 17.879,
+      "steps_per_second": 35.758,
+      "field_step_ms": {
+        "mean": 19.569,
+        "p50": 18.629,
+        "p95": 25.346
+      },
+      "_think_ms": {
+        "mean": 5.115,
+        "p50": 4.99,
+        "p95": 6.012
+      },
+      "_walk_ms": {
+        "mean": 8.32,
+        "p50": 7.321,
+        "p95": 12.7
+      },
+      "_fight_ms": {
+        "mean": 1.3,
+        "p50": 1.253,
+        "p95": 1.765
+      },
+      "prepare_ms": {
+        "mean": 1.491,
+        "p50": 1.514,
+        "p95": 1.703
+      },
+      "grid_ms": {
+        "mean": 0.023,
+        "p50": 0.022,
+        "p95": 0.044
+      },
+      "advance_ms": {
+        "mean": 3.583,
+        "p50": 3.524,
+        "p95": 4.227
+      },
+      "read_poses_ms": {
+        "mean": 0.079,
+        "p50": 0.078,
+        "p95": 0.083
+      },
+      "physics_stage_ms": {
+        "mean": 1.377,
+        "p50": 0.856,
+        "p95": 3.465
+      },
+      "neighbor_checks": {
+        "mean": 433.041,
+        "p50": 214,
+        "p95": 1334
+      },
+      "yielding": {
+        "mean": 360.853,
+        "p50": 416,
+        "p95": 443
+      },
+      "physics_writebacks": {
+        "mean": 149.825,
+        "p50": 79,
+        "p95": 491
+      },
+      "full_ai_rows_per_step": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 0,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0
+    },
+    "contact": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        986,
+        1260
+      ],
+      "frames": 137,
+      "per_frame_steps": {
+        "2": 137
+      },
+      "frame_ms": {
+        "mean": 63.283,
+        "p50": 61.036,
+        "p95": 79.953
+      },
+      "gpu_ms": {
+        "mean": 6.151,
+        "p50": 5.176,
+        "p95": 8.176
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.195,
+        "p50": 17.046,
+        "p95": 18.419
+      },
+      "fps": 15.802,
+      "steps_per_second": 31.604,
+      "field_step_ms": {
+        "mean": 23.046,
+        "p50": 22.634,
+        "p95": 30.658
+      },
+      "_think_ms": {
+        "mean": 6.567,
+        "p50": 6.248,
+        "p95": 8.042
+      },
+      "_walk_ms": {
+        "mean": 9.409,
+        "p50": 9.446,
+        "p95": 10.725
+      },
+      "_fight_ms": {
+        "mean": 1.583,
+        "p50": 1.517,
+        "p95": 2.535
+      },
+      "prepare_ms": {
+        "mean": 1.643,
+        "p50": 1.641,
+        "p95": 1.915
+      },
+      "grid_ms": {
+        "mean": 0.046,
+        "p50": 0.026,
+        "p95": 0.362
+      },
+      "advance_ms": {
+        "mean": 3.815,
+        "p50": 3.83,
+        "p95": 4.18
+      },
+      "read_poses_ms": {
+        "mean": 0.084,
+        "p50": 0.076,
+        "p95": 0.094
+      },
+      "physics_stage_ms": {
+        "mean": 1.707,
+        "p50": 1.702,
+        "p95": 1.941
+      },
+      "neighbor_checks": {
+        "mean": 941.822,
+        "p50": 944,
+        "p95": 1031
+      },
+      "yielding": {
+        "mean": 312.455,
+        "p50": 312,
+        "p95": 319
+      },
+      "physics_writebacks": {
+        "mean": 194.127,
+        "p50": 196,
+        "p95": 205
+      },
+      "full_ai_rows_per_step": {
+        "mean": 12.625,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 7,
+      "admitted_individuals_per_step": {
+        "mean": 41.284,
+        "p50": 41,
+        "p95": 43
+      },
+      "positive_hits": 61,
+      "damage": 2112,
+      "shots": 85
+    },
+    "march": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 69.137,
+        "p50": 68.518,
+        "p95": 81.26
+      },
+      "gpu_ms": {
+        "mean": 6.346,
+        "p50": 5.469,
+        "p95": 8.635
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.668,
+        "p50": 17.499,
+        "p95": 19.655
+      },
+      "fps": 14.464,
+      "steps_per_second": 28.928,
+      "field_step_ms": {
+        "mean": 25.748,
+        "p50": 25.33,
+        "p95": 30.846
+      },
+      "_think_ms": {
+        "mean": 5.144,
+        "p50": 5.006,
+        "p95": 6.03
+      },
+      "_walk_ms": {
+        "mean": 11.635,
+        "p50": 11.192,
+        "p95": 15.243
+      },
+      "_fight_ms": {
+        "mean": 3.23,
+        "p50": 3.558,
+        "p95": 4.57
+      },
+      "prepare_ms": {
+        "mean": 1.593,
+        "p50": 1.588,
+        "p95": 1.891
+      },
+      "grid_ms": {
+        "mean": 0.027,
+        "p50": 0.026,
+        "p95": 0.042
+      },
+      "advance_ms": {
+        "mean": 4.017,
+        "p50": 3.973,
+        "p95": 4.611
+      },
+      "read_poses_ms": {
+        "mean": 0.079,
+        "p50": 0.077,
+        "p95": 0.091
+      },
+      "physics_stage_ms": {
+        "mean": 2.869,
+        "p50": 2.592,
+        "p95": 4.364
+      },
+      "neighbor_checks": {
+        "mean": 1088.778,
+        "p50": 956,
+        "p95": 1584
+      },
+      "yielding": {
+        "mean": 195.594,
+        "p50": 231,
+        "p95": 248
+      },
+      "physics_writebacks": {
+        "mean": 362.094,
+        "p50": 318,
+        "p95": 547
+      },
+      "full_ai_rows_per_step": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 0,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0
+    }
+  },
+  "final": {
+    "idle": {
+      "first_hit": 0,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 54.743,
+        "p50": 53.308,
+        "p95": 65.729
+      },
+      "gpu_ms": {
+        "mean": 6.617,
+        "p50": 5.738,
+        "p95": 8.784
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 16.697,
+        "p50": 16.565,
+        "p95": 18.005
+      },
+      "fps": 18.267,
+      "steps_per_second": 36.534,
+      "field_step_ms": {
+        "mean": 19.042,
+        "p50": 18.335,
+        "p95": 24.507
+      },
+      "_think_ms": {
+        "mean": 5.08,
+        "p50": 4.943,
+        "p95": 6.008
+      },
+      "_walk_ms": {
+        "mean": 7.946,
+        "p50": 7.163,
+        "p95": 12.081
+      },
+      "_fight_ms": {
+        "mean": 1.269,
+        "p50": 1.232,
+        "p95": 1.644
+      },
+      "prepare_ms": {
+        "mean": 1.503,
+        "p50": 1.511,
+        "p95": 1.702
+      },
+      "grid_ms": {
+        "mean": 0.02,
+        "p50": 0.018,
+        "p95": 0.035
+      },
+      "advance_ms": {
+        "mean": 3.251,
+        "p50": 3.272,
+        "p95": 3.526
+      },
+      "read_poses_ms": {
+        "mean": 0.081,
+        "p50": 0.08,
+        "p95": 0.083
+      },
+      "physics_stage_ms": {
+        "mean": 1.345,
+        "p50": 0.872,
+        "p95": 3.488
+      },
+      "neighbor_checks": {
+        "mean": 1582.537,
+        "p50": 1584,
+        "p95": 1641
+      },
+      "yielding": {
+        "mean": 360.853,
+        "p50": 416,
+        "p95": 443
+      },
+      "physics_writebacks": {
+        "mean": 149.825,
+        "p50": 79,
+        "p95": 491
+      },
+      "full_ai_rows_per_step": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 0,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0,
+      "native": {
+        "native_batches": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_rows": {
+          "mean": 499,
+          "p50": 499,
+          "p95": 499
+        },
+        "native_fallback_rows": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_skipped_rows": {
+          "mean": 0,
+          "p50": 0,
+          "p95": 0
+        },
+        "native_foot_rows": {
+          "mean": 399,
+          "p50": 399,
+          "p95": 399
+        },
+        "native_mounted_rows": {
+          "mean": 100,
+          "p50": 100,
+          "p95": 100
+        },
+        "steps_running_native": 320,
+        "total_batches": 320,
+        "total_movement_rows": 160000,
+        "native_active_rows": 159680,
+        "native_active_share_of_movement_rows": 0.998,
+        "native_pack_ms": {
+          "mean": 2.515,
+          "p50": 2.54,
+          "p95": 2.733
+        },
+        "native_solve_ms": {
+          "mean": 0.118,
+          "p50": 0.116,
+          "p95": 0.131
+        },
+        "native_apply_ms": {
+          "mean": 0.315,
+          "p50": 0.311,
+          "p95": 0.337
+        }
+      }
+    },
+    "contact": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        986,
+        1260
+      ],
+      "frames": 137,
+      "per_frame_steps": {
+        "2": 137
+      },
+      "frame_ms": {
+        "mean": 62.13,
+        "p50": 60.403,
+        "p95": 78.118
+      },
+      "gpu_ms": {
+        "mean": 6.014,
+        "p50": 5.225,
+        "p95": 8.234
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.342,
+        "p50": 17.37,
+        "p95": 18.077
+      },
+      "fps": 16.095,
+      "steps_per_second": 32.191,
+      "field_step_ms": {
+        "mean": 22.399,
+        "p50": 22.094,
+        "p95": 28.44
+      },
+      "_think_ms": {
+        "mean": 6.556,
+        "p50": 6.239,
+        "p95": 8.241
+      },
+      "_walk_ms": {
+        "mean": 8.873,
+        "p50": 8.899,
+        "p95": 9.848
+      },
+      "_fight_ms": {
+        "mean": 1.55,
+        "p50": 1.476,
+        "p95": 2.454
+      },
+      "prepare_ms": {
+        "mean": 1.619,
+        "p50": 1.612,
+        "p95": 1.854
+      },
+      "grid_ms": {
+        "mean": 0.044,
+        "p50": 0.026,
+        "p95": 0.329
+      },
+      "advance_ms": {
+        "mean": 3.327,
+        "p50": 3.352,
+        "p95": 3.651
+      },
+      "read_poses_ms": {
+        "mean": 0.081,
+        "p50": 0.074,
+        "p95": 0.083
+      },
+      "physics_stage_ms": {
+        "mean": 1.676,
+        "p50": 1.687,
+        "p95": 1.851
+      },
+      "neighbor_checks": {
+        "mean": 2212.175,
+        "p50": 2214,
+        "p95": 2297
+      },
+      "yielding": {
+        "mean": 312.455,
+        "p50": 312,
+        "p95": 319
+      },
+      "physics_writebacks": {
+        "mean": 194.127,
+        "p50": 196,
+        "p95": 205
+      },
+      "full_ai_rows_per_step": {
+        "mean": 12.625,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 7,
+      "admitted_individuals_per_step": {
+        "mean": 41.284,
+        "p50": 41,
+        "p95": 43
+      },
+      "positive_hits": 61,
+      "damage": 2112,
+      "shots": 85,
+      "native": {
+        "native_batches": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_rows": {
+          "mean": 495.32,
+          "p50": 495,
+          "p95": 499
+        },
+        "native_fallback_rows": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_skipped_rows": {
+          "mean": 0,
+          "p50": 0,
+          "p95": 0
+        },
+        "native_foot_rows": {
+          "mean": 395.32,
+          "p50": 395,
+          "p95": 399
+        },
+        "native_mounted_rows": {
+          "mean": 100,
+          "p50": 100,
+          "p95": 100
+        },
+        "steps_running_native": 275,
+        "total_batches": 275,
+        "total_movement_rows": 136488,
+        "native_active_rows": 136213,
+        "native_active_share_of_movement_rows": 0.99799,
+        "native_pack_ms": {
+          "mean": 2.555,
+          "p50": 2.582,
+          "p95": 2.812
+        },
+        "native_solve_ms": {
+          "mean": 0.13,
+          "p50": 0.13,
+          "p95": 0.136
+        },
+        "native_apply_ms": {
+          "mean": 0.326,
+          "p50": 0.322,
+          "p95": 0.35
+        }
+      }
+    },
+    "march": {
+      "first_hit": 986,
+      "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+      "gpu": "NVIDIA GeForce RTX 3090",
+      "range": [
+        121,
+        440
+      ],
+      "frames": 159,
+      "per_frame_steps": {
+        "2": 159
+      },
+      "frame_ms": {
+        "mean": 67.128,
+        "p50": 65.442,
+        "p95": 77.967
+      },
+      "gpu_ms": {
+        "mean": 6.328,
+        "p50": 5.472,
+        "p95": 8.517
+      },
+      "outside_field_step_ms_per_frame": {
+        "mean": 17.633,
+        "p50": 17.45,
+        "p95": 19.185
+      },
+      "fps": 14.897,
+      "steps_per_second": 29.794,
+      "field_step_ms": {
+        "mean": 24.751,
+        "p50": 24.089,
+        "p95": 29.955
+      },
+      "_think_ms": {
+        "mean": 5.109,
+        "p50": 4.958,
+        "p95": 6.123
+      },
+      "_walk_ms": {
+        "mean": 10.899,
+        "p50": 10.432,
+        "p95": 13.616
+      },
+      "_fight_ms": {
+        "mean": 3.167,
+        "p50": 3.498,
+        "p95": 4.737
+      },
+      "prepare_ms": {
+        "mean": 1.568,
+        "p50": 1.586,
+        "p95": 1.813
+      },
+      "grid_ms": {
+        "mean": 0.028,
+        "p50": 0.026,
+        "p95": 0.043
+      },
+      "advance_ms": {
+        "mean": 3.379,
+        "p50": 3.398,
+        "p95": 3.706
+      },
+      "read_poses_ms": {
+        "mean": 0.075,
+        "p50": 0.074,
+        "p95": 0.079
+      },
+      "physics_stage_ms": {
+        "mean": 2.819,
+        "p50": 2.523,
+        "p95": 4.141
+      },
+      "neighbor_checks": {
+        "mean": 1732.072,
+        "p50": 1733,
+        "p95": 1800
+      },
+      "yielding": {
+        "mean": 195.594,
+        "p50": 231,
+        "p95": 248
+      },
+      "physics_writebacks": {
+        "mean": 362.094,
+        "p50": 318,
+        "p95": 547
+      },
+      "full_ai_rows_per_step": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "steps_with_full_ai_rows": 0,
+      "admitted_individuals_per_step": {
+        "mean": 41.575,
+        "p50": 42,
+        "p95": 43
+      },
+      "positive_hits": 0,
+      "damage": 0,
+      "shots": 0,
+      "native": {
+        "native_batches": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_rows": {
+          "mean": 498.997,
+          "p50": 499,
+          "p95": 499
+        },
+        "native_fallback_rows": {
+          "mean": 1,
+          "p50": 1,
+          "p95": 1
+        },
+        "native_skipped_rows": {
+          "mean": 0.003,
+          "p50": 0,
+          "p95": 0
+        },
+        "native_foot_rows": {
+          "mean": 398.997,
+          "p50": 399,
+          "p95": 399
+        },
+        "native_mounted_rows": {
+          "mean": 100,
+          "p50": 100,
+          "p95": 100
+        },
+        "steps_running_native": 320,
+        "total_batches": 320,
+        "total_movement_rows": 160000,
+        "native_active_rows": 159679,
+        "native_active_share_of_movement_rows": 0.99799,
+        "native_pack_ms": {
+          "mean": 2.59,
+          "p50": 2.619,
+          "p95": 2.873
+        },
+        "native_solve_ms": {
+          "mean": 0.133,
+          "p50": 0.132,
+          "p95": 0.144
+        },
+        "native_apply_ms": {
+          "mean": 0.333,
+          "p50": 0.327,
+          "p95": 0.369
+        }
+      }
+    }
+  },
+  "workload_check": {
+    "status": "PASS",
+    "native_used_in_all_windows": true,
+    "scenarios": {
+      "idle": {
+        "same_commands": true,
+        "same_first_hit": true,
+        "same_machine": true,
+        "due_first_different_tick": null,
+        "yielding_first_different_tick": null,
+        "physics_writebacks_first_different_tick": null,
+        "combat_first_different_tick": null
+      },
+      "contact": {
+        "same_commands": true,
+        "same_first_hit": true,
+        "same_machine": true,
+        "due_first_different_tick": null,
+        "yielding_first_different_tick": null,
+        "physics_writebacks_first_different_tick": null,
+        "combat_first_different_tick": null
+      }
+    }
+  }
+}
