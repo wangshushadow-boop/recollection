@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "P2-VIS-BATTLE-007",
+  "kind": "EXECUTION",
+  "parent": "P2-VIS-BATTLE",
+  "stage": "P2",
+  "module_id": "VIS",
+  "title": "骑手鞍座和瞄准朝向分离",
+  "spec": "docs/systems/game/presentation/visuals/README.md",
+  "depends_on": [
+    "P2-VIS-BATTLE-001"
+  ],
+  "requirements": [
+    "BAI-06",
+    "COM-05",
+    "VIS-01"
+  ],
+  "acceptance_test_ids": [
+    "T-VIS-01",
+    "T-VIS-02",
+    "T-VIS-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/visuals/",
+    "game/tests/p2/mounted_visual/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+  "worktree": "D:/work/game/recollection",
+  "scope": "骑手鞍座和瞄准朝向分离",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "马身和骑手下身随坐骑，骑手上身可随权威瞄准转动。"
+  ],
+  "status": "DONE",
+  "owner": "ride"
+}

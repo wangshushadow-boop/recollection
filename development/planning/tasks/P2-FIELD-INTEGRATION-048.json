@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-048",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "河原战场角色控向双入口验收",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-045",
+    "P2-INPUT-004",
+    "P2-VIS-BATTLE-007",
+    "P2-FIELD-INTEGRATION-047",
+    "P2-FIELD-INTEGRATION-049"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-UI-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "development/reports/tests/P2/field-direction/",
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+  "worktree": "D:/work/game/recollection",
+  "scope": "河原战场角色控向双入口验收",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "普通、常驻真实键鼠核查模型朝向、步行位移及固定镜头，覆盖步行、交战及骑乘。"
+  ],
+  "status": "DONE",
+  "owner": "root / direction_desktop"
+}

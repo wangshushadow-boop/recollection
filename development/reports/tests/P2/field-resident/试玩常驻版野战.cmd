@@ -3,8 +3,8 @@ setlocal
 set "RECOLLECTION_WINDOW_DIR=%APPDATA%\Godot\app_userdata\recollection"
 chcp 65001 >nul
 for %%I in ("%~dp0..\..\..\..\..") do set "repo=%%~fI"
-set "base=6733b064ab9022fb2ad2ea2c70096681b5dc2468"
-set "trial=%repo%\out\resident\play-6733b06"
+set "base=0da63557563a91290dc3f679fe86dcda779e7d1d"
+set "trial=%repo%\out\resident\play-0da6355"
 set "engine=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64.exe"
 set "console=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64_console.exe"
 set "RECOLLECTION_MOVE_WORKERS=1"

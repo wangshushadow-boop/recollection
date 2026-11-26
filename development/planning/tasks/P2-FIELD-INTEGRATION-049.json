@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-049",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MOV",
+  "title": "骑乘持续转向与导航制动",
+  "spec": "docs/systems/game/mission/movement/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-028"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/mission/movement/ports/field_movement.gd",
+    "game/tests/p2/move_intents/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "game/contracts/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+  "worktree": "D:/work/game/recollection",
+  "scope": "骑乘持续转向与导航制动",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "骑兵左右连续转向保持前进；急转减速、碰撞和回滚回归通过。"
+  ],
+  "status": "DONE",
+  "owner": "steering"
+}

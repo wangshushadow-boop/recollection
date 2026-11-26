@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-047",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MIS-RT",
+  "title": "投影骑手与坐骑各自的权威方向",
+  "spec": "docs/systems/game/mission/runtime/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-044"
+  ],
+  "requirements": [
+    "BAT-01",
+    "BAT-02"
+  ],
+  "acceptance_test_ids": [
+    "T-MIS-RT-02"
+  ],
+  "allowed_paths": [
+    "game/mission/runtime/field_pipeline.gd",
+    "game/mission/runtime/field_mission.gd",
+    "game/tests/p2/field_pipeline/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+  "worktree": "D:/work/game/recollection",
+  "scope": "投影骑手与坐骑各自的权威方向",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "保留同代坐骑的实际行进角，改变骑手瞄准不旋转马匹。"
+  ],
+  "status": "DONE",
+  "owner": "ride"
+}

@@ -617,7 +617,8 @@
       "child_ids": [
         "P2-INPUT-001",
         "P2-INPUT-002",
-        "P2-INPUT-003"
+        "P2-INPUT-003",
+        "P2-INPUT-004"
       ]
     },
     "P2-CAM": {
@@ -658,7 +659,8 @@
         "P2-VIS-BATTLE-003",
         "P2-VIS-BATTLE-004",
         "P2-VIS-BATTLE-005",
-        "P2-VIS-BATTLE-006"
+        "P2-VIS-BATTLE-006",
+        "P2-VIS-BATTLE-007"
       ]
     },
     "P2-AUD-BATTLE": {
@@ -759,7 +761,10 @@
         "P2-FIELD-INTEGRATION-043",
         "P2-FIELD-INTEGRATION-044",
         "P2-FIELD-INTEGRATION-045",
-        "P2-FIELD-INTEGRATION-046"
+        "P2-FIELD-INTEGRATION-046",
+        "P2-FIELD-INTEGRATION-047",
+        "P2-FIELD-INTEGRATION-048",
+        "P2-FIELD-INTEGRATION-049"
       ]
     },
     "GATE-P2": {
@@ -3177,6 +3182,61 @@
       "integrated_commit": "6733b064ab9022fb2ad2ea2c70096681b5dc2468",
       "evidence": [
         "development/reports/tests/P2/field-commander/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-INPUT-004": {
+      "status": "DONE",
+      "owner": "root / direction_design",
+      "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+      "candidate_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "integrated_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "evidence": [
+        "development/reports/tests/P2/field-direction/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-VIS-BATTLE-007": {
+      "status": "DONE",
+      "owner": "ride",
+      "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+      "candidate_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "integrated_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "evidence": [
+        "development/reports/tests/P2/field-direction/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-047": {
+      "status": "DONE",
+      "owner": "ride",
+      "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+      "candidate_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "integrated_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "evidence": [
+        "development/reports/tests/P2/field-direction/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-048": {
+      "status": "DONE",
+      "owner": "root / direction_desktop",
+      "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+      "candidate_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "integrated_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "evidence": [
+        "development/reports/tests/P2/field-direction/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-049": {
+      "status": "DONE",
+      "owner": "steering",
+      "base_commit": "409e946fc0802905312a48652b811ea4c132a05a",
+      "candidate_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "integrated_commit": "0da63557563a91290dc3f679fe86dcda779e7d1d",
+      "evidence": [
+        "development/reports/tests/P2/field-direction/README.md"
       ],
       "child_ids": []
     }
