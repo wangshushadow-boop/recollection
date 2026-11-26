@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-033",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MOV",
+  "title": "C++ 批量推进与近邻避让实测",
+  "spec": "docs/systems/game/mission/movement/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-030",
+    "P2-FIELD-INTEGRATION-031",
+    "P2-FIELD-INTEGRATION-032"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "development/reports/tests/P2/field-native-move/"
+  ],
+  "ignored_trial_workspace": "out/native-move/",
+  "excluded_paths": [
+    "development/state/",
+    "game/contracts/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "5277bd474a74841f7c4d3d5e64e0f5cfbdf081b5",
+  "worktree": "D:/work/game/recollection",
+  "scope": "隔离副本加载原生候选，以相同规则比较实际野战推进和避让开销，包括数据交接。",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "500 人和 100 匹马，站立、行军与接战，原版/原生候选在相同输入各采样一批。",
+    "记录 GDExtension 实际参与人数、数据装配和写回及端到端帧与步耗时；检查 1260 步回放和第 986 步重试。",
+    "保存可复跑源码及实际采用决定。"
+  ],
+  "status": "DONE",
+  "owner": "movement2 / batch_move"
+}
