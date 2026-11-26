@@ -3,6 +3,7 @@ const Composition = preload("res://bootstrap/composition_root.gd")
 const Config = preload("res://bootstrap/boot_config.gd")
 const Canon = preload("res://contracts/canonical.gd")
 const Protocol = preload("res://contracts/ports/network_port.gd")
+const WindowPreferences = preload("res://bootstrap/window_preferences.gd")
 
 var _root: RefCounted
 var _profile := ""
@@ -14,6 +15,7 @@ var _running := false
 var _field_scene: Node3D
 var _retiring_audio: Array[WeakRef] = []
 var _finishing := false
+var _window_preferences: WindowPreferences
 
 func _ready() -> void:
 	get_tree().auto_accept_quit=false
@@ -31,6 +33,9 @@ func _start() -> void:
 		_failure(config)
 		return
 	_profile=config.value.profile
+	if _profile=="client" and not _profile_smoke and DisplayServer.get_name()!="headless" and OS.get_environment("RECOLLECTION_REMEMBER_WINDOW")=="1":
+		_window_preferences=WindowPreferences.new()
+		_window_preferences.restore(get_window())
 	_root=Composition.new(self)
 	var started: Dictionary=_root.boot(config.value)
 	if not started.ok:
@@ -192,5 +197,7 @@ func _notification(what: int) -> void:
 
 func _exit_tree() -> void:
 	_running=false
+	if _window_preferences!=null:
+		_window_preferences.save()
 	if _root!=null:
 		_root.shutdown()

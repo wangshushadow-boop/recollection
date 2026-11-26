@@ -18,6 +18,8 @@ var _hud := HUD.new()
 var _hud_state := {}
 var _player := {}
 var _visual_state := {}
+var _tactical_map := {}
+var _map_actor := {}
 var _pending_frame := false
 var _pending_events := []
 var _target: Variant
@@ -132,6 +134,8 @@ func _order(order: Dictionary, revisions: Dictionary) -> Dictionary:
 
 func _hud_view() -> Dictionary:
 	var projection := _hud_state.duplicate()
+	if _field_capture and _map_actor==_own_actor() and not _tactical_map.is_empty():
+		projection.tactical_map = _tactical_map.merged({"origin":_player.position,"heading":_player.heading})
 	var local := _input_port.view()
 	projection.selection = local.selection
 	projection.command_feedback = local.feedback
@@ -268,9 +272,34 @@ func present_frame(delta: float) -> Dictionary:
 	if not accepted.ok: return accepted
 	_pending_events.clear()
 	_pending_frame = false
+	_sample_tactical_map()
 	if _last_audio_end: _hud.set_process(true)
 	_present_camera(delta)
 	return _hud.refresh()
+
+# Reuse the authorized visual snapshot. Sampling at 10 Hz keeps this off the per-soldier simulation path.
+func _sample_tactical_map() -> void:
+	var actor := _own_actor()
+	if not _field_capture or _last_audio_end or actor.is_empty():
+		_tactical_map.clear()
+		_map_actor.clear()
+		return
+	if _map_actor==actor and _visual_state.tick < int(_tactical_map.get("sample_tick",-6))+6: return
+	var allies := PackedVector2Array()
+	var enemies := PackedVector2Array()
+	var team: int = _player.player.team
+	for unit: Dictionary in _visual_state.actors:
+		if unit.handle==actor or unit.role=="mount" or unit.phase=="Downed": continue
+		var pos: Vector3 = unit.position
+		if unit.team==team: allies.append(Vector2(pos.x,pos.z))
+		else: enemies.append(Vector2(pos.x,pos.z))
+	_map_actor = actor.duplicate()
+	var rallies := PackedVector2Array()
+	for zone: Dictionary in _hud_state.deployment_zones:
+		var mm: Array = zone.position_mm
+		rallies.append(Vector2(mm[0],mm[2])*.001)
+	_tactical_map = {"sample_tick":_visual_state.tick,"allies":allies,"enemies":enemies,
+		"rallies":rallies,"objectives":_hud_state.objective_sites}
 
 func _present_camera(delta: float) -> void:
 	var controls := _input_port.view()

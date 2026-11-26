@@ -84,6 +84,26 @@ func _counts(entities: RefCounted) -> Dictionary:
 			result[team] = result.get(team,0) + 1
 	return result
 
+# First-wave preview uses the same ordered allocation ranges and side quota as auto_wave.
+func opening_roles(team: Variant, kit_for: Callable) -> Dictionary:
+	var counts := {}
+	for side in _sides:
+		if not is_same(side.team,team): continue
+		var remaining: int = _zones[team].quota
+		for bounds in side.ranges:
+			var slot: int = bounds[0]
+			var end: int = mini(bounds[1],slot+remaining)
+			remaining -= end-slot
+			while slot < end:
+				var source: Dictionary = _sources[_source_starts.bsearch(slot,false)-1]
+				var next: int = mini(end,source.source_slot_range[1])
+				var role: String = kit_for.call(source).role
+				counts[role] = counts.get(role,0)+next-slot
+				slot = next
+			if remaining==0: break
+		break
+	return counts
+
 # An explicit deployment may override neither its team nor its trusted loadout.
 func _bind(slot: Variant, components: Dictionary) -> Dictionary:
 	var team := _index.team_for_slot(slot) as Dictionary

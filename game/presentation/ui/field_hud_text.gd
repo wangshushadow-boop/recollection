@@ -2,7 +2,10 @@ extends RefCounted
 
 # Battle terminology shared by the controls and their command receipts.
 const WORDS := {
-	"deployment":["野战 · 部署","Field deployment"], "battle":["野战 · 指挥","Field command"],
+	"deployment":["野战布阵","Order of battle"], "battle":["野战 · 指挥","Field command"],
+	"commander":["主将","Commander"],"on_foot":["步战","On foot"],"on_horse":["骑乘","Mounted"],
+	"map_range":["战图  ·  半径 70 米","Battle map  ·  70 m radius"],"north":["北","N"],
+	"formation_card":["编队","Formation"],
 	"ended":["战果","Battle result"], "select":["选择编队","Formations"],
 	"layout":["阵型","Formation"], "zone":["部署区","Deployment zone"], "target":["目标","Target"],
 	"pick":["选择…","Choose…"], "mark":["预览部署","Place units"], "reset":["重置部署","Reset plan"],
@@ -21,7 +24,7 @@ const WORDS := {
 	"square":["方阵","Square"], "circle":["圆阵","Circle"], "wedge":["楔形","Wedge"], "column":["纵队","Column"],
 	"ready":["在场","Ready"], "reserve":["预备","Reserve"], "routed":["溃逃","Routed"],
 	"own":["本方","Own"], "other":["对方","Opposing"], "withdrawn":["已撤退","Withdrawn"],
-	"hp":["体力","Health"], "ammo":["弹药","Ammo"], "morale":["士气","Morale"],
+	"hp":["生命","Health"], "ammo":["弹药","Ammo"], "morale":["士气","Morale"],
 	"direction":["攻向","Direction"], "up":["上","Up"], "right":["右","Right"],
 	"left":["左","Left"], "down":["下","Down"], "downed":["主将倒地","Commander down"],
 	"settings":["显示设置","Display settings"], "large":["大字号","Larger type"],

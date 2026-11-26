@@ -22,6 +22,9 @@ func run() -> void:
 	if not check(opened.ok,"normal field start "+str(opened)): quit(1); return
 	var hud: Dictionary=app.field_view("hud")
 	check(hud.ok and hud.value.phase=="deployment" and not hud.value.formations.is_empty(),"initial deployment")
+	var opening := {}
+	for group: Dictionary in hud.value.formations: opening[group.troop_role]=group.planned_count
+	check(opening=={"infantry":5,"archer":3,"cavalry":1,"mounted_archer":1},"own first wave preview excludes reserves and the opposing side")
 	if not check(not app.session().finish_mission({"outcome":"victory"}).ok,"premature end rejected"): quit(1);return
 	var first: Dictionary
 	for i in 50:

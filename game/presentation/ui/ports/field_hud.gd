@@ -4,6 +4,7 @@ const R = preload("res://contracts/result.gd")
 const Words = preload("res://presentation/ui/field_hud_text.gd")
 const InputPort = preload("res://presentation/input/ports/field_input.gd")
 const BattleOverlay = preload("res://presentation/ui/field_battle_overlay.gd")
+const Standard = preload("res://presentation/ui/field_troop_standard.gd")
 signal resume_requested
 
 var _scope := ""
@@ -27,7 +28,12 @@ var _receipt := ""
 var _panel := PanelContainer.new()
 var _scroll := ScrollContainer.new()
 var _body := VBoxContainer.new()
-var _groups := VBoxContainer.new()
+var _groups := GridContainer.new()
+var _deploy_head := HBoxContainer.new()
+var _deploy_options := HBoxContainer.new()
+var _deploy_footer := HBoxContainer.new()
+var _deploy_rule := HSeparator.new()
+var _in_deployment := false
 var _commands := GridContainer.new()
 var _prefs := VBoxContainer.new()
 var _overlay := BattleOverlay.new()
@@ -51,6 +57,10 @@ func _ready() -> void:
 	_scroll.add_child(_body)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.minimum_size_changed.connect(_resize,CONNECT_DEFERRED)
+	_body.add_child(_deploy_head)
+	_body.add_child(_deploy_rule)
+	_deploy_head.hide()
+	_deploy_rule.hide()
 	_label("Title")
 	_button("Deploy","deploy",func(): _send("deploy",{"placements":_draft.values()}))
 	_button("Resume","controller",_resume)
@@ -67,6 +77,8 @@ func _ready() -> void:
 	_label("Objective")
 	_label("Formations","select")
 	_body.add_child(_groups)
+	_body.add_child(_deploy_options)
+	_deploy_options.hide()
 	_picker("Layout","layout")
 	_picker("Zone","zone")
 	_picker("Target","target")
@@ -86,6 +98,8 @@ func _ready() -> void:
 	_button("Leave","leave",_send.bind("leave",{}))
 	_label("Receipt")
 	_label("Captions")
+	_body.add_child(_deploy_footer)
+	_deploy_footer.hide()
 	_button("Language","language",_setting.bind("language"),_prefs)
 	_button("Large","large",_setting.bind("large"),_prefs,true)
 	_button("Contrast","contrast",_setting.bind("contrast"),_prefs,true)
@@ -138,13 +152,15 @@ func _picker(id: String, caption: String, parent: Container = null) -> void:
 
 func _resize() -> void:
 	var deploy: bool = _view.get("phase")=="deployment" and _page!="settings"
+	if deploy: _groups.columns = 4 if size.x>=760 else 2
 	var height := minf(maxf(100,_body.get_combined_minimum_size().y+26),maxf(100,size.y-24))
 	if deploy:
-		_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-		_panel.offset_left = 12
-		_panel.offset_right = minf(size.x-12,clampf(size.x*.34,270,385))
-		_panel.offset_top = 12
-		_panel.offset_bottom = height+12
+		_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		var width := minf(size.x-28,maxf(420,size.x*.88))
+		_panel.offset_left = -width*.5
+		_panel.offset_right = width*.5
+		_panel.offset_bottom = -16
+		_panel.offset_top = -height-16
 	else:
 		_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		var half_width := minf(size.x*.46,230 if _page=="command" else 178)
@@ -154,6 +170,32 @@ func _resize() -> void:
 		_panel.offset_top = -half_height
 		_panel.offset_bottom = half_height
 	queue_redraw()
+
+func _arrange_deployment(active: bool) -> void:
+	if active==_in_deployment: return
+	_in_deployment = active
+	_deploy_head.visible = active
+	_deploy_rule.visible = active
+	_deploy_options.visible = active
+	_deploy_footer.visible = active
+	for row in [[_nodes.Title,_deploy_head],[_nodes.Settings,_deploy_head],[_nodes.LayoutRow,_deploy_options],[_nodes.ZoneRow,_deploy_options],[_nodes.Reset,_deploy_footer],[_nodes.Mark,_deploy_footer],[_nodes.Deploy,_deploy_footer]]:
+		var item: Control = row[0]
+		var parent: Control = row[1] if active else (_commands if item in [_nodes.Reset,_nodes.Mark] else _body)
+		item.reparent(parent,false)
+	if not active:
+		_body.move_child(_nodes.Title,2)
+		_body.move_child(_nodes.Settings,_nodes.Resume.get_index()+1)
+		_body.move_child(_nodes.LayoutRow,_nodes.TargetRow.get_index())
+		_groups.columns = 1
+	_nodes.Title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_nodes.Title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if active else HORIZONTAL_ALIGNMENT_CENTER
+	_nodes.Settings.autowrap_mode = TextServer.AUTOWRAP_OFF if active else TextServer.AUTOWRAP_WORD_SMART
+	_nodes.Settings.size_flags_horizontal = Control.SIZE_SHRINK_END if active else Control.SIZE_EXPAND_FILL
+	_nodes.LayoutRow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_nodes.ZoneRow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_deploy_options.add_theme_constant_override("separation",18)
+	_deploy_footer.add_theme_constant_override("separation",8)
+	_nodes.Deploy.custom_minimum_size.y = 36
 
 func _open_page(page: String) -> void:
 	var focus := get_viewport().gui_get_focus_owner()
@@ -177,6 +219,7 @@ func set_field_capture(captured: bool) -> void:
 	if _field_capture == captured: return
 	_field_capture = captured
 	_page = "menu"
+	if not captured: _view.erase("tactical_map")
 	if captured:
 		_confirm = false
 		_capture = ""
@@ -277,7 +320,7 @@ func _send(action: String, fields: Dictionary) -> Dictionary:
 	var r: Variant = _submit.call(action,data)
 	if generation != _generation: return R.fail("StaleVersion","hud_scope")
 	if typeof(r) != TYPE_DICTIONARY or not r.has("ok"): r = R.fail("Unavailable","receipt")
-	_receipt = _w("accepted") if r.ok else _error_text(r)
+	_receipt = ("" if action=="select" else _w("accepted")) if r.ok else _error_text(r)
 	refresh()
 	return r
 
@@ -380,6 +423,12 @@ func _render_field() -> void:
 	_overlay.set_strength(own,other,_w("own"),_w("other"))
 	var player: Dictionary = _view.get("player",{})
 	var weapons: Array = player.get("weapons",[])
+	_overlay.identity.text = _w("commander")
+	_overlay.mount_state.visible = player.has("mount_handle")
+	_overlay.mount_state.text = _w("on_horse" if player.get("mount_handle")!=null else "on_foot")
+	_overlay.morale.visible = player.has("morale")
+	_overlay.morale.text = "%s   %s"%[_w("morale"),player.get("morale","")]
+	_overlay.tactical.show_contacts(_view.get("tactical_map",{}),_w("map_range"),_w("north"))
 	var slot: int = player.get("weapon_slot",-1)
 	var kit := PackedStringArray()
 	if slot>=0 and slot<weapons.size(): kit.append(_w(weapons[slot]))
@@ -439,15 +488,18 @@ func _render_field() -> void:
 
 func _render() -> void:
 	if _nodes.is_empty(): return
-	_overlay.visible = _field_capture and not _view.is_empty()
-	_panel.visible = not _field_capture
-	_shade.visible = not _field_capture and _view.get("phase","") in ["battle","ended"]
-	if _field_capture:
+	var show_field: bool = _field_capture and _view.get("phase")=="battle"
+	_overlay.visible = show_field
+	_panel.visible = not show_field
+	_shade.visible = not show_field and _view.get("phase","") in ["battle","ended"]
+	if show_field:
 		_render_field()
 		return
+	_overlay.tactical.clear_contacts()
 	for id in _labels: _nodes[id].text = _w(_labels[id])
 	var phase: String = _view.get("phase","")
 	var deploy := phase == "deployment" and _page!="settings"
+	_arrange_deployment(deploy)
 	var battle := phase == "battle"
 	var finished := phase == "ended"
 	var rules: Dictionary = _view.get("rules",{})
@@ -500,7 +552,7 @@ func _render() -> void:
 		lines.append("#%s → %s · %s" % [id,_draft[id].zone_id,_w(_draft[id].layout)])
 	_text("Draft",(_w("preview")+"\n"+"\n".join(lines)) if deploy and not lines.is_empty() else "")
 	var selected := not _selection().is_empty()
-	_commands.visible = (deploy or command) and not _confirm
+	_commands.visible = command and not _confirm
 	_show_action("Mark",deploy,selected and _chosen("Zone") != null)
 	_show_action("Reset",deploy,not _draft.is_empty())
 	_show_action("Deploy",deploy,true)
@@ -551,9 +603,28 @@ func _render_groups() -> void:
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			b.pressed.connect(_toggle.bind(id))
 			_groups.add_child(b)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var standard := Standard.new()
+			standard.name = "Standard"
+			standard.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			standard.position = Vector2(9,6)
+			standard.size = Vector2(26,40)
+			b.add_child(standard)
 		b.disabled = not g.get("controllable",true)
 		b.set_pressed_no_signal(_selection().has(id))
 		var count: int = g.get("count",g.get("members",[]).size())
+		var standard := b.get_node("Standard") as Standard
+		standard.visible = _in_deployment
+		if _in_deployment:
+			standard.set_arm(g.get("troop_role",""),b.button_pressed)
+			b.custom_minimum_size.y = 56
+			b.theme_type_variation = &"TroopCard"
+			var unit := _w(g.get("troop_role","formation_card"))
+			var strength: String = str(g.planned_count) if g.has("planned_count") else (str(count) if count>0 else "—")
+			b.text = "%s   %s\n%s  ·  %s" % [id,unit,strength,_w(g.get("layout",""))]
+			continue
+		b.custom_minimum_size.y = 0
+		b.theme_type_variation = &""
 		var parts := ["#%d"%id]
 		if g.has("troop_role"): parts.append(_w(g.troop_role))
 		parts.append(_w("await_deploy") if count==0 and _view.get("phase")=="deployment" else "×%d"%count)
@@ -621,16 +692,25 @@ func _appearance() -> void:
 	var sheet := Theme.new()
 	sheet.default_font_size = 19 if _large else 15
 	theme = sheet
-	var box := BattleOverlay.frame(Color("#12110f") if _contrast else Color("#28251ff5"),BattleOverlay.Brass,12)
+	var box := BattleOverlay.frame(Color("#12110f") if _contrast else Color("#212725f5"),BattleOverlay.Brass,12)
 	box.border_width_top = 3
 	box.border_width_bottom = 2
 	_panel.add_theme_stylebox_override("panel",box)
-	sheet.set_stylebox("normal","Button",BattleOverlay.frame(Color("#342f27"),Color("#6c5e45"),6))
-	sheet.set_stylebox("hover","Button",BattleOverlay.frame(Color("#504431"),Color("#e3c184"),6))
-	sheet.set_stylebox("pressed","Button",BattleOverlay.frame(Color("#5b4931"),Color("#e3c184"),6))
-	_nodes.Deploy.add_theme_stylebox_override("normal",BattleOverlay.frame(Color("#6e512c"),Color("#dda95e"),7))
+	sheet.set_stylebox("normal","Button",BattleOverlay.frame(Color("#303735"),Color("#615e50"),6))
+	sheet.set_stylebox("hover","Button",BattleOverlay.frame(Color("#484d41"),Color("#e3c184"),6))
+	sheet.set_stylebox("pressed","Button",BattleOverlay.frame(Color("#64513a"),Color("#e3c184"),6))
+	sheet.set_type_variation(&"TroopCard",&"Button")
+	for state in ["normal","hover","pressed","hover_pressed","disabled"]:
+		var checked: bool = state in ["pressed","hover_pressed"]
+		var card := BattleOverlay.frame(Color("#59493a") if checked else Color("#323c37"),Color("#c7a371") if state!="normal" else Color("#726e59"),6)
+		card.content_margin_left = 44
+		card.border_width_bottom = 2 if checked else 1
+		sheet.set_stylebox(state,&"TroopCard",card)
+	for state in ["normal","hover","pressed"]:
+		var lacquer := Color("#803c30") if state=="normal" else Color("#a3513d")
+		_nodes.Deploy.add_theme_stylebox_override(state,BattleOverlay.frame(lacquer,Color("#d5ac74"),7))
 	_nodes.Resume.add_theme_stylebox_override("normal",BattleOverlay.frame(Color("#6e512c"),Color("#dda95e"),7))
-	_nodes.Title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_nodes.Title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if _in_deployment else HORIZONTAL_ALIGNMENT_CENTER
 	_nodes.Title.add_theme_color_override("font_color",Color("#ffe0a1"))
 
 func _input(event: InputEvent) -> void:

@@ -72,9 +72,12 @@ func setup() -> void:
 
 func query() -> Dictionary:
 	var groups := [form.view(0).value,form.view(1).value]
+	if phase=="deployment":
+		groups[0].troop_role = "infantry"
+		groups[0].planned_count = 17
 	var v := {"scope_id":scope_read,"revision":revision,"phase":phase,"formations":groups,
 		"targets":[2],"team_key":0,"rules":rules.view(),"selection":input.view().selection,
-		"player":{"hp":commander_hp,"ammo":4,"morale":92,"direction":"up","weapon_slot":0,"weapons":["melee"]},"delegate_candidate":"captain",
+		"player":{"hp":commander_hp,"ammo":4,"morale":92,"direction":"up","weapon_slot":0,"weapons":["melee"],"mount_handle":null},"delegate_candidate":"captain",
 		"deployment_zones":[{"id":"north","position_mm":[1000,0,300]}],"target_position":point,
 		"can_withdraw":true,"allow_rebind":true,"bindable_actions":input.profile_view().bindings.keys(),"command_feedback":input.view().feedback,"subtitle":"Cavalry!"}
 	if phase=="ended":
@@ -162,6 +165,11 @@ func click(id: String) -> void:
 func captured_field() -> void:
 	var field := FieldClicks.new()
 	root.add_child(field)
+	var sample := {"origin":Vector3(16,0,5),"heading":Vector3.FORWARD,"sample_tick":120,
+		"allies":PackedVector2Array([Vector2(19,12)]),"enemies":PackedVector2Array([Vector2(20,-3)]),
+		"rallies":PackedVector2Array([Vector2(-12,0)]),"objectives":PackedVector2Array([Vector2(3,4)])}
+	field_overlay.tactical_map = sample
+	hud.refresh()
 	control("Settings").grab_focus()
 	hud.set_field_capture(true)
 	await frames()
@@ -169,10 +177,16 @@ func captured_field() -> void:
 	var hint := control("FieldHints") as Label
 	check(hint.is_visible_in_tree() and hint.text.contains("攻击") and hint.text.contains("格挡"),"field controls show active keyboard/mouse bindings")
 	check(root.get_visible_rect().encloses(hint.get_global_rect()) and root.get_visible_rect().encloses(control("Equipment").get_global_rect()),"captured readouts fit inside the viewport")
-	check(control("Balance").get_global_rect().get_center().y<root.size.y*.15 and control("Equipment").get_global_rect().get_center().x>root.size.x*.65,"top strength and bottom right equipment")
+	var logical := root.get_visible_rect().size
+	check(control("Balance").get_global_rect().get_center().y<logical.y*.15 and control("Equipment").get_global_rect().get_center().x>logical.x*.65,"top strength and bottom right equipment")
 	check(control("HealthBar").is_visible_in_tree() and control("HealthBar").value==commander_hp and control("HealthBar").max_value==100,"health bar follows real field health")
+	var mini = control("TacticalMap")
+	check(mini.is_visible_in_tree() and mini._allies==sample.allies and mini._enemies==sample.enemies and mini._origin==Vector2(16,5) and mini._heading==Vector2.UP,"local map displays authorised XZ sample and north-facing player")
+	check(mini._rallies==sample.rallies and mini._objectives==sample.objectives,"map receives actual rally and objective locations")
+	check(not mini.get_global_rect().intersects(control("Equipment").get_global_rect()) and root.get_visible_rect().encloses(mini.get_global_rect()),"tactical map stays clear of player attributes")
+	check(control("PlayerMorale").text.contains("92") and control("PlayerMount").text=="步战" and control("PlayerWeapon").text.contains("近战"),"visible personal morale, mount state and equipped weapon")
 	var count := sent.size()
-	for pos in [Vector2(root.size)*0.5,Vector2(45,65)]:
+	for pos in [logical*.5,Vector2(45,65)]:
 		for button in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
 			for down in [true,false]:
 				var e := InputEventMouseButton.new()
@@ -193,6 +207,7 @@ func captured_field() -> void:
 	field_overlay.clear()
 	hud.set_field_capture(false)
 	hud.refresh()
+	check(not mini.is_visible_in_tree() and mini._allies.is_empty() and mini._enemies.is_empty() and sample.allies.size()==1 and sample.enemies.size()==1,"leaving field controls clears markers without writing to source")
 	check(control("Settings").is_visible_in_tree() and not hint.is_visible_in_tree(),"released cursor restores command controls")
 	field.free()
 
@@ -322,6 +337,17 @@ func run() -> void:
 	root.add_child(hud)
 	check(hud.mount(SCOPE,query,submit,prefs).ok,"mount")
 	await frames()
+	var deploy_panel := hud.find_children("*","PanelContainer",true,false)[0] as PanelContainer
+	check(deploy_panel.size.x>root.get_visible_rect().size.x*.8 and deploy_panel.get_global_rect().end.y>root.get_visible_rect().size.y*.9,"wide deployment desk at lower edge")
+	for _locale in 2:
+		var settings := control("Settings") as Button
+		var settings_text_width := settings.get_theme_font("font").get_string_size(settings.text,HORIZONTAL_ALIGNMENT_LEFT,-1,settings.get_theme_font_size("font_size")).x
+		check(settings.size.x>=settings_text_width and settings.size.y<50 and deploy_panel.get_global_rect().encloses(settings.get_global_rect()),"deployment settings fits a single readable row: "+settings.text)
+		await click("Settings")
+		await click("Language")
+		await click("Large")
+		await click("BackMenu")
+	check(control("Group0").text.contains("步兵") and control("Group0").text.contains("17") and control("Group0").get_global_rect().position.y==control("Group1").get_global_rect().position.y,"side-by-side formation banners show projected role and planned count")
 	await click("Group0")
 	await click("Group1")
 	check(input.view().selection==[0,1],"multi selection by mouse")
@@ -412,7 +438,7 @@ func run() -> void:
 	press_key(KEY_F6)
 	check(root.gui_get_focus_owner()==null,"F6 releases focus")
 	var panel := hud.find_children("*","PanelContainer",true,false)[0] as PanelContainer
-	check(root.get_visible_rect().encloses(panel.get_global_rect()) and panel.size.x<root.size.x*0.6,"panel fits "+str(root.size))
+	check(root.get_visible_rect().encloses(panel.get_global_rect()) and panel.size.x<root.get_visible_rect().size.x*0.6,"panel fits "+str(root.size))
 	check(panel.get_global_rect().get_center().distance_to(root.get_visible_rect().get_center())<2,"battle menu is centred")
 	var scroll := hud.find_children("*","ScrollContainer",true,false)[0] as ScrollContainer
 	for item in hud.find_children("*","Control",true,false):

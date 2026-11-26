@@ -163,6 +163,8 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 	for id in _frame.get("groups",{}): all_groups[id]=_frame.groups[id].team_key
 	var groups := []
 	var roles: Dictionary = _frame.get("roles",{}) if projection=="hud" else {}
+	var preview: bool = projection=="hud" and _phase=="Deployment"
+	var opening: Dictionary = _field.opening_roles(grant.team_key,_kit) if preview else {}
 	var targets: Array = _brains.visible_formations(grant.team_key) if _brains.has_method("visible_formations") else []
 	for id in all_groups:
 		var reading: Dictionary=_form.view(id)
@@ -178,6 +180,9 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 					var role: String = roles.get(h.index,"")
 					if not role.is_empty():
 						troop_role = role if troop_role.is_empty() or troop_role==role else "mixed"
+			if preview and _base_groups.has(id):
+				troop_role = ROLES[(id-1)%ROLES.size()]
+				g["planned_count"] = opening.get(troop_role,0)
 			if not troop_role.is_empty(): g["troop_role"]=troop_role
 			g["count"]=count
 			g["controllable"]=grant.issuer_id in [g.owner,g.delegate] and decision.outcome==null
@@ -213,6 +218,10 @@ func _projection(payload: Dictionary, grant: Dictionary) -> Dictionary:
 			out["interaction_target"]=_nearby_mount(player,grant.team_key)
 			out["can_withdraw"]=decision.outcome==null and not decision.teams.any(func(t):return is_same(t.team_key,grant.team_key) and t.withdrawn)
 			out["deployment_zones"]=[{"id":zone.get("id","deployment-"+str(_teams[grant.team_key].ordinal)),"position_mm":zone.rally_mm}]
+			var objectives := PackedVector2Array()
+			for site: Dictionary in _teams[grant.team_key].sites:
+				if site.objective: objectives.append(Vector2(site.position.x,site.position.z))
+			out["objective_sites"] = objectives
 			out["target_position"]=null
 			out["result"]=_result if not _result.is_empty() else null
 			return R.ok(out)

@@ -1,5 +1,6 @@
 extends Control
 ## Read-only HUD for the player camera. Never takes input away from the battlefield.
+const TacticalMap = preload("res://presentation/ui/field_tactical_map.gd")
 const Ink := Color("#221f1ce8")
 const Brass := Color("#ad8a51")
 const Parchment := Color("#f2e7cd")
@@ -12,6 +13,10 @@ var enemy := Label.new()
 var meter := ProgressBar.new()
 var equipment := VBoxContainer.new()
 var weapon := Label.new()
+var identity := Label.new()
+var morale := Label.new()
+var mount_state := Label.new()
+var tactical := TacticalMap.new()
 var health := Label.new()
 var health_bar := ProgressBar.new()
 var formations := HFlowContainer.new()
@@ -56,7 +61,15 @@ func _ready() -> void:
 	gear.offset_bottom = -15
 	gear.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	gear.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	equipment.add_child(weapon)
+	var heading := HBoxContainer.new()
+	equipment.add_child(heading)
+	heading.add_child(identity)
+	heading.add_child(mount_state)
+	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity.modulate = Color("#f5d593")
+	mount_state.name = "PlayerMount"
+	mount_state.modulate = Color("#d1c6af")
+	equipment.add_child(HSeparator.new())
 	var vitality := HBoxContainer.new()
 	equipment.add_child(vitality)
 	vitality.add_child(health_bar)
@@ -71,6 +84,14 @@ func _ready() -> void:
 	weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	health.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	health.modulate = Color("#ffd7a4")
+	morale.name = "PlayerMorale"
+	morale.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	equipment.add_child(morale)
+	weapon.name = "PlayerWeapon"
+	equipment.add_child(weapon)
+	tactical.name = "TacticalMap"
+	add_child(tactical)
+	tactical.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	board.name = "ScorePanel"
 	add_child(board)
 	board.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -130,10 +151,16 @@ func _plate(id: String, content: Container) -> PanelContainer:
 
 func _resize() -> void:
 	var half := minf(size.x*.46,260)
+	var diameter := clampf(minf(size.x*.17,size.y*.24),100,150)
+	tactical.offset_left = 14
+	tactical.offset_right = 14+diameter
+	tactical.offset_bottom = -48
+	tactical.offset_top = -65-diameter
 	board.offset_left = -half
 	board.offset_right = half
 	hints.offset_right = maxf(70,size.x*.52)
-	notice.offset_right = maxf(70,size.x*.70)
+	notice.offset_left = tactical.offset_right+10
+	notice.offset_right = maxf(notice.offset_left+70,size.x*.70)
 
 func set_strength(own_count: int, enemy_count: int, own_label: String, enemy_label: String) -> void:
 	balance.get_parent().visible = own_count>=0
