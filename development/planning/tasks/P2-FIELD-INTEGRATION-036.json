@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-036",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "BOOT",
+  "title": "正式与常驻版桌面战场捕获、失焦和镜头输入集成",
+  "spec": "docs/systems/game/bootstrap/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-004",
+    "P2-CAM-002",
+    "P2-INPUT-002",
+    "P2-UI-BATTLE-002",
+    "P2-FIELD-INTEGRATION-035",
+    "P2-FIELD-INTEGRATION-034"
+  ],
+  "requirements": [
+    "UX-02",
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-02",
+    "T-INPUT-03",
+    "T-CAM-01",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "game/bootstrap/field_desktop.gd",
+    "development/reports/tests/P2/field-resident/试玩常驻版野战.cmd",
+    "development/reports/tests/P2/field-controls/",
+    "development/reports/tests/P2/field-resident/README.md"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a6a255590647f34b2155248ffdf240136acb5f0c",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "正式与常驻版桌面战场捕获、失焦和镜头输入集成",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "正式与常驻版桌面战场捕获、失焦和镜头输入集成通过 Godot 实际输入或场景回归。",
+    "独立审查及同一战场客户端集成验证。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}

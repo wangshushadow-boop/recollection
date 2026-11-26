@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "P2-UI-BATTLE-002",
+  "kind": "EXECUTION",
+  "parent": "P2-UI-BATTLE",
+  "stage": "P2",
+  "module_id": "UI",
+  "title": "沉浸战斗 HUD、准星与兵令菜单",
+  "spec": "docs/systems/game/presentation/ui/README.md",
+  "depends_on": [
+    "P2-UI-BATTLE-001"
+  ],
+  "requirements": [
+    "ACC-01",
+    "UX-01",
+    "UX-02",
+    "UX-03"
+  ],
+  "acceptance_test_ids": [
+    "T-UI-01",
+    "T-UI-02",
+    "T-UI-03",
+    "T-UI-04"
+  ],
+  "allowed_paths": [
+    "game/presentation/ui/ports/field_hud.gd",
+    "game/presentation/ui/field_hud_text.gd",
+    "game/tests/p2/ui/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a6a255590647f34b2155248ffdf240136acb5f0c",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "沉浸战斗 HUD、准星与兵令菜单",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "沉浸战斗 HUD、准星与兵令菜单通过 Godot 实际输入或场景回归。",
+    "独立审查及同一战场客户端集成验证。"
+  ],
+  "status": "DONE",
+  "owner": "batch_sense"
+}

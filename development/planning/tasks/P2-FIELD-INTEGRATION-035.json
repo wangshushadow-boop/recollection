@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-035",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "VIS",
+  "title": "按本人代际管理第一人称可见模型与装备",
+  "spec": "docs/systems/game/presentation/visuals/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-012"
+  ],
+  "requirements": [
+    "BAT-01"
+  ],
+  "acceptance_test_ids": [
+    "T-VIS-01"
+  ],
+  "allowed_paths": [
+    "game/presentation/visuals/ports/field_visuals.gd"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/",
+    "game/contracts/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a6a255590647f34b2155248ffdf240136acb5f0c",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "按本人代际管理第一人称可见模型与装备",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "按本人代际管理第一人称可见模型与装备通过 Godot 实际输入或场景回归。",
+    "独立审查及同一战场客户端集成验证。"
+  ],
+  "status": "DONE",
+  "owner": "root"
+}

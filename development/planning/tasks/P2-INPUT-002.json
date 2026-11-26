@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "P2-INPUT-002",
+  "kind": "EXECUTION",
+  "parent": "P2-INPUT",
+  "stage": "P2",
+  "module_id": "INPUT",
+  "title": "霸主键鼠默认布局与战场指挥快捷操作",
+  "spec": "docs/systems/game/presentation/input/README.md",
+  "depends_on": [
+    "P2-INPUT-001"
+  ],
+  "requirements": [
+    "ACC-01",
+    "BAI-01",
+    "COM-05",
+    "NET-04",
+    "UX-01"
+  ],
+  "acceptance_test_ids": [
+    "T-INPUT-01",
+    "T-INPUT-02",
+    "T-INPUT-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/input/",
+    "game/tests/p2/input/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a6a255590647f34b2155248ffdf240136acb5f0c",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "霸主键鼠默认布局与战场指挥快捷操作",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "霸主键鼠默认布局与战场指挥快捷操作通过 Godot 实际输入或场景回归。",
+    "独立审查及同一战场客户端集成验证。"
+  ],
+  "status": "DONE",
+  "owner": "batch_ai"
+}

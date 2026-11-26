@@ -2,16 +2,16 @@
 setlocal
 chcp 65001 >nul
 for %%I in ("%~dp0..\..\..\..\..") do set "repo=%%~fI"
-set "base=bbcdc93675f69e26927e802430048e299ea39394"
-set "trial=%repo%\out\resident\play-bbcdc93"
+set "base=5df3b64390b152305252f6c4f8f244c41a7660f7"
+set "trial=%repo%\out\resident\play-5df3b64"
 set "engine=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64.exe"
 set "console=D:\Program\Godot\Standard\Godot_v4.7.2-stable_win64_console.exe"
 set "RECOLLECTION_MOVE_WORKERS=1"
 if not exist "%engine%" goto :failed
 if not exist "%console%" goto :failed
 if not exist "%trial%" mkdir "%trial%" || goto :failed
-set "APPDATA=%trial%\appdata"
-set "LOCALAPPDATA=%trial%\localdata"
+set "APPDATA=%repo%\out\resident\play-bbcdc93\appdata"
+set "LOCALAPPDATA=%repo%\out\resident\play-bbcdc93\localdata"
 if not exist "%trial%\baseline.ready" (
     git -C "%repo%" archive --format=zip --output="%trial%\baseline.zip" "%base%" game || goto :failed
     tar -xf "%trial%\baseline.zip" -C "%trial%" || goto :failed

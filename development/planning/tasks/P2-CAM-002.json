@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "P2-CAM-002",
+  "kind": "EXECUTION",
+  "parent": "P2-CAM",
+  "stage": "P2",
+  "module_id": "CAM",
+  "title": "步骑跟随、第一人称、自由观察与缩放",
+  "spec": "docs/systems/game/presentation/camera/README.md",
+  "depends_on": [
+    "P2-CAM-001"
+  ],
+  "requirements": [
+    "ACC-01",
+    "NET-04",
+    "UX-02"
+  ],
+  "acceptance_test_ids": [
+    "T-CAM-01",
+    "T-CAM-02",
+    "T-CAM-03"
+  ],
+  "allowed_paths": [
+    "game/presentation/camera/ports/field_camera.gd",
+    "game/tests/p2/camera/"
+  ],
+  "excluded_paths": [
+    "development/state/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "a6a255590647f34b2155248ffdf240136acb5f0c",
+  "worktree": "D:\\work\\game\\recollection",
+  "scope": "步骑跟随、第一人称、自由观察与缩放",
+  "non_goals": [
+    "未批准的公共契约或后续阶段范围。"
+  ],
+  "acceptance": [
+    "步骑跟随、第一人称、自由观察与缩放通过 Godot 实际输入或场景回归。",
+    "独立审查及同一战场客户端集成验证。"
+  ],
+  "status": "DONE",
+  "owner": "movement2"
+}
