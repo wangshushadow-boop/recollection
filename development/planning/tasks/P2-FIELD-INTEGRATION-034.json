@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P2-FIELD-INTEGRATION-034",
+  "kind": "EXECUTION",
+  "parent": "P2-FIELD-INTEGRATION",
+  "stage": "P2",
+  "module_id": "MOV",
+  "title": "河原野战移动数据常驻与分片对照",
+  "spec": "docs/systems/game/mission/movement/README.md",
+  "depends_on": [
+    "P2-FIELD-INTEGRATION-033"
+  ],
+  "requirements": [
+    "NAV-01",
+    "BAI-06"
+  ],
+  "acceptance_test_ids": [
+    "T-MOV-02",
+    "T-MOV-04",
+    "T-TEST-01"
+  ],
+  "allowed_paths": [
+    "development/reports/tests/P2/field-resident/"
+  ],
+  "ignored_trial_workspace": "out/resident/",
+  "excluded_paths": [
+    "development/state/",
+    "game/contracts/",
+    "docs/architecture/"
+  ],
+  "contract_changes": "forbidden",
+  "base_commit": "bbcdc93675f69e26927e802430048e299ea39394",
+  "worktree": "D:/work/game/recollection",
+  "scope": "同一原生推进规则下复用跨步数据，比较依序预测与并行预测并拆出显示开销。",
+  "non_goals": [
+    "未经批准的公共契约扩展、其他阶段玩法。"
+  ],
+  "acceptance": [
+    "对照上次 C++ 版、常驻串行与分片，记录显示帧时间、步速、数据交接和显示阶段。",
+    "对照权威回放、事务失败重试及真实内核参与，保持移动和命中规则。",
+    "交付可启动的独立版本、源码和实际测试记录。"
+  ],
+  "status": "DONE",
+  "owner": "movement2 / batch_move"
+}

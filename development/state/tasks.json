@@ -736,7 +736,8 @@
         "P2-FIELD-INTEGRATION-030",
         "P2-FIELD-INTEGRATION-031",
         "P2-FIELD-INTEGRATION-032",
-        "P2-FIELD-INTEGRATION-033"
+        "P2-FIELD-INTEGRATION-033",
+        "P2-FIELD-INTEGRATION-034"
       ]
     },
     "GATE-P2": {
@@ -2901,6 +2902,17 @@
       "integrated_commit": "09c66573dfeb488ece6a2b3467f66a4b9d4f4bb8",
       "evidence": [
         "development/reports/tests/P2/field-native-move/README.md"
+      ],
+      "child_ids": []
+    },
+    "P2-FIELD-INTEGRATION-034": {
+      "status": "DONE",
+      "owner": "movement2 / batch_move",
+      "base_commit": "bbcdc93675f69e26927e802430048e299ea39394",
+      "candidate_commit": "47ce2c3ca10a3de78b5ba66cc758d35a40f38f0b",
+      "integrated_commit": "47ce2c3ca10a3de78b5ba66cc758d35a40f38f0b",
+      "evidence": [
+        "development/reports/tests/P2/field-resident/README.md"
       ],
       "child_ids": []
     }
