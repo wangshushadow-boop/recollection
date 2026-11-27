@@ -24,14 +24,16 @@ class Figure:
 	var spine: int
 	var neck: int
 	var torso_chain: PackedInt32Array
+	var torso_rest: Array[Quaternion] = []
+	var saddle_bone := -1
+	var mounted_legs: PackedInt32Array
+	var mounted_rotations: Array[Quaternion] = []
 	var right: int
 	var forearm: int
 	var wrist: int
 	var left: int
 	var left_forearm: int
 	var left_wrist: int
-	var left_leg: int
-	var right_leg: int
 	var tunic: MeshInstance3D
 	var cape: MeshInstance3D
 	var ranged_weapon: Node3D
@@ -129,8 +131,16 @@ func instantiate(host: Node3D) -> Figure:
 	f.left = f.skeleton.find_bone("LeftArm")
 	f.left_forearm = f.skeleton.find_bone("LeftForeArm")
 	f.left_wrist = f.skeleton.find_bone("LeftHand")
-	f.left_leg = f.skeleton.find_bone("LeftUpLeg")
-	f.right_leg = f.skeleton.find_bone("RightUpLeg")
+	var left_leg := f.skeleton.find_bone("LeftUpLeg")
+	var right_leg := f.skeleton.find_bone("RightUpLeg")
+	f.saddle_bone = f.skeleton.find_bone("Torso2")
+	var bend := Quaternion(Vector3.RIGHT, -.67)
+	for joint: int in [left_leg, right_leg]:
+		if joint >= 0:
+			var spread := -.24 if joint == left_leg else .24
+			f.mounted_legs.append(joint)
+			f.mounted_rotations.append(f.skeleton.get_bone_rest(joint).basis.get_rotation_quaternion()
+				* bend * Quaternion(Vector3.BACK, spread))
 	f.tunic = f.root.find_child("garment-tunic", true, false) as MeshInstance3D
 	if role=="commander":
 		_dress_commander(f)
@@ -167,7 +177,10 @@ func _dress_commander(f: Figure) -> void:
 		grip.add_child(part)
 	f.cape = f.root.find_child("garment-cape",true,false)
 	for name in ["Spine1","Spine2","Neck","Head"]:
-		f.torso_chain.append(f.skeleton.find_bone(name))
+		var bone := f.skeleton.find_bone(name)
+		if bone < 0: continue
+		f.torso_chain.append(bone)
+		f.torso_rest.append(f.skeleton.get_bone_rest(bone).basis.get_rotation_quaternion())
 	for side in ["Left","Right"]:
 		var attachment := BoneAttachment3D.new()
 		f.skeleton.add_child(attachment)
@@ -210,8 +223,9 @@ func pose(f: Figure, time: float, speed: float, phase: String, direction: String
 	if not mounted and clip in ["Run","Walk"] and not f.torso_chain.is_empty():
 		# The source run rotates two consecutive chest joints by up to 27° and
 		# 39°. Reduce this double lean and its neck compensation before actions.
-		for bone in f.torso_chain:
-			var rest := f.skeleton.get_bone_rest(bone).basis.get_rotation_quaternion()
+		for i in f.torso_chain.size():
+			var bone := f.torso_chain[i]
+			var rest := f.torso_rest[i]
 			f.skeleton.set_bone_pose_rotation(bone,rest.slerp(f.skeleton.get_bone_pose_rotation(bone),.24))
 	if ranged and role in ["infantry","commander"] and f.ranged_weapon==null:
 		_attach_bow(f)
@@ -221,10 +235,8 @@ func pose(f: Figure, time: float, speed: float, phase: String, direction: String
 	if f.shield: f.shield.visible = shield_intact and not ranged
 	if f.arrow: f.arrow.visible = ranged and phase in ["Windup","Hold"]
 	if mounted:
-		for joint in [f.left_leg, f.right_leg]:
-			var sign_x := -1 if joint == f.left_leg else 1
-			f.skeleton.set_bone_pose_rotation(joint, f.skeleton.get_bone_rest(joint).basis.get_rotation_quaternion()
-				* Quaternion(Vector3.RIGHT, -.67) * Quaternion(Vector3.BACK, sign_x*.24))
+		for i in f.mounted_legs.size():
+			f.skeleton.set_bone_pose_rotation(f.mounted_legs[i], f.mounted_rotations[i])
 	var weight := smoothstep(0.0,maxf(1.0,phase_ticks),time-since)
 	if f.arrow and ranged:
 		_bow_pose(f,phase,pitch,weight)
@@ -362,10 +374,8 @@ func _set_world_rotation(skel: Skeleton3D, id: int, aim: Quaternion, blend := 1.
 	skel.set_bone_pose_rotation(id,skel.get_bone_pose_rotation(id).slerp(parent.inverse()*aim,blend))
 
 static func saddle_offset(f: Figure) -> Vector3:
-	if f == null: return SADDLE_OFFSET
-	var chest := f.skeleton.find_bone("Torso2")
-	if chest < 0: return SADDLE_OFFSET
-	var local := f.root.global_transform.affine_inverse() * f.skeleton.global_transform * f.skeleton.get_bone_global_pose(chest)
+	if f == null or f.saddle_bone < 0: return SADDLE_OFFSET
+	var local := f.root.global_transform.affine_inverse() * f.skeleton.global_transform * f.skeleton.get_bone_global_pose(f.saddle_bone)
 	# Saddle leather sits .22 m above the spine. Human hips sit .81 m above the root.
 	return local.origin * HORSE_SCALE + Vector3.UP * (.22-.81)
 

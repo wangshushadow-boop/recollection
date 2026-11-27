@@ -295,7 +295,7 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var movement: Dictionary = _move.begin_step(batch.source_tick)
 	if not movement.ok: return movement
 	_draft = {"stage":movement.value,"nav":nav.value.applied_revision,"com":_com.fork(),"player":_user_handle,
-		"rows":{},"pose":{},"orders":{},"layout_cache":_layout_specs.duplicate(),"look":_frame.get("look",{}).duplicate(),"moves":[],"actions":[],"ai":[],"move_receipts":[]}
+		"rows":{},"pose":{},"orders":{},"layout_cache":_layout_specs.duplicate(),"look":_frame.get("look",{}),"moves":[],"actions":[],"ai":[],"move_receipts":[]}
 	_draft.aim_pitch = _frame.get("aim_pitch",0.0) if _frame.get("aim_handle")==_user_handle else 0.0
 	_draft["resolved_mount_orders"]=[]
 	_draft["interactions"]=[]
@@ -305,6 +305,7 @@ func _start(ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	if stable:
 		_draft.rows=_frame.rows
 	else:
+		_draft.look = _draft.look.duplicate()
 		for row in ctx.entities: _draft.rows[row.handle.index] = row
 	for old in [] if stable else _frame.get("roster",[]):
 		if _draft.rows.get(old.handle.index,{}).get("handle")!=old.handle:
@@ -509,6 +510,16 @@ func _formations() -> Dictionary:
 		for slot in slots: targets[slot.member.index]=slot.position
 	return R.ok(targets)
 
+# The committed heading overrides are shared until an input really changes one.
+func _set_look(index: int, yaw: int) -> void:
+	var heading := Vector3.FORWARD.rotated(Vector3.UP,yaw*.000001)
+	var look: Dictionary = _draft.look
+	if look.get(index) == heading: return
+	if is_same(look,_frame.get("look")):
+		look = look.duplicate()
+		_draft.look = look
+	look[index] = heading
+
 func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var mounted:=_apply_mount_requests(batch.source_tick)
 	if not mounted.ok:return mounted
@@ -543,7 +554,7 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	_draft["ai_moves"]=decision.value.moves
 	_draft["metrics"]=decision.value.metrics
 	for aim in decision.value.get("looks",[]):
-		_draft.look[aim.actor_handle.index]=Vector3.FORWARD.rotated(Vector3.UP,aim.yaw*.000001)
+		_set_look(aim.actor_handle.index,aim.yaw)
 	if not _input.is_empty():
 		if not _identity(_input.context).ok: return R.fail("Unauthorized","field.input")
 		for intent in _input.batch.inputs:
@@ -551,7 +562,7 @@ func _think(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 			if intent.has("desired_direction"):
 				_draft.moves.append({"intent":intent,"context":_input.context})
 			elif intent.has("yaw"):
-				_draft.look[intent.actor_handle.index]=Vector3.FORWARD.rotated(Vector3.UP,intent.yaw*.000001)
+				_set_look(intent.actor_handle.index,intent.yaw)
 				_draft.aim_pitch=intent.pitch*.000001
 			elif intent.has("input_phase") or intent.has("held") or intent.has("item_ref"):
 				_draft.actions.append(intent)
@@ -709,13 +720,23 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var shielded: Dictionary = traits.value.shielded
 	var stable := is_same(_draft.roster,_frame.get("roster"))
 	var same_slots := stable and is_same(mounts,_frame.mounts)
-	var physical: Array=_frame.physical.duplicate() if same_slots else []
-	var slots: PackedInt32Array=_frame.human_slots if same_slots else PackedInt32Array()
-	var next: Dictionary=previous.duplicate() if stable else {}
-	var pose: Dictionary=_frame.pose.duplicate() if stable else {}
-	var combat: Dictionary=_frame.combat_poses.duplicate() if stable else {}
-	if not stable:
-		for row in _draft.roster:combat[row.handle.index]=null
+	# A stable slot layout can share the committed tables until the first write.
+	var physical: Array = _frame.physical if same_slots else []
+	var slots: PackedInt32Array = _frame.human_slots if same_slots else PackedInt32Array()
+	var next: Dictionary = previous
+	var pose: Dictionary = _frame.get("pose",{})
+	var combat: Dictionary = _frame.get("combat_poses",{})
+	if stable and not same_slots:
+		# A remount rebuilds physical slots; keep the published dictionary order.
+		next = next.duplicate()
+		pose = pose.duplicate()
+		combat = combat.duplicate()
+	elif not stable:
+		next = {}
+		pose = {}
+		combat = {}
+		for row in _draft.roster: combat[row.handle.index] = null
+	var shared := same_slots
 	var old_positions: PackedVector3Array=_frame.motion.positions if same_slots else PackedVector3Array()
 	var old_velocities: PackedVector3Array=_frame.motion.velocities if same_slots else PackedVector3Array()
 	var old_headings: PackedVector3Array=_frame.motion.headings if same_slots else PackedVector3Array()
@@ -725,13 +746,28 @@ func _walk(_ctx: Dictionary, batch: Dictionary) -> Dictionary:
 	var ridden := {}
 	var aiming_handle: Variant=_draft.aim_handle
 	var pitch_unchanged: bool=_frame.get("aim_handle")==aiming_handle and _frame.get("aim_pitch")==_draft.aim_pitch
-	for i in _draft.humans.size():
-		var h: Dictionary=_draft.humans[i]
-		var index: int=h.index
-		var heading: Vector3=look.get(index,headings[i])
-		var aim_changed: bool=not pitch_unchanged and (h==aiming_handle or h==_frame.get("aim_handle"))
-		if same_slots and not aim_changed and old_positions[i]==positions[i] and old_velocities[i]==velocities[i] and old_look.get(index,old_headings[i])==heading and old_headings[i]==headings[i]:
-			if same_shields or shielded.has(index)==_frame.shielded.has(index): continue
+	var same_look := is_same(old_look,look)
+	# Packed column comparison runs in the engine; an unchanged battlefield
+	# needs no per-soldier script loop or new projection containers.
+	var humans_to_check: int = _draft.humans.size()
+	if same_slots and same_look and same_shields and pitch_unchanged:
+		if old_positions == positions and old_velocities == velocities and old_headings == headings:
+			humans_to_check = 0
+	for i in humans_to_check:
+		var h: Dictionary = _draft.humans[i]
+		var index: int = h.index
+		if same_slots and old_positions[i] == positions[i] and old_velocities[i] == velocities[i] and old_headings[i] == headings[i]:
+			var aim_changed: bool = not pitch_unchanged and (h == aiming_handle or h == _frame.aim_handle)
+			if not aim_changed and (same_shields or shielded.has(index) == _frame.shielded.has(index)):
+				if same_look or old_look.get(index,old_headings[i]) == look.get(index,headings[i]):
+					continue
+		if shared:
+			physical = physical.duplicate()
+			next = next.duplicate()
+			pose = pose.duplicate()
+			combat = combat.duplicate()
+			shared = false
+		var heading: Vector3 = look.get(index,headings[i])
 		var mount: Variant=mounts.get(index)
 		if not same_slots: slots.append(physical.size())
 		var projection := _project_actor(previous.get(index),_draft.rows[index],positions[i],velocities[i],heading,mount!=null,shielded.has(index),_draft.aim_pitch if h==aiming_handle else null)

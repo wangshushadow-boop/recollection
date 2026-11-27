@@ -428,7 +428,9 @@ func _decide_range(part: int, members: Array[MemberWork], batches: int) -> void:
 func _flush_quiet(members: Array[MemberWork], proposals: Dictionary, metrics: Dictionary) -> Dictionary:
 	var batches := mini(AI_BATCHES,maxi(1,members.size()/8))
 	if batches > 1:
-		var group := WorkerThreadPool.add_group_task(_decide_range.bind(members,batches),batches,batches)
+		# Decide one disjoint slice on the mission thread while workers handle the rest.
+		var group := WorkerThreadPool.add_group_task(_decide_range.bind(members,batches),batches-1,batches-1)
+		_decide_range(batches-1,members,batches)
 		WorkerThreadPool.wait_for_group_task_completion(group)
 	else:
 		_decide_range(0,members,1)
@@ -470,27 +472,35 @@ func _dispatch(tick: int,nav: int,combat: RefCounted,player: Variant) -> Diction
 	var scheduled: Dictionary = _ai.schedule()
 	if not scheduled.ok: return scheduled
 	var metrics := {"tick":tick,"tactical":0,"formation":0,"individual":0,"orders":0,"modes":{},"role_modes":{},"backlog":scheduled.value.backlog}
-	var jobs: Array = scheduled.value.jobs
-	for job in jobs:
-		if job.layer!="tactical": continue
-		var result := _tactical(job)
-		if not result.ok: return result
-		metrics.tactical += 1
+	var formations := []
+	var individuals := []
+	for job in scheduled.value.jobs:
+		match job.layer:
+			"tactical":
+				var result := _tactical(job)
+				if not result.ok: return result
+				metrics.tactical += 1
+			"formation":
+				formations.append(job)
+			"individual":
+				if job.subject!=player: individuals.append(job)
 	var drained: Dictionary = _ai.drain()
 	if not drained.ok or drained.value.size()!=metrics.tactical:
 		return R.fail("StaleVersion","field_ai_plan")
+	# Taking a tactical view copies the plan. Only scheduled formations need it.
 	var tasks := {}
-	for team in _l1:
-		for task in _l1[team].view().get("formation_tasks",[]):
-			tasks[task.formation_id] = task
-	for job in jobs:
-		if job.layer!="formation": continue
+	var teams_read := {}
+	for job in formations:
+		var team: Variant = _groups[job.subject].team_key
+		if not teams_read.has(team):
+			for task in _l1[team].view().get("formation_tasks",[]):
+				tasks[task.formation_id] = task
+			teams_read[team] = true
 		var result := _formation(job,nav,tasks,metrics)
 		if not result.ok: return result
 		metrics.formation += 1
 	var states := {}
 	var proposals := {}
-	var individuals := jobs.filter(func(job):return job.layer=="individual" and job.subject!=player)
 	var quiet: PackedByteArray = _ai._rank_scheduled(individuals,AI_BATCHES)
 	var pending: Array[MemberWork] = []
 	for i in individuals.size():

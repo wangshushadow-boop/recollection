@@ -351,7 +351,8 @@ func _rank_scheduled(jobs: Array, tick: int, batches: int) -> PackedByteArray:
 	no_enemies.resize(jobs.size())
 	if jobs.size()<8:
 		return no_enemies
-	var parts := clampi(batches,1,jobs.size())
+	# Keep at least eight ranking jobs per slice to amortize a pool submission.
+	var parts := clampi(batches,1,jobs.size()/8)
 	var results := []
 	results.resize(jobs.size())
 	var work := _rank_chunk.bind(parts,jobs,tick,results)

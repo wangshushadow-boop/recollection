@@ -1,6 +1,15 @@
 extends Node3D
 ## Uniform transform + pose batches. Capacity only grows when a batch fills.
+class Batch:
+	var geometry: MultiMesh
+	var transforms: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var count := 0
+	var capacity := 0
+
 var groups := {}
+var _active: Array[Batch] = []
+var _previous: Array[Batch] = []
 var material := ShaderMaterial.new()
 
 func _init() -> void:
@@ -21,25 +30,52 @@ func add_group(key: String, mesh: Mesh, surface: Material = null) -> void:
 	node.material_override = surface if surface != null else material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(node)
-	groups[key] = {"geometry":geometry, "transforms":[], "colors":[]}
+	var batch := Batch.new()
+	batch.geometry = geometry
+	geometry.visible_instance_count = 0
+	groups[key] = batch
 
 func begin_frame() -> void:
-	for g: Dictionary in groups.values():
-		g.transforms.clear()
-		g.colors.clear()
+	var reuse := _previous
+	_previous = _active
+	_active = reuse
+	_active.clear()
+	for batch in _previous:
+		batch.count = 0
 
 func push(key: String, transform3: Transform3D, color: Color) -> void:
-	var g: Dictionary = groups[key]
-	g.transforms.append(transform3)
-	g.colors.append(color.srgb_to_linear())
+	var batch: Batch = groups[key]
+	var slot := batch.count
+	if slot == 0:
+		_active.append(batch)
+	batch.count += 1
+
+	if slot == batch.transforms.size():
+		batch.transforms.append(transform3)
+		batch.colors.append(color)
+		if slot < batch.capacity:
+			batch.geometry.set_instance_transform(slot, transform3)
+			batch.geometry.set_instance_custom_data(slot, color.srgb_to_linear())
+		return
+
+	if batch.transforms[slot] != transform3:
+		batch.transforms[slot] = transform3
+		batch.geometry.set_instance_transform(slot, transform3)
+	if batch.colors[slot] != color:
+		batch.colors[slot] = color
+		batch.geometry.set_instance_custom_data(slot, color.srgb_to_linear())
 
 func flush() -> void:
-	for g: Dictionary in groups.values():
-		var m: MultiMesh = g.geometry
-		var count: int = g.transforms.size()
-		if m.instance_count < count:
-			m.instance_count = maxi(8,ceili(count*1.3))
-		m.visible_instance_count = count
-		for i in count:
-			m.set_instance_transform(i,g.transforms[i])
-			m.set_instance_custom_data(i,g.colors[i])
+	for batch in _previous:
+		if batch.count == 0:
+			batch.geometry.visible_instance_count = 0
+	for batch in _active:
+		if batch.count > batch.capacity:
+			# Resizing invalidates instance data, including slots that did not change.
+			batch.capacity = maxi(8, ceili(batch.count * 1.3))
+			batch.geometry.instance_count = batch.capacity
+			for i in batch.count:
+				batch.geometry.set_instance_transform(i, batch.transforms[i])
+				batch.geometry.set_instance_custom_data(i, batch.colors[i].srgb_to_linear())
+		if batch.geometry.visible_instance_count != batch.count:
+			batch.geometry.visible_instance_count = batch.count

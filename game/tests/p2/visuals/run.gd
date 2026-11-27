@@ -234,7 +234,33 @@ func replay(scope: String, eye: Vector3, direction: String) -> Array:
 	vis.release_scope(scope)
 	return [results,attack_pose]
 
+# Pose batches can empty, reuse old slots in a different order, or grow
+# beyond their previous capacity without a change to the underlying pose mesh.
+func batch_slot_reuse() -> void:
+	var batches := Vis.Batches.new()
+	root.add_child(batches)
+	batches.add_group("pose", BoxMesh.new())
+	var group = batches.groups.pose
+	var mesh: MultiMesh = group.geometry
+	for ids: Array in [[1,2,3], [1,2,3], [], [3,1], [3,1,2,4,5,6,7,8,9], [9]]:
+		batches.begin_frame()
+		for id: int in ids:
+			var transform3 := Transform3D(Basis.IDENTITY, Vector3(id,0,0))
+			batches.push("pose", transform3, Color.RED if id % 2 else Color.BLUE)
+		batches.flush()
+		check(mesh.visible_instance_count == ids.size(), "batch visible count after reuse")
+		for i in ids.size():
+			var id: int = ids[i]
+			var expected_color := Color.RED if id % 2 else Color.BLUE
+			check(group.transforms[i].origin.x == id and group.colors[i] == expected_color,
+				"cached transform and tint after reorder")
+			if DisplayServer.get_name() != "headless":
+				check(mesh.get_instance_transform(i).origin.x == id and mesh.get_instance_custom_data(i).is_equal_approx(expected_color),
+					"rendered transform and tint after reallocation")
+	batches.free()
+
 func _run() -> void:
+	batch_slot_reuse()
 	vis = Vis.new()
 	root.add_child(vis)
 	var opened := vis.open_field("test")

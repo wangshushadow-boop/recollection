@@ -40,7 +40,9 @@ func projected_rows() -> void:
 	var prior_rider: Dictionary = old.filter(func(a):return a.handle==rider)[0]
 	var next_rider: Dictionary = next.filter(func(a):return a.handle==rider)[0]
 	var next_horse: Dictionary = next.filter(func(a):return a.handle==horse)[0]
-	check(prior_rider.heading!=next_rider.heading and next_rider.position==next_horse.position and next_rider.heading==next_horse.heading,"motion and look update both actor poses")
+	var aim := Vector3.FORWARD.rotated(Vector3.UP, 1.0)
+	check(prior_rider.heading!=next_rider.heading and next_rider.heading.dot(aim)>.999, "rider follows the requested yaw")
+	check(next_rider.position==next_horse.position and next_horse.heading.dot(hud().player.mount_heading)>.999, "horse shares rider position and follows its movement heading")
 	blockers[0].collision_layer=4
 	await physics_frame
 	await physics_frame
@@ -61,6 +63,27 @@ func projected_rows() -> void:
 	check(replaced.size()==2 and replaced.any(func(a):return a.handle==newer and a.role=="mount" and a.rider_handle==rider), "replacement becomes visible with correct role and rider")
 	check(replaced.all(func(a):return a.handle!=horse), "retired horse never reappears")
 
+func stationary_snapshots() -> void:
+	site_positions = [[[-3000, 0, 0]], [[3000, 0, 0]]]
+	if not await open(battle(["infantry"], [1], 1)): return
+	if not ok(mission.step_fixed(1, []), "open stationary ranks"): return
+	var actor: Dictionary = hud().player_handle
+	var before: Dictionary = mission._frame
+	if not ok(mission.step_fixed(2, []), "advance idle ranks"): return
+	var idle: Dictionary = mission._frame
+	for key in ["physical", "projections", "pose", "combat_poses"]:
+		check(is_same(before[key], idle[key]), "idle snapshot reuses " + key)
+	if not ok(input(3,[{"actor_handle":actor,"yaw":0,"pitch":0}]), "establish stationary aim"): return
+	if not ok(mission.step_fixed(3, []), "advance unchanged pitch"): return
+	idle = mission._frame
+	var original_pose := var_to_bytes(idle.pose)
+	var original_combat := var_to_bytes(idle.combat_poses)
+	if not ok(input(4,[{"actor_handle":actor,"yaw":0,"pitch":400000}]), "admit stationary pitch"): return
+	if not ok(mission.step_fixed(4, []), "advance stationary pitch"): return
+	var current: Dictionary = mission._frame
+	check(current.pose[actor.index].position==idle.pose[actor.index].position and is_equal_approx(current.pose[actor.index].aim_pitch, .4), "pitch updates even when position is stationary")
+	check(var_to_bytes(idle.pose)==original_pose and var_to_bytes(idle.combat_poses)==original_combat, "editing one actor leaves earlier committed poses intact")
+
 func run() -> void:
 	var compiler := Compiler.new()
 	var compiled := compiler.compile(compiler.scan_packages([Compiler.BASE_PACKAGE,"res://content/base/field"]),{})
@@ -69,6 +92,8 @@ func run() -> void:
 		return
 	registry=compiled.value.registry
 	adapter=EngineAdapter.new(root,true)
+	await stationary_snapshots()
+	if mission!=null:mission.dispose()
 	await projected_rows()
 	if mission!=null:mission.dispose()
 	print("POSE_PROJECTION checks=",checks," failures=",failed)
